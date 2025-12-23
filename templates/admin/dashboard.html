@@ -1,0 +1,449 @@
+
+{% extends 'admin/base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block page_heading %}Dashboard Overview{% endblock %}
+{% block content %}
+<div class="row g-3">
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Total Users</p>
+                <h4 class="mb-0">{{ metrics.total_users }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Active Users</p>
+                <h4 class="mb-0">{{ metrics.active_users }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Linked Accounts</p>
+                <h4 class="mb-0">{{ metrics.total_accounts }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Brokers Connected</p>
+                <h4 class="mb-0">{{ metrics.brokers_connected }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row g-3 mt-1">
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Trades Today</p>
+                <h4 class="mb-0">{{ metrics.trades_today }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Failed Trades</p>
+                <h4 class="mb-0">{{ metrics.failed_trades }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <p class="text-muted small mb-1">System Uptime</p>
+                <h4 class="mb-0">{{ metrics.uptime }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mt-3">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
+        <span class="fw-semibold">User Risk &amp; Enforcement</span>
+        {% if enforcement.recent_user %}
+            <span class="text-muted small">Most recent active: {{ enforcement.recent_user.email }} ({{ enforcement.recent_user.last_login.strftime('%Y-%m-%d %H:%M') if enforcement.recent_user.last_login else 'No login recorded' }})</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-12 col-md-4">
+                <div class="p-3 border rounded h-100">
+                    <p class="text-muted small mb-1">Suspended</p>
+                    <h5 class="mb-0">{{ enforcement.suspended }}</h5>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="p-3 border rounded h-100">
+                    <p class="text-muted small mb-1">Flagged</p>
+                    <h5 class="mb-0">{{ enforcement.flagged }}</h5>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="p-3 border rounded h-100">
+                    <p class="text-muted small mb-1">Pending KYC</p>
+                    <h5 class="mb-0">{{ enforcement.pending_kyc }}</h5>
+                </div>
+            </div>
+        </div>
+        {% if enforcement.recent_user %}
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+                <div>
+                    <div class="fw-semibold">{{ enforcement.recent_user.email }}</div>
+                    <div class="text-muted small">Last login: {{ enforcement.recent_user.last_login.strftime('%Y-%m-%d %H:%M') if enforcement.recent_user.last_login else 'N/A' }}</div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <form method="post" action="{{ url_for('admin_suspend_user', user_id=enforcement.recent_user.id) }}">
+                        <button class="btn btn-outline-danger btn-sm" type="submit">Suspend</button>
+                    </form>
+                    <form method="post" action="{{ url_for('admin_reset_password', user_id=enforcement.recent_user.id) }}">
+                        <button class="btn btn-outline-secondary btn-sm" type="submit">Reset Password</button>
+                    </form>
+                    <form method="post" action="{{ url_for('admin_force_logout', user_id=enforcement.recent_user.id) }}">
+                        <button class="btn btn-outline-warning btn-sm" type="submit">Force Logout</button>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3 mt-3">
+    <div class="col-12 col-xl-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-semibold">Revenue &amp; Subscription Health</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <p class="text-muted small mb-1">MRR</p>
+                        <h4 class="mb-0">₹ {{ '%.2f' % subscription_health.mrr }}</h4>
+                        <div class="text-muted small">Price per paid user: ₹ {{ '%.2f' % subscription_health.plan_price }}</div>
+                    </div>
+                    <div class="col-6">
+                        <p class="text-muted small mb-1">ARPU</p>
+                        <h4 class="mb-0">₹ {{ '%.2f' % subscription_health.arpu }}</h4>
+                        <div class="text-muted small">Active paid users: {{ subscription_health.active_paid }}</div>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-4">
+                        <p class="text-muted small mb-1">Churn (30d)</p>
+                        <h6 class="mb-0">{{ subscription_health.churn_30d }}</h6>
+                    </div>
+                    <div class="col-4">
+                        <p class="text-muted small mb-1">Trials (30d)</p>
+                        <h6 class="mb-0">{{ subscription_health.trials_30d }}</h6>
+                    </div>
+                    <div class="col-4">
+                        <p class="text-muted small mb-1">Conversions (30d)</p>
+                        <h6 class="mb-0">{{ subscription_health.conversions_30d }}</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-semibold">Security &amp; Reliability Alerts</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="d-flex justify-content-between align-items-center p-3 border rounded">
+                            <div>
+                                <div class="fw-semibold">Failed Logins</div>
+                                <div class="text-muted small">Last 24h</div>
+                            </div>
+                            <span class="badge {{ 'bg-danger' if security_alerts.failed_logins else 'bg-success' }}">{{ security_alerts.failed_logins }}</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex justify-content-between align-items-center p-3 border rounded">
+                            <div>
+                                <div class="fw-semibold">Rate Limits (429)</div>
+                                <div class="text-muted small">Last 24h</div>
+                            </div>
+                            <span class="badge {{ 'bg-warning text-dark' if security_alerts.rate_limits else 'bg-success' }}">{{ security_alerts.rate_limits }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-6">
+                        <div class="d-flex justify-content-between align-items-center p-3 border rounded">
+                            <div>
+                                <div class="fw-semibold">Errors (500)</div>
+                                <div class="text-muted small">Last 24h</div>
+                            </div>
+                            <span class="badge {{ 'bg-danger' if security_alerts.errors else 'bg-success' }}">{{ security_alerts.errors }}</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex justify-content-between align-items-center p-3 border rounded">
+                            <div>
+                                <div class="fw-semibold">Broker Errors</div>
+                                <div class="text-muted small">Last 24h</div>
+                            </div>
+                            <span class="badge {{ 'bg-danger' if security_alerts.broker_errors else 'bg-success' }}">{{ security_alerts.broker_errors }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="card shadow-sm mt-4">
+    <div class="card-header fw-semibold">API Status</div>
+    <div class="card-body">
+        {% if api_status %}
+            <div class="row g-3">
+                {% for api in api_status %}
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="d-flex align-items-center justify-content-between p-3 border rounded">
+                            <span class="fw-semibold text-capitalize">{{ api.name }}</span>
+                            {% if api.online %}
+                                <span class="badge bg-success">Online</span>
+                            {% else %}
+                                <span class="badge bg-danger">Offline</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">No broker status data available.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3 mt-3">
+    <div class="col-12 col-xl-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span class="fw-semibold">Recent Trades</span>
+                {% set trade_params = namespace(data={}) %}
+                {% if filters.current.status %}{% set _ = trade_params.data.update({'status': filters.current.status}) %}{% endif %}
+                {% if filters.current.broker %}{% set _ = trade_params.data.update({'broker': filters.current.broker}) %}{% endif %}
+                {% if filters.current.timeframe %}{% set _ = trade_params.data.update({'timeframe': filters.current.timeframe}) %}{% endif %}
+                <div class="d-flex align-items-center gap-2">
+                    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('admin_export_trades', **trade_params.data) }}">Export CSV</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-2 align-items-end mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted mb-1">Status</label>
+                        <select class="form-select form-select-sm" name="status">
+                            <option value="">All</option>
+                            {% for status in filters.statuses %}
+                                <option value="{{ status }}" {% if filters.current.status == status %}selected{% endif %}>{{ status }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted mb-1">Broker</label>
+                        <select class="form-select form-select-sm" name="broker">
+                            <option value="">All</option>
+                            {% for broker in filters.brokers %}
+                                <option value="{{ broker }}" {% if filters.current.broker == broker %}selected{% endif %}>{{ broker }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted mb-1">Timeframe</label>
+                        <select class="form-select form-select-sm" name="timeframe">
+                            <option value="">Any</option>
+                            <option value="today" {% if filters.current.timeframe == 'today' %}selected{% endif %}>Today</option>
+                            <option value="7d" {% if filters.current.timeframe == '7d' %}selected{% endif %}>Last 7 days</option>
+                            <option value="30d" {% if filters.current.timeframe == '30d' %}selected{% endif %}>Last 30 days</option>
+                        </select>
+                    </div>
+                    <div class="col-12 d-flex gap-2">
+                        <button class="btn btn-primary btn-sm" type="submit">Apply</button>
+                        <a class="btn btn-light btn-sm" href="{{ url_for('admin_dashboard') }}">Reset</a>
+                    </div>
+                </form>
+                {% if recent_trades %}
+                    <ul class="list-group list-group-flush">
+                        {% for trade in recent_trades %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="fw-semibold">{{ trade.symbol }} ({{ trade.action }})</div>
+                                    <div class="text-muted small">{{ trade.timestamp.strftime('%Y-%m-%d %H:%M') if trade.timestamp else 'N/A' }}
+                                        · {{ trade.user.email if trade.user else 'Unknown user' }}</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-semibold">{{ trade.qty }} @ {{ '%.2f' % trade.price if trade.price is not none else '—' }}</div>
+                                    <span class="badge {{ 'bg-success' if trade.status == 'Success' else 'bg-secondary' if trade.status == 'Pending' else 'bg-danger' }}">{{ trade.status }}</span>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted mb-0">No trade activity recorded yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="d-flex flex-column">
+                    <span class="fw-semibold">Recent Activity</span>
+                    <a class="link-secondary small" href="{{ url_for('admin_logs') }}">View logs</a>
+                </div>
+                {% set log_params = namespace(data={}) %}
+                {% if filters.current.log_timeframe %}{% set _ = log_params.data.update({'log_timeframe': filters.current.log_timeframe}) %}{% endif %}
+                <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('admin_export_logs', **log_params.data) }}">Export CSV</a>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-2 align-items-end mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted mb-1">Timeframe</label>
+                        <select class="form-select form-select-sm" name="log_timeframe">
+                            <option value="">Any</option>
+                            <option value="today" {% if filters.current.log_timeframe == 'today' %}selected{% endif %}>Today</option>
+                            <option value="7d" {% if filters.current.log_timeframe == '7d' %}selected{% endif %}>Last 7 days</option>
+                            <option value="30d" {% if filters.current.log_timeframe == '30d' %}selected{% endif %}>Last 30 days</option>
+                        </select>
+                    </div>
+                    <div class="col-12 d-flex gap-2">
+                        <button class="btn btn-primary btn-sm" type="submit">Apply</button>
+                        <a class="btn btn-light btn-sm" href="{{ url_for('admin_dashboard') }}">Reset</a>
+                    </div>
+                </form>
+                {% if recent_logs %}
+                    <ul class="list-group list-group-flush">
+                        {% for log in recent_logs %}
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span class="badge {{ 'bg-danger' if log.level and log.level.upper() == 'ERROR' else 'bg-warning text-dark' if log.level and log.level.upper() == 'WARN' else 'bg-secondary' }}">{{ log.level or 'INFO' }}</span>
+                                    <span class="text-muted small">{{ log.timestamp.strftime('%Y-%m-%d %H:%M') if log.timestamp else 'N/A' }}</span>
+                                </div>
+                                <div class="fw-semibold mt-1">{{ log.module or 'System' }}</div>
+                                <div class="text-muted">{{ log.message }}</div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted mb-0">No log entries available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mt-3">
+    <div class="col-12 col-xl-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-semibold">User Activity Leaderboards</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <h6>Most Active (24h)</h6>
+                        {% if leaderboards.active %}
+                            <ul class="list-group list-group-flush">
+                                {% for row in leaderboards.active %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="fw-semibold">{{ row.email }}</div>
+                                            <div class="text-muted small">Last trade: {{ row.last_trade.strftime('%Y-%m-%d %H:%M') if row.last_trade else 'N/A' }}</div>
+                                        </div>
+                                        <span class="badge bg-primary">{{ row.trade_count }} trades</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted mb-0">No recent activity.</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <h6>Top Traders by Volume (7d)</h6>
+                        {% if leaderboards.top_traders %}
+                            <ul class="list-group list-group-flush">
+                                {% for row in leaderboards.top_traders %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="fw-semibold">{{ row.email }}</div>
+                                            <div class="text-muted small">Trades: {{ row.trade_count }}</div>
+                                        </div>
+                                        <span class="badge bg-success">₹ {{ '%.2f' % (row.volume or 0) }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted mb-0">No volume recorded.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-semibold">Operations Queue</div>
+            <div class="card-body vstack gap-3">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold">Webhooks</span>
+                        <span class="badge {{ 'bg-danger' if queue_status.webhooks.errors else 'bg-success' }}">{{ 'Issues' if queue_status.webhooks.errors else 'Healthy' }}</span>
+                    </div>
+                    <p class="mb-1">Pending: {{ queue_status.webhooks.pending }}</p>
+                    <p class="text-muted small mb-0">Oldest pending: {{ queue_status.webhooks.oldest.strftime('%Y-%m-%d %H:%M') if queue_status.webhooks.oldest else 'N/A' }}</p>
+                </div>
+                <div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold">Task Queue</span>
+                        <span class="badge {{ 'bg-danger' if queue_status.task_queue.errors else 'bg-success' }}">{{ 'Issues' if queue_status.task_queue.errors else 'Healthy' }}</span>
+                    </div>
+                    <p class="mb-1">Backlog: {{ queue_status.task_queue.pending }}</p>
+                    <p class="text-muted small mb-0">Oldest event: {{ queue_status.task_queue.oldest.strftime('%Y-%m-%d %H:%M') if queue_status.task_queue.oldest else 'N/A' }}</p>
+                </div>
+                <div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold">Notifications</span>
+                        <span class="badge {{ 'bg-danger' if queue_status.notifications.errors else 'bg-success' }}">{{ 'Issues' if queue_status.notifications.errors else 'Healthy' }}</span>
+                    </div>
+                    <p class="mb-1">Backlog: {{ queue_status.notifications.pending }}</p>
+                    <p class="text-muted small mb-0">Oldest event: {{ queue_status.notifications.oldest.strftime('%Y-%m-%d %H:%M') if queue_status.notifications.oldest else 'N/A' }}</p>
+                </div>
+                <p class="text-muted small mb-0">Monitor queue depth, backlog, and recent error counts to keep workers healthy.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mt-3">
+    <div class="card-header fw-semibold">5-Day Activity Snapshot</div>
+    <div class="card-body">
+        {% if trade_chart.labels %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Trades</th>
+                            <th>New Signups</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for label, trade_count, signup_count in trade_chart.labels|zip(trade_chart.data, signup_chart.data) %}
+                            <tr>
+                                <td>{{ label }}</td>
+                                <td>{{ trade_count }}</td>
+                                <td>{{ signup_count }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">No recent activity data to display.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
