@@ -1,0 +1,67 @@
+:root {
+    --admin-bg: #f6f7fb;
+    --admin-surface: #ffffff;
+    --admin-accent: #0d6efd;
+    --admin-text: #1f2937;
+    --admin-muted: #6b7280;
+}
+
+body.admin-shell {
+    min-height: 100vh;
+    background: var(--admin-bg);
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+.admin-sidebar {
+    width: 240px;
+    background: var(--admin-surface);
+    border-right: 1px solid #e5e7eb;
+    gap: 8px;
+}
+
+.admin-sidebar .sidebar-brand {
+    font-size: 1.1rem;
+    color: var(--admin-text);
+}
+
+.admin-sidebar .nav-link {
+    color: var(--admin-muted);
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+}
+
+.admin-sidebar .nav-link:hover,
+.admin-sidebar .nav-link:focus {
+    background: #eef2ff;
+    color: var(--admin-accent);
+}
+
+.admin-main {
+    background: var(--admin-bg);
+}
+
+.admin-topbar {
+    background: var(--admin-surface);
+}
+
+.admin-content .card {
+    border: 1px solid #e5e7eb;
+}
+
+.flash-container .alert {
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 991.98px) {
+    .admin-sidebar {
+        position: fixed;
+        inset: 0 auto 0 -260px;
+        transition: inset 0.25s ease;
+        z-index: 1030;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .admin-sidebar.is-open {
+        inset: 0 auto 0 0;
+    }
+}
