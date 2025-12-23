@@ -1,0 +1,94 @@
+{% extends 'admin/base.html' %}
+{% block title %}Admin Bug Reports{% endblock %}
+{% block page_heading %}Bug Reports{% endblock %}
+{% block content %}
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-semibold">Incoming Reports</div>
+            <div class="list-group list-group-flush">
+                {% for bug in bug_reports %}
+                    {% set details = bug.details or {} %}
+                    {% set status = details.get('status') or 'New' %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-semibold">{{ bug.message or 'Bug Report' }}</div>
+                                <small class="text-muted">Reported by {{ details.get('reporter') or 'Unknown' }}{% if bug.timestamp %} • {{ bug.timestamp.strftime('%Y-%m-%d %H:%M') }}{% endif %}</small>
+                            </div>
+                            <span class="badge {% if status == 'Resolved' %}bg-success{% elif status == 'Investigating' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ status }}</span>
+                        </div>
+                        <p class="mb-2 small text-muted">{{ details.get('description') }}</p>
+                        {% if details.get('page_url') %}
+                            <div class="small mb-1">Page: <a href="{{ details.get('page_url') }}" target="_blank" rel="noopener">{{ details.get('page_url') }}</a></div>
+                        {% endif %}
+                        {% set attachments = attachments_by_bug.get(bug.id, []) %}
+                        {% if attachments %}
+                            <div class="d-flex gap-2 flex-wrap small mb-2">
+                                {% for attachment in attachments %}
+                                    {% if attachment.download_url %}
+                                        <a class="badge bg-light text-primary border" href="{{ attachment.download_url }}" target="_blank" rel="noopener">{{ attachment.name }}</a>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Missing: {{ attachment.name }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <form method="post" action="{{ url_for('admin_bug_reports') }}" class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                            <input type="hidden" name="action" value="update_status">
+                            <input type="hidden" name="ticket" value="{{ bug.id }}">
+                            <label class="small mb-0" for="status-{{ bug.id }}">Status</label>
+                            <select class="form-select form-select-sm" id="status-{{ bug.id }}" name="status">
+                                {% for opt in allowed_statuses %}
+                                    <option value="{{ opt }}" {% if opt == status %}selected{% endif %}>{{ opt }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary" type="submit">Update</button>
+                        </form>
+                        {% set notes = notes_by_bug.get(bug.id, []) %}
+                        {% if notes %}
+                            <div class="mt-2 small">
+                                <div class="fw-semibold text-secondary">Notes</div>
+                                {% for note in notes %}
+                                    <div class="text-muted">- {{ note.details.get('note') if note.details else '' }}{% if note.timestamp %}<span class="ms-2">{{ note.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>{% endif %}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="list-group-item text-muted small">No bug reports captured yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">Add Note</div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('admin_bug_reports') }}" class="vstack gap-3">
+                    <div>
+                        <label class="form-label" for="ticket">Ticket</label>
+                        <select class="form-select" id="ticket" name="ticket" {% if not bug_reports %}disabled{% endif %}>
+                            {% if bug_reports %}
+                                {% for bug in bug_reports %}
+                                    <option value="{{ bug.id }}">{{ bug.message or 'Bug Report' }} ({{ bug.id }})</option>
+                                {% endfor %}
+                            {% else %}
+                                <option selected>No bug reports available</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="note">Internal note</label>
+                        <textarea class="form-control" id="note" name="note" rows="3" placeholder="Summarize findings" {% if not bug_reports %}disabled{% endif %} required></textarea>
+                    </div>
+                    <button class="btn btn-primary" type="submit" {% if not bug_reports %}disabled{% endif %}>Save Note</button>
+                    {% if not bug_reports %}
+                        <div class="text-muted small">Notes can be added after at least one bug report is captured.</div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
