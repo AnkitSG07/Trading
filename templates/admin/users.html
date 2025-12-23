@@ -1,0 +1,45 @@
+{% extends 'admin/base.html' %}
+{% block title %}Admin Users{% endblock %}
+{% block page_heading %}User Management{% endblock %}
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Users</span>
+        <span class="text-muted small">{{ users|length }} total</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Plan</th>
+                    <th scope="col">Last Login</th>
+                    <th scope="col" class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                    <tr>
+                        <td>{{ u.name }}</td>
+                        <td>{{ u.email }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ u.plan }}</span></td>
+                        <td>{{ u.last_login }}</td>
+                        <td class="text-end">
+                            <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('admin_view_user', user_id=u.id) }}">View</a>
+                            <form method="post" action="{{ url_for('admin_suspend_user', user_id=u.id) }}" class="d-inline">
+                                <button class="btn btn-outline-warning btn-sm" type="submit">Suspend</button>
+                            </form>
+                            <form method="post" action="{{ url_for('admin_reset_password', user_id=u.id) }}" class="d-inline">
+                                <button class="btn btn-outline-danger btn-sm" type="submit">Reset</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="text-center text-muted">No users found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
