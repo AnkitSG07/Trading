@@ -1,0 +1,12 @@
+{% extends 'admin/base.html' %}
+{% block title %}Admin Profile{% endblock %}
+{% block page_heading %}Profile{% endblock %}
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h6 class="fw-semibold mb-3">Admin Information</h6>
+        <p class="mb-1">Email: {{ admin.email }}</p>
+        <p class="mb-0 text-muted">Manage your preferences from this page.</p>
+    </div>
+</div>
+{% endblock %}
