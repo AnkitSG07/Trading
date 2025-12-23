@@ -36,6 +36,7 @@ from dhanhq import dhanhq
 import os
 import json
 import pandas as pd
+import csv
 from flask_cors import CORS
 from flask_talisman import Talisman
 from flask_limiter import Limiter
@@ -161,6 +162,26 @@ _REJECTION_HINT_RULES: tuple[tuple[str, str], ...] = (
 _SNAPSHOT_WORKER_TIMEOUT = 10.0
 
 DEFAULT_USER_TIMEZONE = ZoneInfo("Asia/Kolkata")
+
+BUG_ATTACHMENT_ALLOWED_EXTENSIONS = {
+    "png",
+    "jpg",
+    "jpeg",
+    "gif",
+    "pdf",
+    "txt",
+    "log",
+    "zip",
+}
+BUG_ATTACHMENT_ALLOWED_MIME_TYPES = {
+    "image/png",
+    "image/jpeg",
+    "image/gif",
+    "application/pdf",
+    "text/plain",
+    "application/zip",
+}
+BUG_ATTACHMENT_MAX_BYTES = int(os.environ.get("BUG_ATTACHMENT_MAX_BYTES", 5 * 1024 * 1024))
 
 def resolve_rejection_reason(reason: str | None) -> str | None:
     """Return a concise resolution hint for a well-known rejection reason."""
@@ -1742,10 +1763,74 @@ def load_accounts():
     return Account.query.all()
 
 def load_trades():
-    return Trade.query.all()
+    return Trade.query.options(joinedload(Trade.user)).all()
 
 def load_logs():
     return WebhookLog.query.all(), SystemLog.query.all()
+
+
+def load_bug_reports():
+    bug_reports = (
+        SystemLog.query.filter(SystemLog.module == 'bugreport')
+        .order_by(SystemLog.timestamp.desc())
+        .all()
+    )
+
+    notes = (
+        SystemLog.query.filter(SystemLog.module == 'bugreport_note')
+        .order_by(SystemLog.timestamp.desc())
+        .all()
+    )
+
+    notes_by_bug: dict[int, list[SystemLog]] = defaultdict(list)
+    for note in notes:
+        bug_id = None
+        if note.details:
+            bug_id = note.details.get('bug_id')
+        if bug_id is not None:
+            try:
+                notes_by_bug[int(bug_id)].append(note)
+            except (TypeError, ValueError):
+                continue
+
+    storage_root = (Path(current_app.root_path) / 'data' / 'bug_reports').resolve()
+    attachments_by_bug: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for bug in bug_reports:
+        details = bug.details or {}
+        attachments = details.get('attachments') or []
+        for attachment in attachments:
+            if not isinstance(attachment, dict):
+                continue
+            path_value = attachment.get('path')
+            if not path_value:
+                continue
+
+            resolved_path = Path(path_value).resolve()
+            try:
+                resolved_path.relative_to(storage_root)
+            except ValueError:
+                continue
+
+            original_name = attachment.get('name') or resolved_path.name
+            stored_name = resolved_path.name
+            exists = resolved_path.exists()
+
+            entry: dict[str, Any] = {
+                'name': original_name,
+                'stored_name': stored_name,
+                'exists': exists,
+            }
+
+            if exists:
+                entry['download_url'] = url_for(
+                    'admin_bug_report_attachment',
+                    bug_id=bug.id,
+                    stored_name=stored_name,
+                )
+
+            attachments_by_bug[bug.id].append(entry)
+
+    return bug_reports, notes_by_bug, attachments_by_bug
 
 def load_settings():
     # Return all key/value settings stored in the DB
@@ -10974,6 +11059,97 @@ def groups_page():
 def change_plan():
     return render_template("change-plan.html")
 
+@app.route('/api/report-bug', methods=['POST'])
+@csrf.exempt
+def api_report_bug():
+    summary = (request.form.get('summary') or '').strip()
+    description = (request.form.get('description') or '').strip()
+    page_url = (request.form.get('page_url') or '').strip()
+    browser_info = (request.form.get('browser_info') or '').strip()
+
+    if not summary or not description:
+        return jsonify({'message': 'Summary and description are required'}), 400
+
+    reporter = None
+    try:
+        user = current_user()
+    except Exception:
+        user = None
+    if user:
+        reporter = user.email
+
+    storage_dir = Path(current_app.root_path) / 'data' / 'bug_reports'
+    storage_dir.mkdir(parents=True, exist_ok=True)
+
+    attachments_meta: list[dict[str, str]] = []
+    attachment_errors: list[str] = []
+    for file in request.files.getlist('attachments'):
+        if not file or not file.filename:
+            continue
+        filename = secure_filename(file.filename)
+        if not filename:
+            continue
+
+        ext = Path(filename).suffix.lower().lstrip('.')
+        if ext and ext not in BUG_ATTACHMENT_ALLOWED_EXTENSIONS:
+            attachment_errors.append(f"Attachment '{filename}' type is not allowed.")
+            continue
+
+        try:
+            file.stream.seek(0, os.SEEK_END)
+            size_bytes = file.stream.tell()
+            file.stream.seek(0)
+        except Exception:
+            size_bytes = None
+
+        if size_bytes is not None and size_bytes > BUG_ATTACHMENT_MAX_BYTES:
+            attachment_errors.append(
+                f"Attachment '{filename}' exceeds the {BUG_ATTACHMENT_MAX_BYTES // (1024 * 1024)}MB limit."
+            )
+            continue
+
+        mimetype = (file.mimetype or '').lower()
+        if mimetype and mimetype not in BUG_ATTACHMENT_ALLOWED_MIME_TYPES:
+            attachment_errors.append(f"Attachment '{filename}' MIME type {mimetype} is not allowed.")
+            continue
+
+        target = storage_dir / f"{uuid.uuid4().hex}_{filename}"
+        file.save(target)
+        attachments_meta.append({'name': filename, 'path': str(target)})
+
+    if attachment_errors:
+        return (
+            jsonify({'message': 'Invalid attachment(s)', 'errors': attachment_errors}),
+            400,
+        )
+
+    details = {
+        'description': description,
+        'page_url': page_url,
+        'browser_info': browser_info,
+        'reporter': reporter or request.form.get('reporter') or 'anonymous',
+        'attachments': attachments_meta,
+        'status': 'New',
+    }
+
+    log_entry = SystemLog(
+        level='BUG',
+        message=summary,
+        details=details,
+        user_id=str(user.id) if user else None,
+        module='bugreport',
+    )
+
+    db.session.add(log_entry)
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Bug report captured', 'id': log_entry.id})
+    except Exception as exc:
+        db.session.rollback()
+        logger.error("Failed to save bug report: %s", exc)
+        return jsonify({'message': 'Failed to save bug report'}), 500
+
+
 # === Admin routes ===
 @app.route('/adminlogin', methods=['GET', 'POST'])
 @app.route('/admin-login', methods=['GET', 'POST'])
@@ -11033,6 +11209,13 @@ def admin_dashboard():
         'uptime': format_uptime()
     }
 
+    suspended_users = User.query.filter(User.plan == 'Suspended').count()
+    flagged_users = User.query.filter(User.payment_status == 'Flagged').count()
+    pending_kyc_users = User.query.filter(User.payment_status == 'KYC_PENDING').count()
+    recent_active_user = (
+        User.query.order_by(User.last_login.desc().nullslast()).first()
+    )
+    
     labels = []
     trade_counts = []
     signup_counts = []
@@ -11047,8 +11230,11 @@ def admin_dashboard():
                 cast(Trade.timestamp, SADateTime) < end,
             ).count()
         )
-        signup_counts.append(User.query.filter(User.subscription_start >= start,
-                                              User.subscription_start < end).count())
+        signup_counts.append(
+            User.query.filter(
+                User.subscription_start >= start, User.subscription_start < end
+            ).count()
+        )
 
     trade_chart = {'labels': labels, 'data': trade_counts}
     signup_chart = {'labels': labels, 'data': signup_counts}
@@ -11059,39 +11245,519 @@ def admin_dashboard():
         url = BROKER_STATUS_URLS.get(name)
         online = check_api(url) if url else False
         api_status.append({'name': name.title(), 'online': online})
-    return render_template('dashboard.html', metrics=metrics, api_status=api_status, trade_chart=trade_chart, signup_chart=signup_chart)
+
+    trade_status = request.args.get('status')
+    trade_broker = request.args.get('broker')
+    trade_timeframe = request.args.get('timeframe')
+
+    trade_query = Trade.query.options(joinedload(Trade.user))
+    if trade_status:
+        trade_query = trade_query.filter(Trade.status == trade_status)
+    if trade_broker:
+        trade_query = trade_query.filter(Trade.broker == trade_broker)
+    if trade_timeframe:
+        trade_query = _apply_timeframe_filter(trade_query, trade_timeframe)
+
+    recent_trades = (
+        trade_query.order_by(cast(Trade.timestamp, SADateTime).desc()).limit(5).all()
+    )
+
+    log_timeframe = request.args.get('log_timeframe')
+    log_query = SystemLog.query
+    if log_timeframe:
+        log_query = _apply_timeframe_filter(log_query, log_timeframe, SystemLog.timestamp)
+    recent_logs = log_query.order_by(SystemLog.timestamp.desc()).limit(5).all()
+
+    available_statuses = [row[0] for row in db.session.query(Trade.status).distinct() if row[0]]
+    available_brokers = sorted({acc.broker for acc in accounts if acc.broker})
+
+    paid_filter = User.plan != 'Free'
+    plan_price = float(os.environ.get('MONTHLY_PLAN_PRICE', '0') or 0)
+    paid_users = User.query.filter(paid_filter, User.plan != 'Suspended')
+    active_paid_count = paid_users.count()
+    mrr = active_paid_count * plan_price
+    arpu = mrr / metrics['total_users'] if metrics['total_users'] else 0
+
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    churned_recently = (
+        User.query.filter(
+            User.subscription_end != None,
+            cast(User.subscription_end, SADateTime) >= thirty_days_ago,
+        ).count()
+    )
+    recent_trials = User.query.filter(
+        User.plan == 'Free', User.subscription_start != None, cast(User.subscription_start, SADateTime) >= thirty_days_ago
+    ).count()
+    recent_conversions = User.query.filter(
+        User.plan != 'Free', User.subscription_start != None, cast(User.subscription_start, SADateTime) >= thirty_days_ago
+    ).count()
+
+    alert_window = datetime.utcnow() - timedelta(hours=24)
+    failed_login_alerts = SystemLog.query.filter(
+        SystemLog.level.ilike('ERROR'),
+        SystemLog.message.ilike('%login%'),
+        SystemLog.timestamp >= alert_window,
+    ).count()
+    rate_limit_alerts = SystemLog.query.filter(
+        SystemLog.message.ilike('%429%'), SystemLog.timestamp >= alert_window
+    ).count()
+    error_spike = SystemLog.query.filter(
+        SystemLog.level.ilike('ERROR'), SystemLog.timestamp >= alert_window
+    ).count()
+    broker_errors = SystemLog.query.filter(
+        SystemLog.module.ilike('%broker%'), SystemLog.timestamp >= alert_window
+    ).count()
+
+    pending_webhooks = WebhookLog.query.filter(WebhookLog.status == 202)
+    pending_webhook_count = pending_webhooks.count()
+    oldest_pending = pending_webhooks.order_by(WebhookLog.timestamp.asc()).first()
+    webhook_failures = (
+        WebhookLog.query.filter(WebhookLog.status >= 400)
+        .order_by(WebhookLog.timestamp.desc())
+        .count()
+    )
+
+    def _queue_snapshot(module_keyword: str, *, window_hours: int = 24):
+        window_start = datetime.utcnow() - timedelta(hours=window_hours)
+        logs = SystemLog.query.filter(
+            SystemLog.module.ilike(f"%{module_keyword}%"),
+            SystemLog.timestamp >= window_start,
+        )
+        newest_log = logs.order_by(SystemLog.timestamp.desc()).first()
+        oldest_log = logs.order_by(SystemLog.timestamp.asc()).first()
+        backlog = _parse_backlog_from_message(newest_log.message) if newest_log else None
+        error_count = logs.filter(SystemLog.level.ilike('ERROR')).count()
+        warn_count = logs.filter(SystemLog.level.ilike('WARN')).count()
+        return {
+            'pending': backlog or 0,
+            'oldest': oldest_log.timestamp if oldest_log else None,
+            'errors': error_count + warn_count,
+        }
+
+    leaderboard_window = datetime.utcnow() - timedelta(hours=24)
+    active_leaderboard = (
+        db.session.query(
+            User.email.label('email'),
+            func.count(Trade.id).label('trade_count'),
+            func.max(cast(Trade.timestamp, SADateTime)).label('last_trade'),
+        )
+        .join(Trade, Trade.user_id == User.id)
+        .filter(cast(Trade.timestamp, SADateTime) >= leaderboard_window)
+        .group_by(User.id)
+        .order_by(func.count(Trade.id).desc())
+        .limit(5)
+        .all()
+    )
+
+    top_traders_window = datetime.utcnow() - timedelta(days=7)
+    top_traders = (
+        db.session.query(
+            User.email.label('email'),
+            func.sum(Trade.qty * func.coalesce(Trade.price, 0)).label('volume'),
+            func.count(Trade.id).label('trade_count'),
+        )
+        .join(Trade, Trade.user_id == User.id)
+        .filter(cast(Trade.timestamp, SADateTime) >= top_traders_window)
+        .group_by(User.id)
+        .order_by(func.sum(Trade.qty * func.coalesce(Trade.price, 0)).desc())
+        .limit(5)
+        .all()
+    )
+
+    return render_template(
+        'admin/dashboard.html',
+        metrics=metrics,
+        api_status=api_status,
+        trade_chart=trade_chart,
+        signup_chart=signup_chart,
+        recent_trades=recent_trades,
+        recent_logs=recent_logs,
+        enforcement={
+            'suspended': suspended_users,
+            'flagged': flagged_users,
+            'pending_kyc': pending_kyc_users,
+            'recent_user': recent_active_user,
+        },
+        subscription_health={
+            'mrr': mrr,
+            'arpu': arpu,
+            'active_paid': active_paid_count,
+            'churn_30d': churned_recently,
+            'trials_30d': recent_trials,
+            'conversions_30d': recent_conversions,
+            'plan_price': plan_price,
+        },
+        security_alerts={
+            'failed_logins': failed_login_alerts,
+            'rate_limits': rate_limit_alerts,
+            'errors': error_spike,
+            'broker_errors': broker_errors,
+        },
+        queue_status={
+            'webhooks': {
+                'pending': pending_webhook_count,
+                'oldest': oldest_pending.timestamp if oldest_pending else None,
+                'errors': webhook_failures,
+            },
+            'task_queue': _queue_snapshot('task'),
+            'notifications': _queue_snapshot('notification'),
+        },
+        leaderboards={
+            'active': active_leaderboard,
+            'top_traders': top_traders,
+        },
+        filters={
+            'statuses': available_statuses,
+            'brokers': available_brokers,
+            'current': {
+                'status': trade_status,
+                'broker': trade_broker,
+                'timeframe': trade_timeframe,
+                'log_timeframe': log_timeframe,
+            },
+        },
+    )
+
+
+def _apply_timeframe_filter(query, timeframe: str, column=None):
+    target_column = cast(column, SADateTime) if column is not None else cast(Trade.timestamp, SADateTime)
+    if not timeframe:
+        return query
+    now = datetime.utcnow()
+
+    if timeframe == 'today':
+        start = datetime.combine(now.date(), datetime.min.time())
+    elif timeframe == '7d':
+        start = now - timedelta(days=7)
+    elif timeframe == '30d':
+        start = now - timedelta(days=30)
+    else:
+        return query
+
+    return query.filter(target_column >= start)
+
+
+def _parse_backlog_from_message(message: str | None) -> int | None:
+    if not message:
+        return None
+    match = re.search(r"(\d+).*(pending|queued|backlog)", message, re.IGNORECASE)
+    if match:
+        try:
+            return int(match.group(1))
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+@app.route('/admintrades/export')
+@admin_login_required
+def admin_export_trades():
+    trade_status = request.args.get('status')
+    trade_broker = request.args.get('broker')
+    trade_timeframe = request.args.get('timeframe')
+
+    trade_query = Trade.query.options(joinedload(Trade.user))
+    if trade_status:
+        trade_query = trade_query.filter(Trade.status == trade_status)
+    if trade_broker:
+        trade_query = trade_query.filter(Trade.broker == trade_broker)
+    if trade_timeframe:
+        trade_query = _apply_timeframe_filter(trade_query, trade_timeframe)
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(['Timestamp', 'User', 'Symbol', 'Action', 'Qty', 'Price', 'Status', 'Broker'])
+    for trade in trade_query.order_by(cast(Trade.timestamp, SADateTime).desc()).all():
+        writer.writerow([
+            trade.timestamp.isoformat() if trade.timestamp else '',
+            trade.user.email if trade.user else '',
+            trade.symbol,
+            trade.action,
+            trade.qty,
+            trade.price,
+            trade.status,
+            trade.broker,
+        ])
+
+    buffer.seek(0)
+    return Response(
+        buffer.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=admin-trades.csv'},
+    )
+
+
+@app.route('/adminlogs/export')
+@admin_login_required
+def admin_export_logs():
+    log_timeframe = request.args.get('log_timeframe')
+    log_query = SystemLog.query
+    if log_timeframe:
+        log_query = _apply_timeframe_filter(log_query, log_timeframe, SystemLog.timestamp)
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(['Timestamp', 'Level', 'Module', 'Message'])
+    for log in log_query.order_by(SystemLog.timestamp.desc()).all():
+        writer.writerow([
+            log.timestamp.isoformat() if log.timestamp else '',
+            log.level,
+            log.module,
+            log.message,
+        ])
+
+    buffer.seek(0)
+    return Response(
+        buffer.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=admin-logs.csv'},
+    )
 
 @app.route('/adminusers')
 @admin_login_required
 def admin_users():
     users = load_users()
-    return render_template('users.html', users=users)
+    return render_template('admin/users.html', users=users)
 
-@app.route('/adminbrokers')
+@app.route('/adminbrokers', methods=['GET', 'POST'])
 @admin_login_required
 def admin_brokers():
     accounts = load_accounts()
     broker_names = sorted({acc.broker for acc in accounts if acc.broker})
-    return render_template('brokers.html', accounts=accounts, broker_names=broker_names)
+    check_result = None
 
-@app.route('/admintrades')
+    if request.method == 'POST':
+        broker = (request.form.get('broker') or '').strip().lower()
+        endpoint = (request.form.get('endpoint') or '').strip()
+        base_url = BROKER_STATUS_URLS.get(broker)
+
+        if not broker or not base_url:
+            flash('Select a valid broker to run a connectivity check.', 'error')
+        elif not endpoint:
+            flash('Endpoint is required for connectivity check.', 'error')
+        else:
+            target_url = f"{base_url.rstrip('/')}/{endpoint.lstrip('/')}"
+            try:
+                resp = requests.get(target_url, timeout=5)
+                check_result = {'url': target_url, 'status_code': resp.status_code, 'ok': resp.ok}
+                if resp.ok:
+                    flash(f"Connectivity check to {target_url} succeeded ({resp.status_code}).", 'success')
+                else:
+                    flash(
+                        f"Connectivity check to {target_url} returned status {resp.status_code}.",
+                        'warning',
+                    )
+            except Exception as exc:
+                flash(f"Failed to reach {target_url}: {exc}", 'error')
+
+    return render_template(
+        'admin/brokers.html',
+        accounts=accounts,
+        broker_names=broker_names,
+        broker_icons=get_broker_icon_map(),
+        check_result=check_result,
+    )
+
+@app.route('/admintrades', methods=['GET', 'POST'])
 @admin_login_required
 def admin_trades():
     trades = load_trades()
-    return render_template('trades.html', trades=trades)
+    users = load_users()
+
+    if request.method == 'POST':
+        symbol = (request.form.get('symbol') or '').strip().upper()
+        side = (request.form.get('side') or '').strip().lower()
+        quantity = request.form.get('quantity', type=int)
+
+        errors = []
+        if not symbol:
+            errors.append('Symbol is required for a manual override.')
+        if side not in {'buy', 'sell'}:
+            errors.append('Side must be Buy or Sell.')
+        if quantity is None or quantity <= 0:
+            errors.append('Quantity must be a positive number.')
+
+        target_user = None
+        user_id = request.form.get('user_id', type=int)
+        if user_id:
+            target_user = db.session.get(User, user_id)
+            if not target_user:
+                errors.append('Selected user not found for manual trade override.')
+        else:
+            target_user = User.query.order_by(User.id.asc()).first()
+
+        if not target_user:
+            errors.append('No users are available to attach this manual trade.')
+
+        if errors:
+            for message in errors:
+                flash(message, 'error')
+        else:
+            trade = Trade(
+                user_id=target_user.id,
+                symbol=symbol,
+                action=side,
+                qty=quantity,
+                price=0,
+                status='MANUAL_OVERRIDE',
+                timestamp=datetime.now(timezone.utc),
+            )
+            log_entry = SystemLog(
+                level='INFO',
+                message=f'Manual trade override: {side} {quantity} {symbol} for {target_user.email or target_user.id}',
+                module='admin',
+                user_id=str(target_user.id),
+            )
+            db.session.add(trade)
+            db.session.add(log_entry)
+            try:
+                safe_commit()
+                flash(
+                    f"Manual {side.title()} order for {symbol} x{quantity} recorded for {target_user.email or target_user.id}.",
+                    'success',
+                )
+                trades = load_trades()
+            except Exception as exc:  # pragma: no cover - defensive
+                flash(f"Failed to record manual trade override: {exc}", 'error')
+
+    return render_template('admin/trades.html', trades=trades, users=users)
 
 @app.route('/adminsubscriptions')
 @admin_login_required
 def admin_subscriptions():
     users = load_users()
     subs = [u for u in users]
-    return render_template('subscriptions.html', subscriptions=subs)
+    return render_template('admin/subscriptions.html', subscriptions=subs)
 
 @app.route('/adminlogs')
 @admin_login_required
 def admin_logs():
     webhook_logs, system_logs = load_logs()
-    return render_template('logs.html', webhook_logs=webhook_logs, system_logs=system_logs)
+    return render_template('admin/logs.html', webhook_logs=webhook_logs, system_logs=system_logs)
+
+
+@app.route('/adminbugreports/attachment/<int:bug_id>/<path:stored_name>')
+@admin_login_required
+def admin_bug_report_attachment(bug_id: int, stored_name: str):
+    bug = SystemLog.query.filter(
+        SystemLog.id == bug_id, SystemLog.module == 'bugreport'
+    ).first_or_404()
+
+    attachments = (bug.details or {}).get('attachments') or []
+    storage_root = (Path(current_app.root_path) / 'data' / 'bug_reports').resolve()
+
+    matched_path: Path | None = None
+    download_name: str | None = None
+    for attachment in attachments:
+        if not isinstance(attachment, dict):
+            continue
+        path_value = attachment.get('path')
+        if not path_value:
+            continue
+
+        resolved_path = Path(path_value).resolve()
+        if resolved_path.name != stored_name:
+            continue
+
+        try:
+            resolved_path.relative_to(storage_root)
+        except ValueError:
+            abort(404)
+
+        matched_path = resolved_path
+        download_name = attachment.get('name') or resolved_path.name
+        break
+
+    if not matched_path:
+        abort(404)
+
+    if not matched_path.exists():
+        flash('Attachment file is missing on the server.', 'error')
+        return redirect(url_for('admin_bug_reports'))
+
+    return send_file(matched_path, as_attachment=True, download_name=download_name)
+
+
+@app.route('/adminbugreports', methods=['GET', 'POST'])
+@admin_login_required
+def admin_bug_reports():
+    allowed_statuses = ['New', 'Investigating', 'Resolved']
+
+    if request.method == 'POST':
+        action = request.form.get('action') or 'note'
+        ticket_id = request.form.get('ticket')
+
+        try:
+            ticket_id_int = int(ticket_id)
+        except (TypeError, ValueError):
+            flash('Invalid ticket selected.', 'error')
+            return redirect(url_for('admin_bug_reports'))
+
+        bug = SystemLog.query.filter(
+            SystemLog.id == ticket_id_int, SystemLog.module == 'bugreport'
+        ).first()
+
+        if not bug:
+            flash('Bug report not found.', 'error')
+            return redirect(url_for('admin_bug_reports'))
+
+        if action == 'update_status':
+            new_status = request.form.get('status') or ''
+            if new_status not in allowed_statuses:
+                flash('Invalid status value.', 'error')
+                return redirect(url_for('admin_bug_reports'))
+
+            details = dict(bug.details or {})
+            details['status'] = new_status
+            if new_status == 'Resolved':
+                details['resolved_by'] = session.get('admin')
+                details['resolved_at'] = datetime.utcnow().isoformat()
+            else:
+                details.pop('resolved_by', None)
+                details.pop('resolved_at', None)
+
+            bug.details = details
+            try:
+                db.session.commit()
+                flash('Status updated.', 'success')
+            except Exception as exc:
+                db.session.rollback()
+                logger.error('Failed to update bug status: %s', exc)
+                flash('Failed to update status.', 'error')
+
+            return redirect(url_for('admin_bug_reports'))
+
+        note = (request.form.get('note') or '').strip()
+        if not ticket_id or not note:
+            flash('Ticket and note are required.', 'error')
+            return redirect(url_for('admin_bug_reports'))
+
+        note_entry = SystemLog(
+            level='INFO',
+            message=f'Note added for bug {bug.id}',
+            details={'note': note, 'bug_id': bug.id, 'author': session.get('admin')},
+            module='bugreport_note',
+        )
+
+        db.session.add(note_entry)
+        try:
+            db.session.commit()
+            flash('Note saved.', 'success')
+        except Exception as exc:
+            db.session.rollback()
+            logger.error('Failed to save bug note: %s', exc)
+            flash('Failed to save note.', 'error')
+
+        return redirect(url_for('admin_bug_reports'))
+
+    bug_reports, notes_by_bug, attachments_by_bug = load_bug_reports()
+    return render_template(
+        'admin/bug_reports.html',
+        bug_reports=bug_reports,
+        notes_by_bug=notes_by_bug,
+        attachments_by_bug=attachments_by_bug,
+        allowed_statuses=allowed_statuses,
+    )
 
 @app.route('/adminsettings', methods=['GET', 'POST'])
 @admin_login_required
@@ -11110,12 +11776,12 @@ def admin_settings():
             flash(f"Failed to save settings: {str(e)}", "error")
             logger.error(f"Failed to save admin settings: {str(e)}")
 
-    return render_template('settings.html', settings=settings)
+    return render_template('admin/settings.html', settings=settings)
 
 @app.route('/adminprofile')
 @admin_login_required
 def admin_profile():
-    return render_template('profile.html', admin={'email': session.get('admin')})
+    return render_template('admin/profile.html', admin={'email': session.get('admin')})
 
 # ---- Admin action routes ----
 
@@ -11150,11 +11816,32 @@ def admin_reset_password(user_id):
     return redirect(url_for('admin_users'))
 
 
+@app.route('/adminusers/<user_id>/logout', methods=['POST'])
+@admin_login_required
+def admin_force_logout(user_id):
+    user = User.query.get_or_404(user_id)
+    log_entry = SystemLog(
+        level='WARN',
+        message=f'Admin forced logout for {user.email}',
+        user_id=str(user.id),
+        module='auth',
+    )
+    db.session.add(log_entry)
+    try:
+        db.session.commit()
+        flash(f"Logout forced for {user.email}.", "info")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Failed to force logout: {str(e)}", "error")
+        logger.error(f"Failed to force logout for user {user_id}: {str(e)}")
+    return redirect(url_for('admin_dashboard'))
+
+
 @app.route('/adminusers/<user_id>')
 @admin_login_required
 def admin_view_user(user_id):
     user = User.query.get_or_404(user_id)
-    return render_template('user_detail.html', user=user)
+    return render_template('admin/user_detail.html', user=user)
 
 
 @app.route('/adminbrokers/<account_id>/revoke', methods=['POST'])
