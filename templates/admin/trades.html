@@ -1,0 +1,80 @@
+{% extends 'admin/base.html' %}
+{% block title %}Admin Trades{% endblock %}
+{% block page_heading %}Trades{% endblock %}
+{% block content %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Recent Trades</span>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin_export_trades') }}">Export CSV</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">User</th>
+                    <th scope="col">Symbol</th>
+                    <th scope="col">Side</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in trades %}
+                    <tr>
+                        <td>#{{ t.id }}</td>
+                        <td>{{ t.user.email if t.user else t.user_id }}</td>
+                        <td>{{ t.symbol }}</td>
+                        <td>{{ (t.order_type or t.action or t.side)|capitalize }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ t.status }}</span></td>
+                        <td class="text-end">
+                            <form method="post" action="{{ url_for('admin_retry_trade', trade_id=t.id) }}" class="d-inline">
+                                <button class="btn btn-outline-secondary btn-sm" type="submit">Retry</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="6" class="text-center text-muted">No trades found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="card shadow-sm">
+    <div class="card-header fw-semibold">Manual Trade Override</div>
+    <div class="card-body">
+        <form method="post" action="{{ url_for('admin_trades') }}" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label" for="user_id">User</label>
+                <select class="form-select" id="user_id" name="user_id">
+                    {% if users %}
+                        {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.email or user.id }}</option>
+                        {% endfor %}
+                    {% else %}
+                        <option disabled>No users available</option>
+                    {% endif %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="symbol">Symbol</label>
+                <input class="form-control" id="symbol" name="symbol" placeholder="AAPL" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="side">Side</label>
+                <select class="form-select" id="side" name="side">
+                    <option>Buy</option>
+                    <option>Sell</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="quantity">Quantity</label>
+                <input class="form-control" id="quantity" name="quantity" type="number" min="1" value="10" required>
+            </div>
+            <div class="col-12">
+                <button class="btn btn-primary" type="submit">Submit Order</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
