@@ -1,0 +1,41 @@
+{% extends 'admin/base.html' %}
+{% block title %}Admin Subscriptions{% endblock %}
+{% block page_heading %}Subscriptions{% endblock %}
+{% block content %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Subscriptions</span>
+        <span class="text-muted small">{{ subscriptions|length }} users</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Plan</th>
+                    <th>Started</th>
+                    <th>Ends</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in subscriptions %}
+                    <tr>
+                        <td>{{ sub.email }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ sub.plan }}</span></td>
+                        <td>{{ sub.subscription_start }}</td>
+                        <td>{{ sub.subscription_end }}</td>
+                        <td class="text-end">
+                            <form method="post" action="{{ url_for('admin_change_subscription', user_id=sub.id) }}" class="d-inline">
+                                <button class="btn btn-outline-primary btn-sm" type="submit">Toggle Plan</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="text-center text-muted">No subscriptions found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
