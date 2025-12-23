@@ -1,0 +1,23 @@
+<header class="admin-topbar d-flex align-items-center justify-content-between px-4 py-3 border-bottom">
+    <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-outline-secondary btn-sm" id="sidebar-toggle" type="button" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="fw-semibold text-secondary">{% block page_heading %}{% endblock %}</div>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <form class="d-none d-md-flex align-items-center" method="get" action="{{ url_for('admin_dashboard') }}">
+            <input class="form-control form-control-sm" type="search" name="q" placeholder="Search" aria-label="Search">
+        </form>
+        <div class="dropdown">
+            <button class="btn btn-outline-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                Admin
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{{ url_for('admin_profile') }}">Profile</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="{{ url_for('admin_logout') }}">Logout</a></li>
+            </ul>
+        </div>
+    </div>
+</header>
