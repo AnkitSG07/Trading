@@ -1,0 +1,65 @@
+# Core Flask Framework
+flask==3.1.1
+Flask-SQLAlchemy==3.1.1
+Flask-Cors==4.0.0
+Flask-Migrate==4.0.5
+werkzeug>=3.1.0
+
+# Security & Rate Limiting
+Flask-Limiter==3.5.0
+Flask-Talisman==1.1.0
+cryptography==41.0.7
+Flask-Mail==0.9.1
+
+# Trading APIs
+dhanhq==2.0.2
+kiteconnect==5.0.1
+alice-blue==2.0.4
+fyers-apiv3
+git+https://github.com/AnkitSG07/ShoonyaApi-py.git
+NorenRestApiPy==0.0.22
+
+# Background Tasks & Scheduling
+celery==5.3.4
+redis==5.0.1
+APScheduler==3.10.4
+
+# Data Processing
+pandas==2.2.3
+requests==2.31.0
+beautifulsoup4==4.13.4
+
+# Authentication & Security
+pyotp==2.9.0
+python-dotenv==1.0.0
+Flask-WTF==1.2.1
+
+# Validation & Serialization
+marshmallow==3.20.1
+
+# Database
+psycopg[binary]>=3.1
+
+# Monitoring & Logging
+structlog==23.2.0
+prometheus-client==0.19.0
+
+# Caching
+Flask-Caching==2.1.0
+
+# Production Server
+gunicorn==23.0.0
+
+# Real-time Features
+flask-socketio==5.3.5
+python-socketio==5.10.0
+
+# Error Tracking
+sentry-sdk[flask]==1.39.2
+
+# Testing (Optional - remove if not needed)
+pytest==7.4.3
+pytest-flask==1.3.0
+pytest-cov==4.1.0
+locust==2.16.1
+fpdf==1.7.2
