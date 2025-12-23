@@ -1,0 +1,70 @@
+{% extends 'admin/base.html' %}
+{% block title %}Admin Brokers{% endblock %}
+{% block page_heading %}Broker Integrations{% endblock %}
+{% block content %}
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Connected Brokers</span>
+                <span class="text-muted small">{{ accounts|length }} linked</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Broker</th>
+                            <th>Client ID</th>
+                            <th>Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for acc in accounts %}
+                            <tr>
+                                <td>{{ acc.user_id }}</td>
+                                <td class="d-flex align-items-center gap-2">
+                                    <img src="{{ broker_icons.get(acc.broker, url_for('static', filename='images/logo.png')) }}" alt="{{ acc.broker }}" class="rounded-circle" style="width:24px;height:24px;object-fit:contain;">
+                                    <span class="text-capitalize">{{ acc.broker }}</span>
+                                </td>
+                                <td>{{ acc.client_id }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ acc.status }}</span></td>
+                                <td class="text-end">
+                                    <form method="post" action="{{ url_for('admin_revoke_account', account_id=acc.id) }}" class="d-inline">
+                                        <button class="btn btn-outline-danger btn-sm" type="submit">Revoke</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="5" class="text-center text-muted">No broker accounts linked.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">Connectivity Checks</div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('admin_brokers') }}" class="vstack gap-3">
+                    <div>
+                        <label class="form-label" for="broker">Broker</label>
+                        <select class="form-select" id="broker" name="broker">
+                            {% for b in broker_names %}
+                                <option value="{{ b }}">{{ b.title() }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="endpoint">Endpoint</label>
+                        <input class="form-control" id="endpoint" name="endpoint" placeholder="/v1/positions" required>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Run Check</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
