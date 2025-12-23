@@ -1,0 +1,61 @@
+{% extends 'admin/base.html' %}
+{% block title %}Admin Logs{% endblock %}
+{% block page_heading %}Logs{% endblock %}
+{% block content %}
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Webhook Logs</span>
+                <span class="text-muted small">{{ webhook_logs|length }} entries</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr><th>ID</th><th>Status</th><th>Endpoint</th><th>Time</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for log in webhook_logs %}
+                            <tr>
+                                <td>{{ log.id }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ log.status }}</span></td>
+                                <td>{{ log.endpoint }}</td>
+                                <td>{{ log.timestamp }}</td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="text-center text-muted">No webhook logs found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">System Logs</span>
+                <span class="text-muted small">{{ system_logs|length }} entries</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr><th>Level</th><th>Module</th><th>Message</th><th>Time</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for log in system_logs %}
+                            <tr>
+                                <td><span class="badge bg-light text-dark border">{{ log.level }}</span></td>
+                                <td>{{ log.module }}</td>
+                                <td>{{ log.message }}</td>
+                                <td>{{ log.timestamp }}</td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="text-center text-muted">No system logs found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
