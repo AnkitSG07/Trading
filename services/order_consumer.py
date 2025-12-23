@@ -1,0 +1,1361 @@
+from __future__ import annotations
+
+"""Asynchronous worker that consumes webhook events and places orders."""
+
+import asyncio
+import json
+import logging
+import os
+import re
+import time
+import inspect
+from concurrent.futures import ThreadPoolExecutor, wait
+from functools import partial
+from typing import Any, Dict, Iterable, List
+from datetime import datetime, date
+
+from prometheus_client import Counter
+
+from brokers.factory import get_broker_client
+from brokers.base import DEFAULT_TIMEOUT as BROKER_DEFAULT_TIMEOUT
+from brokers import symbol_map
+import redis
+from sqlalchemy import func
+
+from .alert_guard import check_risk_limits, get_user_settings
+from .webhook_receiver import redis_client, get_redis_client
+from .utils import _decode_event, get_trade_events_maxlen
+from .db import get_session
+from models import Strategy, Account
+from .master_trade_monitor import (
+    COMPLETED_STATUSES,
+    PROCESSED_ORDERS_KEY,
+    PROCESSED_ORDERS_TTL,
+)
+from .fo_symbol_utils import (
+    is_fo_symbol,
+    format_dhan_option_symbol,
+    format_dhan_future_symbol,
+    _lookup_currency_future_expiry_day,
+)
+from services.product_support import map_product_type, is_mtf_supported, _cache_mtf_support
+from .lot_size import normalize_lot_size
+
+log = logging.getLogger(__name__)
+
+def _fallback_lot_size_from_root(
+    symbol: str, broker_name: str, exchange_hint: str | None
+) -> int | None:
+    """Infer a lot size by inspecting existing entries for the same root symbol.
+
+    This acts as a safety net when we cannot find an exact symbol match in the
+    symbol map (for example very long dated contracts that are absent from the
+    broker master files). We look through the cached aliases for the root
+    symbol, prefer lot sizes that belong to the requested broker and fall back
+    to any other broker data if required. When multiple candidates are
+    available, the smallest positive lot size is returned which reflects the
+    current practice of exchanges gradually reducing contract sizes.
+    """
+
+    if not symbol or not is_fo_symbol(symbol):
+        return None
+
+    root_symbol = symbol_map.extract_root_symbol(symbol)
+    if not root_symbol:
+        return None
+
+    try:
+        symbol_map.ensure_symbol_slice(symbol, exchange_hint)
+    except Exception:  # pragma: no cover - defensive
+        return None
+
+    mapping = symbol_map.SYMBOL_MAP.get(root_symbol)
+    if not mapping:
+        return None
+
+    exchange_aliases = mapping.get(symbol_map.SYMBOLS_KEY, {})
+
+    exchange_candidates: list[str] = []
+    if exchange_hint:
+        exchange_candidates.append(exchange_hint)
+        if exchange_hint == "NSE" and "NFO" not in exchange_candidates:
+            exchange_candidates.append("NFO")
+        elif exchange_hint == "BSE" and "BFO" not in exchange_candidates:
+            exchange_candidates.append("BFO")
+
+    for default_candidate in ("NFO", "BFO", "NSE", "BSE"):
+        if default_candidate not in exchange_candidates:
+            exchange_candidates.append(default_candidate)
+
+    broker_key = broker_name.lower()
+    candidate_sizes: list[int] = []
+
+    for exch in exchange_candidates:
+        aliases = exchange_aliases.get(exch)
+        if not aliases:
+            continue
+
+        for entry in aliases.values():
+            if not entry:
+                continue
+
+            broker_entry = entry.get(broker_key, {})
+            lot_value = broker_entry.get("lot_size") or broker_entry.get("lotSize")
+            normalized = normalize_lot_size(lot_value)
+            if normalized:
+                candidate_sizes.append(normalized)
+                continue
+
+            for other_broker, broker_data in entry.items():
+                if other_broker == broker_key or not broker_data:
+                    continue
+                lot_value = broker_data.get("lot_size") or broker_data.get("lotSize")
+                normalized = normalize_lot_size(lot_value)
+                if normalized:
+                    candidate_sizes.append(normalized)
+                    break
+
+        if candidate_sizes:
+            break
+
+    if not candidate_sizes:
+        return None
+
+    return min(candidate_sizes)
+
+
+def _lookup_lot_size_from_symbol_map(
+    symbol: str,
+    broker_name: str,
+    exchange: str | None,
+    event: Dict[str, Any] | None = None,
+    broker_cfg: Dict[str, Any] | None = None,
+) -> Any:
+    """Return lot size from the symbol map without materialising the full dataset."""
+
+    exchange_hint = (exchange or "").upper() or None
+
+    if symbol and is_fo_symbol(symbol):
+        if exchange_hint in (None, "", "NSE"):
+            exchange_hint = "NFO"
+        elif exchange_hint == "BSE":
+            exchange_hint = "BFO"
+
+    try:
+        mapping = symbol_map.get_symbol_for_broker_lazy(
+            symbol, broker_name, exchange_hint
+        )
+    except Exception as exc:  # pragma: no cover - defensive logging
+        log.warning(
+            "Could not retrieve lot size from symbol map for %s: %s",
+            symbol,
+            str(exc),
+            extra={"event": event, "broker": broker_cfg},
+        )
+        return None
+
+    lot_size = mapping.get("lot_size") or mapping.get("lotSize")
+    if lot_size:
+        return lot_size
+
+    if symbol:
+        try:
+            symbol_map.refresh_symbol_slice(symbol, exchange_hint)
+            mapping = symbol_map.get_symbol_for_broker_lazy(
+                symbol, broker_name, exchange_hint
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            log.warning(
+                "Failed refreshing symbol slice for %s: %s",
+                symbol,
+                str(exc),
+                extra={"event": event, "broker": broker_cfg},
+            )
+            return None
+
+    lot_size = mapping.get("lot_size") or mapping.get("lotSize")
+    if lot_size:
+        return lot_size
+
+    fallback = _fallback_lot_size_from_root(symbol, broker_name, exchange_hint)
+    if fallback:
+        log.info(
+            "Using fallback lot size %s for %s derived from existing symbol data",
+            fallback,
+            symbol,
+        )
+        return fallback
+
+    return None
+
+
+_ORIGINAL_LOT_SIZE_LOOKUP = _lookup_lot_size_from_symbol_map
+
+orders_success = Counter(
+    "order_consumer_success_total",
+    "Number of webhook events processed successfully",
+)
+orders_failed = Counter(
+    "order_consumer_failure_total",
+    "Number of webhook events that failed processing",
+)
+
+DEFAULT_MAX_WORKERS = int(os.getenv("ORDER_CONSUMER_MAX_WORKERS", "10"))
+REJECTED_STATUSES = {"REJECTED", "CANCELLED", "CANCELED", "FAILED"}
+
+
+def get_expiry_year(month: str, day: int = None) -> str:
+    """Determine the correct expiry year for a given month and day."""
+    current_date = date.today()
+    current_year = current_date.year
+    current_month = current_date.month
+    current_day = current_date.day
+    
+    month_map = {
+        'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 'MAY': 5, 'JUN': 6,
+        'JUL': 7, 'AUG': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12
+    }
+    
+    month_num = month_map[month]
+    
+    if day:
+        if month_num < current_month:
+            year = current_year + 1
+        elif month_num == current_month and day < current_day:
+            year = current_year + 1
+        else:
+            year = current_year
+    else:
+        if month_num < current_month:
+            year = current_year + 1
+        else:
+            year = current_year
+    
+    return str(year % 100).zfill(2)
+
+
+def parse_fo_symbol(symbol: str, broker: str) -> dict:
+    """Parse F&O symbol into components based on broker format."""
+    if not symbol:
+        return None
+    
+    symbol = symbol.upper().strip()
+    broker = broker.lower()
+    
+    if broker == 'dhan':
+        # NIFTY-Dec2024-24000-CE or NIFTY-Dec2024-FUT format
+        opt_match = re.match(r'^(.+?)-(\w{3})(\d{4})-(\d+)-(CE|PE)$', symbol)
+        if opt_match:
+            return {
+                'underlying': opt_match.group(1),
+                'month': opt_match.group(2),
+                'year': opt_match.group(3),
+                'strike': opt_match.group(4),
+                'option_type': opt_match.group(5),
+                'instrument': 'OPT'
+            }
+        
+        fut_match = re.match(r'^(.+?)-(\w{3})(\d{4})-FUT$', symbol)
+        if fut_match:
+            return {
+                'underlying': fut_match.group(1),
+                'month': fut_match.group(2),
+                'year': fut_match.group(3),
+                'instrument': 'FUT'
+            }
+    
+    elif broker in ['zerodha', 'aliceblue', 'fyers', 'finvasia']:
+        # NIFTY24DEC24000CE format
+        opt_match = re.match(r'^(.+?)(\d{2})(\w{3})(\d+)(CE|PE)$', symbol)
+        if opt_match:
+            return {
+                'underlying': opt_match.group(1),
+                'year': '20' + opt_match.group(2),
+                'month': opt_match.group(3),
+                'strike': opt_match.group(4),
+                'option_type': opt_match.group(5),
+                'instrument': 'OPT'
+            }
+        
+        # NIFTY24DECFUT format
+        fut_match = re.match(r'^(.+?)(\d{2})(\w{3})FUT$', symbol)
+        if fut_match:
+            return {
+                'underlying': fut_match.group(1),
+                'year': '20' + fut_match.group(2),
+                'month': fut_match.group(3),
+                'instrument': 'FUT'
+            }
+    
+    return None
+
+
+def format_fo_symbol(components: dict, to_broker: str) -> str:
+    """Format symbol components for target broker."""
+    if not components:
+        return None
+    
+    to_broker = to_broker.lower()
+    
+    if to_broker == 'dhan':
+        if components['instrument'] == 'OPT':
+            return f"{components['underlying']}-{components['month']}{components['year']}-{components['strike']}-{components['option_type']}"
+        elif components['instrument'] == 'FUT':
+            return f"{components['underlying']}-{components['month']}{components['year']}-FUT"
+    
+    elif to_broker in ['zerodha', 'aliceblue', 'fyers', 'finvasia']:
+        year_short = components['year'][-2:]  # Get last 2 digits
+        if components['instrument'] == 'OPT':
+            return f"{components['underlying']}{year_short}{components['month'].upper()}{components['strike']}{components['option_type']}"
+        elif components['instrument'] == 'FUT':
+            return f"{components['underlying']}{year_short}{components['month'].upper()}FUT"
+    
+    return None
+
+
+def convert_symbol_between_brokers(symbol: str, from_broker: str, to_broker: str, instrument_type: str = None) -> str:
+    """Convert F&O symbol from one broker format to another."""
+    if not symbol or from_broker.lower() == to_broker.lower():
+        return symbol
+    
+    # First, parse the symbol to extract components
+    components = parse_fo_symbol(symbol, from_broker)
+    
+    if not components:
+        log.debug(f"Could not parse F&O symbol: {symbol} for broker: {from_broker}")
+        return symbol  # Return original if can't parse
+    
+    # Convert to target broker format
+    converted = format_fo_symbol(components, to_broker)
+    
+    if converted:
+        log.info(f"Converted F&O symbol from {symbol} ({from_broker}) to {converted} ({to_broker})")
+        return converted
+    
+    log.warning(f"Could not convert symbol {symbol} from {from_broker} to {to_broker}")
+    return symbol
+
+def normalize_derivative_symbol(symbol: str) -> str:
+    """Backward-compatible helper retained for legacy tests."""
+
+    return symbol
+
+
+def normalize_symbol_to_dhan_format(symbol: str) -> str:
+    """Convert various symbol formats to Dhan's expected format.
+    
+    Examples:
+        NIFTYNXT50SEPFUT -> NIFTYNXT50-Sep2025-FUT
+        FINNIFTY25SEP33300CE -> FINNIFTY-Sep2025-33300-CE
+        RELIANCE -> RELIANCE (no change for equity)
+    """
+    if not symbol:
+        return symbol
+    
+    original_symbol = symbol.strip()
+    sym = original_symbol.upper()
+    log.debug(f"Normalizing symbol: {sym}")
+    
+    # CRITICAL: Don't modify plain equity symbols
+    if (not is_fo_symbol(sym) and '-' not in sym and
+            not re.search(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)', sym)):
+        # It's a simple equity symbol, return as-is
+        log.debug(f"Identified as equity symbol, no normalization needed: {sym}")
+        return original_symbol
+
+    # Handle already correctly formatted symbols (with hyphens)
+    if '-' in sym and re.search(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)20\d{2}', sym):
+        pattern = re.compile(
+            r'^(?P<root>.+?)-(?:(?P<day>\d{1,2}))?(?P<month>[A-Za-z]{3})(?P<year>\d{4})(?P<suffix>-(?:\d+(?:\.\d+)?-(?:CE|PE)|FUT))$',
+            re.IGNORECASE,
+        )
+        match = pattern.match(original_symbol)
+        if match:
+            root = match.group('root')
+            month = match.group('month').upper()
+            year = match.group('year')
+            day = int(match.group('day')) if match.group('day') else None
+            suffix = match.group('suffix')
+            if suffix.upper().endswith('-FUT'):
+                normalized = format_dhan_future_symbol(
+                    root,
+                    month,
+                    year,
+                    day=day,
+                )
+            else:
+                strike, opt_type = suffix[1:].rsplit('-', 1)
+                normalized = format_dhan_option_symbol(
+                    root,
+                    month,
+                    year,
+                    strike,
+                    opt_type,
+                    day=day,
+                )
+
+            log.debug(
+                "Symbol already in correct format, preserving casing: %s -> %s",
+                original_symbol,
+                normalized,
+            )
+            return normalized
+
+        log.debug(
+            "Symbol already in correct format, returning original: %s",
+            original_symbol,
+        )
+        return original_symbol
+        
+    # CRITICAL FIX: Handle day-month format "UNDERLYING DD MON STRIKE TYPE"
+    # Pattern 1: Format with day first: "NIFTY 23 SEP 25500 CALL"
+    day_first_pattern = re.match(
+        r'^([A-Z]+(?:\d+)?)\s+(\d{1,2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+(\d+(?:\.\d+)?)\s+(CALL|PUT|CE|PE)$',
+        sym
+    )
+    if day_first_pattern:
+        root = day_first_pattern.group(1)
+        day = int(day_first_pattern.group(2))
+        month = day_first_pattern.group(3)
+        strike = day_first_pattern.group(4)
+        opt_type = day_first_pattern.group(5)
+        
+        # The day is the expiry day, not year
+        year = get_expiry_year(month, day)
+        full_year = f"20{year}"
+        opt_code = "CE" if opt_type in ("CALL", "CE") else "PE"
+        
+        normalized = format_dhan_option_symbol(
+            root,
+            month,
+            full_year,
+            strike,
+            opt_code,
+            day=day,
+        )
+        log.info(f"Normalized from day-first format '{sym}' to '{normalized}'")
+        return normalized
+    
+    # Pattern 2: Futures with day: "NIFTY 23 SEP FUT"
+    fut_with_day = re.match(
+        r'^([A-Z]+(?:\d+)?)\s+(\d{1,2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+FUT$',
+        sym
+    )
+    if fut_with_day:
+        root = fut_with_day.group(1)
+        day = int(fut_with_day.group(2))
+        month = fut_with_day.group(3)
+        
+        year = get_expiry_year(month, day)
+        full_year = f"20{year}"
+        normalized = format_dhan_future_symbol(
+            root,
+            month,
+            full_year,
+            day=day,
+        )
+        log.info(f"Normalized futures with day from '{sym}' to '{normalized}'")
+        return normalized
+    # Pattern 3: Futures with spaces but without explicit day: "NIFTY SEP FUT"
+    fut_spaced_no_day = re.match(
+        r'^([A-Z]+(?:\d+)?)\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+FUT$',
+        sym
+    )
+    if fut_spaced_no_day:
+        root, month = fut_spaced_no_day.groups()
+        year = get_expiry_year(month)
+        full_year = f"20{year}"
+        expiry_day = None
+        if root.upper().endswith("INR"):
+            expiry_day = _lookup_currency_future_expiry_day(root, month, full_year)
+        normalized = format_dhan_future_symbol(
+            root,
+            month,
+            full_year,
+            day=expiry_day,
+        )
+        log.info(f"Normalized spaced futures from '{sym}' to '{normalized}'")
+        return normalized
+
+    # Pattern 4: Compact futures format with explicit year: FINNIFTY25SEPFUT
+    fut_with_year = re.match(
+        r'^(.+?)(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)FUT$',
+        sym
+    )
+    if fut_with_year:
+        root, year, month = fut_with_year.groups()
+        year_num = int(year)
+        if 24 <= year_num <= 30:
+            full_year = f"20{year}"
+            normalized = format_dhan_future_symbol(root, month, full_year)
+            log.info(f"Normalized futures with year from '{sym}' to '{normalized}'")
+            return normalized
+    
+    # Pattern 5: Compact futures format without explicit year: NIFTYNXT50SEPFUT
+    fut_no_year = re.match(
+        r'^(.+?)(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)FUT$',
+        sym
+    )
+    if fut_no_year:
+        root, month = fut_no_year.groups()
+        year = get_expiry_year(month)
+        full_year = f"20{year}"
+        expiry_day = None
+        if root.upper().endswith("INR"):
+            expiry_day = _lookup_currency_future_expiry_day(root, month, full_year)
+        normalized = format_dhan_future_symbol(
+            root,
+            month,
+            full_year,
+            day=expiry_day,
+        )
+        log.info(f"Normalized futures without year from '{sym}' to '{normalized}'")
+        return normalized
+    
+    # Pattern 6: Options with explicit year: FINNIFTY25SEP33300CE
+    opt_with_year = re.match(
+        r'^(.+?)(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(\d+(?:\.\d+)?)(CE|PE)$',
+        sym
+    )
+    if opt_with_year:
+        root, year, month, strike, opt_type = opt_with_year.groups()
+        year_num = int(year)
+        if 24 <= year_num <= 30:
+            full_year = f"20{year}"
+            normalized = format_dhan_option_symbol(
+                root,
+                month,
+                full_year,
+                strike,
+                opt_type,
+            )
+            log.info(f"Normalized options with year from '{sym}' to '{normalized}'")
+            return normalized
+    
+    # Pattern 7: Options without explicit year: NIFTYNXT50SEP33300CE
+    opt_no_year = re.match(
+        r'^(.+?)(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(\d+(?:\.\d+)?)(CE|PE)$',
+        sym
+    )
+    if opt_no_year:
+        root, month, strike, opt_type = opt_no_year.groups()
+        year = get_expiry_year(month)
+        full_year = f"20{year}"
+        normalized = format_dhan_option_symbol(
+            root,
+            month,
+            full_year,
+            strike,
+            opt_type,
+        )
+        log.info(f"Normalized options without year from '{sym}' to '{normalized}'")
+        return normalized
+    
+    # Pattern 8: Handle equity symbols - IMPROVED LOGIC
+    # Check if it's NOT a derivative and looks like an equity symbol
+    if (not re.search(r'(FUT|CE|PE|CALL|PUT)$', sym) and 
+        not re.search(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)', sym) and
+        not sym.endswith('-EQ')):
+        # It's likely an equity symbol - add -EQ suffix
+        normalized = f"{sym}-EQ"
+        log.info(f"Normalized equity symbol from '{sym}' to '{normalized}'")
+        return normalized
+    
+    # If already has -EQ suffix, keep it
+    if sym.endswith('-EQ'):
+        log.debug(f"Symbol already has -EQ suffix: {sym}")
+        return sym
+    
+    log.debug(f"No normalization pattern matched for: {sym}")
+    return sym
+
+
+def consume_webhook_events(
+    *,
+    stream: str = "webhook_events",
+    group: str = "order_consumer",
+    consumer: str = "worker-1",
+    redis_client=redis_client,
+    max_messages: int | None = None,
+    block: int = 0,
+    batch_size: int = 10,
+    max_workers: int | None = None,
+    order_timeout: float | None = None,
+) -> int:
+    """Consume events from *stream* using a consumer group and place orders."""
+    
+    max_workers = max_workers or DEFAULT_MAX_WORKERS
+    broker_http_timeout = float(
+        os.getenv("BROKER_TIMEOUT", BROKER_DEFAULT_TIMEOUT)
+    )
+    if order_timeout is None:
+        env_timeout = os.getenv("ORDER_CONSUMER_TIMEOUT")
+        if env_timeout is not None:
+            order_timeout = float(env_timeout)
+        else:
+            order_timeout = broker_http_timeout
+    else:
+        order_timeout = float(order_timeout)
+
+    if redis_client is None:
+        redis_client = get_redis_client()
+
+    try:
+        redis_client.xgroup_create(stream, group, id="0", mkstream=True)
+    except Exception as exc:
+        if "BUSYGROUP" not in str(exc):
+            raise
+
+    executor = ThreadPoolExecutor(max_workers=max_workers)
+
+    def process_message(msg_id: str, data: Dict[Any, Any]) -> None:
+        event = _decode_event(data)
+        if "exchange_fallbacks" in event:
+            raw_fallbacks = event["exchange_fallbacks"]
+            decoded: List[str] = []
+            if isinstance(raw_fallbacks, str):
+                try:
+                    parsed = json.loads(raw_fallbacks)
+                except json.JSONDecodeError:
+                    parsed = [raw_fallbacks]
+            elif isinstance(raw_fallbacks, (list, tuple, set)):
+                parsed = list(raw_fallbacks)
+            else:
+                parsed = [raw_fallbacks]
+
+            seen_fallbacks = set()
+            for item in parsed:
+                if item is None:
+                    continue
+                text = str(item).strip().upper()
+                if not text or text in seen_fallbacks:
+                    continue
+                seen_fallbacks.add(text)
+                decoded.append(text)
+            event["exchange_fallbacks"] = decoded
+        else:
+            event["exchange_fallbacks"] = None
+        try:
+            check_risk_limits(event)
+            settings = get_user_settings(event["user_id"])
+            brokers = settings.get("brokers", [])
+
+            # Enhanced symbol normalization for derivatives
+            symbol = event.get("symbol", "")
+            instrument_type = event.get("instrument_type", "")
+            
+            # Check if it's a derivative
+            is_derivative = is_fo_symbol(symbol, instrument_type)
+            
+            if is_derivative:
+                normalized_symbol = normalize_symbol_to_dhan_format(symbol)
+                if normalized_symbol != symbol:
+                    log.info(f"Normalized derivative symbol from '{symbol}' to '{normalized_symbol}'")
+                    event["symbol"] = normalized_symbol
+                    
+                    # Update instrument type based on normalized symbol
+                    if "-FUT" in normalized_symbol:
+                        event["instrument_type"] = "FUTIDX" if "NIFTY" in normalized_symbol else "FUTSTK"
+                    elif re.search(r'-\d+(?:\.\d+)?-(CE|PE)$', normalized_symbol):
+                        event["instrument_type"] = "OPTIDX" if "NIFTY" in normalized_symbol else "OPTSTK"
+                        # Extract and set strike price and option type
+                        match = re.search(r'-(\d+(?:\.\d+)?)-(CE|PE)$', normalized_symbol)
+                        if match:
+                            strike_value = match.group(1)
+                            if "." in strike_value:
+                                event["strike"] = float(strike_value)
+                            else:
+                                event["strike"] = int(strike_value)
+                            event["option_type"] = match.group(2)
+
+            # Handle allowed accounts
+            allowed_accounts = event.get("masterAccounts") or []
+            if isinstance(allowed_accounts, str):
+                try:
+                    allowed_accounts = json.loads(allowed_accounts)
+                except json.JSONDecodeError:
+                    log.error("invalid masterAccounts JSON: %s", allowed_accounts, extra={"event": event})
+                    orders_failed.inc()
+                    return
+                if not isinstance(allowed_accounts, list):
+                    log.error("masterAccounts JSON was not a list: %s", allowed_accounts, extra={"event": event})
+                    orders_failed.inc()
+                    return
+                event["masterAccounts"] = allowed_accounts
+                
+            if not allowed_accounts:
+                strategy_id = event.get("strategy_id")
+                if strategy_id is not None:
+                    session = get_session()
+                    try:
+                        strategy = session.query(Strategy).get(strategy_id)
+                        if strategy and strategy.master_accounts:
+                            allowed_accounts = [
+                                a.strip()
+                                for a in str(strategy.master_accounts).split(",")
+                                if a.strip()
+                            ]
+                    finally:
+                        session.close()
+                        
+            if allowed_accounts:
+                invalid_ids = [acc_id for acc_id in allowed_accounts if not str(acc_id).isdigit()]
+                if invalid_ids:
+                    log.error("non-numeric master account id(s): %s", invalid_ids, extra={"event": event})
+                    orders_failed.inc()
+                    return
+
+                ids: List[int] = [int(acc_id) for acc_id in allowed_accounts]
+                session = get_session()
+                try:
+                    master_rows = session.query(Account).filter(Account.id.in_(ids)).all()
+                    allowed_master_pairs = {
+                        (r.broker, r.client_id) for r in master_rows
+                    }
+                    master_client_ids = {
+                        str(r.client_id).lower()
+                        for r in master_rows
+                        if getattr(r, "client_id", None)
+                    }
+                    linked_child_accounts: List[Account] = []
+                    if master_client_ids:
+                        linked_child_accounts = (
+                            session.query(Account)
+                            .filter(
+                                Account.linked_master_id.isnot(None),
+                                func.lower(Account.linked_master_id).in_(
+                                    master_client_ids
+                                ),
+                            )
+                            .all()
+                        )
+                        if linked_child_accounts:
+                            event["linked_child_accounts"] = [
+                                {
+                                    "id": child.id,
+                                    "broker": child.broker,
+                                    "client_id": child.client_id,
+                                }
+                                for child in linked_child_accounts
+                            ]
+                finally:
+                    session.close()
+                allowed_pairs = allowed_master_pairs
+                brokers = [
+                    b for b in brokers
+                    if (b.get("name"), b.get("client_id")) in allowed_pairs
+                ]
+
+                if not brokers:
+                    log.error("no brokers permitted for user", extra={"event": event})
+                    orders_failed.inc()
+                    return
+            elif not brokers:
+                log.error("no brokers configured for user", extra={"event": event})
+                orders_failed.inc()
+                return
+
+            def _normalize_keys(data: Dict[str, Any]) -> Dict[str, Any]:
+                """Return a dict with camelCase keys converted to snake_case."""
+                normalized: Dict[str, Any] = {}
+                for key, value in data.items():
+                    new_key = re.sub(r"([A-Z])", lambda m: "_" + m.group(1).lower(), key)
+                    normalized[new_key] = value
+                return normalized
+
+            def submit(broker_cfg: Dict[str, Any]) -> Dict[str, Any]:
+                broker_name = broker_cfg["name"]
+                client_cls = get_broker_client(broker_name)
+                credentials = _normalize_keys(dict(broker_cfg))
+                access_token = credentials.pop("access_token", "")
+                client_id = credentials.pop("client_id", None)
+                credentials.pop("name", None)
+                
+                # Validate required credentials
+                try:
+                    sig = inspect.signature(client_cls)
+                except (TypeError, ValueError):
+                    sig = None
+                if sig is not None:
+                    required = [
+                        p.name
+                        for p in sig.parameters.values()
+                        if p.kind in (
+                            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                            inspect.Parameter.KEYWORD_ONLY,
+                        )
+                        and p.default is inspect._empty
+                        and p.name not in ("self", "client_id", "access_token")
+                    ]
+                    missing = [p for p in required if p not in credentials]
+                    if missing:
+                        raise ValueError(
+                            "missing required broker credential(s): " + ", ".join(missing)
+                        )
+
+                client = client_cls(
+                    client_id=client_id,
+                    access_token=access_token,
+                    **credentials,
+                )
+                
+                # Get original symbol and determine if it's F&O
+                original_symbol = event.get("symbol", "")
+                instrument_type = event.get("instrument_type", "")
+                
+                is_fo = is_fo_symbol(original_symbol, instrument_type)
+                
+                # Convert symbol if it's F&O and brokers are different
+                converted_symbol = original_symbol
+                if is_fo and broker_name.lower() != "dhan":  # Assuming event comes from Dhan format
+                    converted_symbol = convert_symbol_between_brokers(
+                        original_symbol,
+                        "dhan",  # Source broker format
+                        broker_name, 
+                        instrument_type
+                    )
+                    if converted_symbol and converted_symbol != original_symbol:
+                        log.info(f"Converted F&O symbol from {original_symbol} to {converted_symbol} for {broker_name}")
+
+                raw_product_type = event.get("productType")
+                requested_product_type = str(raw_product_type or "").strip().lower()
+                mtf_status = None
+                mtf_requested = requested_product_type == "mtf_or_cnc"
+                attempt_mtf = False
+                product_type_for_build = raw_product_type
+                if mtf_requested:
+                    mtf_status = is_mtf_supported(original_symbol, broker_name)
+                    attempt_mtf = mtf_status is not False
+                    product_type_for_build = "mtf" if attempt_mtf else "cnc"
+
+                product_type_mapped = None
+                if raw_product_type is not None:
+                    product_type_mapped = map_product_type(product_type_for_build, broker_name)
+
+                order_params = {
+                    "symbol": converted_symbol,
+                    "action": event["action"],
+                    "qty": event["qty"],
+                }
+                
+                # Set exchange
+                exchange = event.get("exchange")
+                if exchange is not None:
+                    if exchange in {"NSE", "BSE"} and is_fo:
+                        exchange = {"NSE": "NFO", "BSE": "BFO"}[exchange]
+                    order_params["exchange"] = exchange
+                
+                # Copy F&O specific parameters
+                fo_params = ["instrument_type", "expiry", "strike", "option_type", "lot_size", "security_id"]
+                for param in fo_params:
+                    if event.get(param) is not None:
+                        order_params[param] = event[param]
+                
+                # Handle additional parameters
+                if event.get("order_type") is not None:
+                    order_params["order_type"] = event["order_type"]
+                    
+                optional_map = {
+                    "orderValidity": "validity",
+                    "masterAccounts": "master_accounts",
+                    "securityId": "security_id",
+                }
+                for src, dest in optional_map.items():
+                    if event.get(src) is not None:
+                        order_params[dest] = event[src]
+
+                if product_type_mapped is not None:
+                    order_params["product_type"] = product_type_mapped
+                
+                # Enhanced lot size handling for F&O
+                lot_size_value = event.get("lot_size")
+                if is_fo:
+                    lot_size = lot_size_value
+
+                    normalized_lot_size = normalize_lot_size(lot_size)
+                    looked_up_lot_size = False
+
+                    if normalized_lot_size is None:
+                        looked_up_lot_size = True
+                        lot_size = _lookup_lot_size_from_symbol_map(
+                            converted_symbol,
+                            broker_name,
+                            exchange,
+                            event,
+                            broker_cfg,
+                        )
+                        normalized_lot_size = normalize_lot_size(lot_size)
+
+                        if normalized_lot_size is not None:
+                            log.info(
+                                "Found lot size %s for %s from symbol map",
+                                normalized_lot_size,
+                                converted_symbol,
+                            )
+                    if normalized_lot_size is None:
+                        message = "Invalid lot size or quantity for F&O order"
+                        if looked_up_lot_size:
+                            message = (
+                                "Unable to determine lot size for F&O symbol %s; aborting order"
+                                % converted_symbol
+                            )
+                        log.error(message, extra={"event": event, "broker": broker_cfg})
+                        return None
+
+                    try:
+                        original_qty = int(float(event["qty"]))
+                    except (ValueError, TypeError):
+                        log.error("Invalid lot size or quantity for F&O order")
+                        return None
+
+                    calculated_qty = original_qty * normalized_lot_size
+                    order_params["qty"] = calculated_qty
+                    order_params["lot_size"] = normalized_lot_size
+                    log.info(
+                        "F&O quantity adjustment: %s lots × %s = %s",
+                        original_qty,
+                        normalized_lot_size,
+                        calculated_qty,
+                    )
+
+                else:
+                    lot_size_int = None
+                    if lot_size_value is not None:
+                        lot_size_int = normalize_lot_size(lot_size_value)
+                        if lot_size_int is None:
+                            log.error("Invalid lot size provided for cash order")
+                            return None
+
+                    looked_up_lot_size = False
+                    if lot_size_int is None or lot_size_int <= 1:
+                        supported_lookup_brokers = {
+                            "dhan",
+                            "zerodha",
+                            "aliceblue",
+                            "fyers",
+                            "finvasia",
+                            "flattrade",
+                            "angel",
+                            "angelone",
+                            "upstox",
+                            "kotak",
+                            "iifl",
+                            "motilal",
+                            "5paisa",
+                        }
+                        lookup_function_changed = (
+                            _lookup_lot_size_from_symbol_map is not _ORIGINAL_LOT_SIZE_LOOKUP
+                        )
+                        if (
+                            broker_name
+                            and broker_name.lower() in supported_lookup_brokers
+                        ) or lookup_function_changed:
+                            looked_up_lot_size = True
+                            looked_up_value = _lookup_lot_size_from_symbol_map(
+                                converted_symbol,
+                                broker_name,
+                                exchange,
+                                event,
+                                broker_cfg,
+                            )
+                            lot_size_int = normalize_lot_size(looked_up_value)
+                            if lot_size_int:
+                                log.info(
+                                    "Found equity lot size %s for %s from symbol map",
+                                    lot_size_int,
+                                    converted_symbol,
+                                )
+
+                    if lot_size_int and lot_size_int > 1:
+                        try:
+                            original_qty = int(float(event["qty"]))
+                        except (ValueError, TypeError):
+                            log.error("Invalid quantity for cash order")
+                            return None
+
+                        calculated_qty = original_qty * lot_size_int
+                        order_params["qty"] = calculated_qty
+                        order_params["lot_size"] = lot_size_int
+                        log.info(
+                            "Cash quantity adjustment: %s lots × %s = %s",
+                            original_qty,
+                            lot_size_int,
+                            calculated_qty,
+                        )
+                
+                try:
+                    def _extract_order_id(order_result):
+                        if not isinstance(order_result, dict):
+                            return None
+                        return (
+                            order_result.get("order_id")
+                            or order_result.get("id")
+                            or order_result.get("data", {}).get("order_id")
+                            or order_result.get("orderId")
+                            or order_result.get("data", {}).get("orderId")
+                        )
+
+                    def _fetch_order_status(target_order_id):
+                        status_value = None
+                        try:
+                            if hasattr(client, "get_order"):
+                                info = client.get_order(target_order_id)
+                                if isinstance(info, dict):
+                                    status_value = info.get("status") or info.get("data", {}).get("status")
+                            elif hasattr(client, "list_orders"):
+                                orders = client.list_orders()
+                                for order in orders:
+                                    oid = (
+                                        order.get("id")
+                                        or order.get("order_id")
+                                        or order.get("orderId")
+                                        or order.get("data", {}).get("order_id")
+                                    )
+                                    if str(oid) == str(target_order_id):
+                                        status_value = order.get("status") or order.get("data", {}).get("status")
+                                        break
+                        except Exception:
+                            log.warning(
+                                "failed to fetch order status",
+                                extra={"order_id": target_order_id},
+                                exc_info=True,
+                            )
+                        return status_value
+
+                    def _record_processed_order(processed_order_id):
+                        try:
+                            redis_key = PROCESSED_ORDERS_KEY.format(master_id=str(client_id))
+                            redis_client.sadd(redis_key, str(processed_order_id))
+                            redis_client.expire(redis_key, PROCESSED_ORDERS_TTL)
+                        except Exception:
+                            log.debug(
+                                "failed to record processed order id",
+                                extra={"master_id": client_id, "order_id": processed_order_id},
+                                exc_info=True,
+                            )
+
+                    raw_exchange_fallbacks = event.get("exchange_fallbacks")
+
+                    base_order_params = dict(order_params)
+
+                    def _base_exchange_value(raw_exchange):
+                        if raw_exchange is None:
+                            return None
+                        value = str(raw_exchange).upper()
+                        if value in {"NFO", "NSE_FNO"}:
+                            return "NSE"
+                        if value in {"BFO", "BSE_FNO"}:
+                            return "BSE"
+                        if "NSE" in value:
+                            return "NSE"
+                        if "BSE" in value:
+                            return "BSE"
+                        return value
+
+                    def _build_params_for_exchange(target_exchange):
+                        params = dict(base_order_params)
+                        if target_exchange is None:
+                            params.pop("exchange", None)
+                            return params
+
+                        original_value = base_order_params.get("exchange")
+                        replacement = target_exchange
+                        if original_value is not None:
+                            original_upper = str(original_value).upper()
+                            mapping = {
+                                "NFO": {"NSE": "NFO", "BSE": "BFO"},
+                                "BFO": {"NSE": "NFO", "BSE": "BFO"},
+                            }
+                            if original_upper in mapping and target_exchange in mapping[original_upper]:
+                                replacement = mapping[original_upper][target_exchange]
+                            elif "NSE" in original_upper or "BSE" in original_upper:
+                                replacement = (
+                                    original_upper.replace("NSE", target_exchange)
+                                    .replace("BSE", target_exchange)
+                                )
+                        params["exchange"] = replacement
+                        return params
+
+                    def _extract_fallback_exchange(message):
+                        if not message:
+                            return None
+                        text = str(message).lower()
+                        if "not available on nse" in text:
+                            return "BSE"
+                        if "not available on bse" in text:
+                            return "NSE"
+                        return None
+
+                    allow_any_exchange_fallback = raw_exchange_fallbacks is None
+                    fallback_queue: List[str] = []
+                    fallback_allowed: set[str] = set()
+                    if isinstance(raw_exchange_fallbacks, list):
+                        for fallback_value in raw_exchange_fallbacks:
+                            normalized = _base_exchange_value(fallback_value)
+                            if not normalized:
+                                continue
+                            if normalized not in {"NSE", "BSE"}:
+                                continue
+                            if normalized in fallback_allowed:
+                                continue
+                            fallback_allowed.add(normalized)
+                            fallback_queue.append(normalized)
+
+                    def _select_fallback(preferred: str | None) -> str | None:
+                        if preferred:
+                            normalized = _base_exchange_value(preferred)
+                            if (
+                                normalized
+                                and normalized not in attempted_exchanges
+                                and (
+                                    allow_any_exchange_fallback
+                                    or normalized in fallback_allowed
+                                )
+                            ):
+                                if normalized in fallback_queue:
+                                    try:
+                                        fallback_queue.remove(normalized)
+                                    except ValueError:
+                                        pass
+                                fallback_allowed.discard(normalized)
+                                return normalized
+
+                        while fallback_queue:
+                            candidate = fallback_queue.pop(0)
+                            if candidate in attempted_exchanges:
+                                continue
+                            fallback_allowed.discard(candidate)
+                            return candidate
+
+                        if allow_any_exchange_fallback and preferred:
+                            for option in ("NSE", "BSE"):
+                                if option in attempted_exchanges:
+                                    continue
+                                return option
+
+                        return None
+
+                    attempted_exchanges = set()
+
+                    def _attempt_place(params: Dict[str, Any]):
+                        base_exchange = _base_exchange_value(params.get("exchange"))
+                        attempted_exchanges.add(base_exchange or "__none__")
+                        return client.place_order(**params)
+
+                    current_params = dict(order_params)
+                    try:
+                        result = _attempt_place(current_params)
+                    except Exception as exc:
+                        fallback_exchange = _extract_fallback_exchange(
+                            getattr(exc, "message", None)
+                            or (exc.args[0] if getattr(exc, "args", None) else str(exc))
+                        )
+                        if fallback_exchange or fallback_queue:
+                            selected_fallback = _select_fallback(fallback_exchange)
+                            if selected_fallback:
+                                current_params = _build_params_for_exchange(selected_fallback)
+                                result = _attempt_place(current_params)
+                            else:
+                                raise
+                        else:
+                            raise
+                    else:
+                        fallback_message = None
+                        if isinstance(result, dict):
+                            fallback_message = (
+                                result.get("error")
+                                or result.get("message")
+                                or result.get("data", {}).get("error")
+                                or result.get("data", {}).get("message")
+                            )
+                        fallback_exchange = _extract_fallback_exchange(fallback_message)
+                        if fallback_exchange:
+                            selected_fallback = _select_fallback(fallback_exchange)
+                            if selected_fallback:
+                                current_params = _build_params_for_exchange(selected_fallback)
+                                result = _attempt_place(current_params)
+
+                    order_params = current_params
+                    fallback_from_mtf = False
+                    if mtf_requested:
+                        if attempt_mtf:
+                            if isinstance(result, dict) and result.get("status") == "failure":
+                                _cache_mtf_support(original_symbol, broker_name, False)
+                                cnc_order_params = dict(order_params)
+                                cnc_order_params["product_type"] = map_product_type("cnc", broker_name)
+                                result = client.place_order(**cnc_order_params)
+                                order_params = cnc_order_params
+                                fallback_from_mtf = True
+                        else:
+                            _cache_mtf_support(original_symbol, broker_name, False)
+                    order_id = _extract_order_id(result)
+                    if not isinstance(result, dict) or result.get("status") != "success" or not order_id:
+                        raise RuntimeError(f"broker order failed: {result}")
+
+                    # Check order status
+                    status = _fetch_order_status(order_id)
+                    
+                    status_upper = str(status).upper() if status is not None else None
+                    if status_upper in REJECTED_STATUSES:
+                        if mtf_requested and attempt_mtf and not fallback_from_mtf:
+                            _cache_mtf_support(original_symbol, broker_name, False)
+                            cnc_order_params = dict(order_params)
+                            cnc_order_params["product_type"] = map_product_type("cnc", broker_name)
+                            result = client.place_order(**cnc_order_params)
+                            order_params = cnc_order_params
+                            fallback_from_mtf = True
+                            order_id = _extract_order_id(result)
+                            if (
+                                not isinstance(result, dict)
+                                or result.get("status") != "success"
+                                or not order_id
+                            ):
+                                raise RuntimeError(f"broker order failed: {result}")
+                            status = _fetch_order_status(order_id)
+                            status_upper = str(status).upper() if status is not None else None
+                            if status_upper in REJECTED_STATUSES:
+                                _record_processed_order(order_id)
+                                log.info(
+                                    "skipping trade event due to rejected status",
+                                    extra={"order_id": order_id, "status": status},
+                                )
+                                return None
+                        else:
+                            _record_processed_order(order_id)
+                            log.info(
+                                "skipping trade event due to rejected status",
+                                extra={"order_id": order_id, "status": status},
+                            )
+                            return None
+                    if status_upper not in COMPLETED_STATUSES:
+                        log.info(
+                            "publishing trade event with incomplete status",
+                            extra={"order_id": order_id, "status": status},
+                        )
+
+                    if mtf_requested and attempt_mtf and not fallback_from_mtf:
+                        _cache_mtf_support(original_symbol, broker_name, True)
+
+                    _record_processed_order(order_id)
+                        
+                    trade_event = {
+                        "master_id": client_id,
+                        "order_id": str(order_id),
+                        **{k: v for k, v in order_params.items() if k != "master_accounts"},
+                    }
+                    return trade_event
+                    
+                except Exception as exc:
+                    message = getattr(exc, "message", None) or (
+                        exc.args[0] if getattr(exc, "args", None) else str(exc)
+                    )
+                    raise RuntimeError(message) from exc
+
+            def _late_completion(cfg, fut):
+                try:
+                    result = fut.result()
+                    log.warning("broker %s completed after timeout: %s", cfg["name"], result)
+                except BaseException as exc:
+                    log.warning("broker %s failed after timeout: %s", cfg["name"], exc, exc_info=exc)
+
+            trade_events: List[Dict[str, Any]] = []
+            if brokers:
+                futures = {executor.submit(submit, cfg): cfg for cfg in brokers}
+                done, pending = wait(futures, timeout=order_timeout)
+                timed_out = []
+                for future in done:
+                    cfg = futures[future]
+                    try:
+                        trade_event = future.result()
+                        if trade_event:
+                            trade_events.append(trade_event)
+                    except Exception:
+                        orders_failed.inc()
+                        log.exception("failed to place master order", extra={"event": event, "broker": cfg})
+                for future in pending:
+                    cfg = futures[future]
+                    orders_failed.inc()
+                    log.warning("broker order timed out", extra={"event": event, "broker": cfg})
+                    if not future.cancel():
+                        timed_out.append((future, cfg))
+                for fut, cfg in timed_out:
+                    fut.add_done_callback(partial(_late_completion, cfg))
+            else:
+                orders_failed.inc()
+                log.warning("no brokers configured for user", extra={"event": event})
+                
+            for trade_event in trade_events:
+                redis_client.xadd(
+                    "trade_events",
+                    trade_event,
+                    maxlen=get_trade_events_maxlen(),
+                    approximate=True,
+                )
+
+            if trade_events:
+                orders_success.inc()
+                log.info("processed webhook event", extra={"event": event})
+            else:
+                orders_failed.inc()
+        except Exception:
+            orders_failed.inc()
+            log.exception("failed to process webhook event", extra={"event": event})
+        finally:
+            redis_client.xack(stream, group, msg_id)
+
+    async def _consume() -> int:
+        processed = 0
+        while max_messages is None or processed < max_messages:
+            count = batch_size
+            if max_messages is not None:
+                count = min(count, max_messages - processed)
+            messages: Iterable = redis_client.xreadgroup(
+                group, consumer, {stream: ">"}, count=count, block=block
+            )
+            if not messages:
+                break
+
+            tasks = []
+            for _stream, events in messages:
+                for msg_id, data in events:
+                    tasks.append(asyncio.to_thread(process_message, msg_id, data))
+            if tasks:
+                await asyncio.gather(*tasks)
+                processed += len(tasks)
+
+        return processed
+
+    try:
+        return asyncio.run(_consume())
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+
+
+def main() -> None:
+    """Run the consumer indefinitely."""
+    while True:
+        try:
+            consume_webhook_events(block=5000)
+        except redis.exceptions.RedisError:
+            log.exception("redis unavailable, retrying", exc_info=True)
+            time.sleep(5)
+
+
+__all__ = [
+    "consume_webhook_events",
+    "orders_success",
+    "orders_failed",
+    "normalize_derivative_symbol",
+    "normalize_symbol_to_dhan_format",
+    "convert_symbol_between_brokers",
+    "parse_fo_symbol",
+    "format_fo_symbol",
+]
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass

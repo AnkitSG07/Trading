@@ -1,0 +1,75 @@
+from __future__ import annotations
+
+import os
+from flask import Flask, Blueprint, jsonify, request
+import redis
+
+from models import db, User, Strategy
+from .webhook_receiver import enqueue_webhook, ValidationError
+
+webhook_bp = Blueprint("webhook", __name__)
+
+@webhook_bp.post("/webhook/<token>")
+def webhook(token: str):
+    """Enqueue *payload* for the user identified by *token*.
+
+    ``token`` may be either a numeric user identifier or a webhook token.
+    If a ``secret`` is supplied it will be matched against the user's
+    strategies and the corresponding ``strategy_id`` will be sent along
+    with the event.
+    """
+
+    strategy_id = request.args.get("strategy_id", type=int)
+    secret = request.args.get("secret") or request.headers.get("X-Webhook-Secret")
+    payload = request.get_json(silent=True) or {}
+
+    user = User.query.filter_by(webhook_token=token).first()
+    if user is not None:
+        user_id = user.id
+        if secret:
+            strategy = Strategy.query.filter_by(user_id=user_id, webhook_secret=secret).first()
+            if not strategy:
+                return jsonify({"error": "Invalid webhook secret"}), 403
+            # Use strategy.id if caller didn't specify one explicitly
+            if strategy_id is None:
+                strategy_id = strategy.id
+    else:
+        # Fallback: allow numeric user IDs to be passed directly
+        try:
+            user_id = int(token)
+        except ValueError:
+            return jsonify({"error": "Unknown webhook token"}), 404
+
+    try:
+        event = enqueue_webhook(user_id, strategy_id, payload)
+    except ValidationError as exc:  # pragma: no cover - simple pass-through
+        return jsonify({"error": str(exc)}), 400
+    except redis.exceptions.RedisError:
+        return jsonify({"error": "Failed to enqueue webhook event"}), 503
+    return jsonify(event), 202
+
+def create_app() -> Flask:
+    """Create a standalone Flask application hosting the webhook endpoint."""
+    app = Flask(__name__)
+    db_url = os.getenv("DATABASE_URL", "sqlite:///webhook.db")
+    if db_url.startswith("postgresql://"):
+        db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    db.init_app(app)
+    app.register_blueprint(webhook_bp)
+    return app
+
+
+def main() -> None:  # pragma: no cover - CLI helper
+    app = create_app()
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
+app = create_app()
+
+
+if __name__ == "__main__":  # pragma: no cover
+    main()
+
+
+__all__ = ["webhook_bp", "create_app", "app", "main"]

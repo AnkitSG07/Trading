@@ -1,0 +1,862 @@
+"""Trade copier service that consumes master order events from Redis.
+
+This module listens to the ``trade_events`` Redis stream and replicates
+orders from master accounts to their linked child accounts.  It no longer
+relies on an in-memory queue or Flask application context, allowing it to be
+run as an independent microservice.
+"""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import time
+from concurrent.futures import ThreadPoolExecutor
+import logging
+import os
+import re
+from functools import partial
+from typing import Any, Callable, Dict, Iterable, Optional
+from collections.abc import Mapping
+from types import SimpleNamespace
+
+from prometheus_client import Histogram
+from sqlalchemy.orm import Session
+
+from models import Account
+from brokers.factory import get_broker_client
+from brokers import symbol_map
+from brokers.symbol_map import convert_symbol_between_brokers
+from brokers.base import DEFAULT_TIMEOUT as BROKER_DEFAULT_TIMEOUT
+import requests
+from .webhook_receiver import redis_client, get_redis_client
+from .db import get_session
+from .utils import _decode_event
+from .lot_size import normalize_lot_size
+from helpers import active_children_for_master, extract_exchange_from_order
+import redis
+
+LATENCY = Histogram(
+    "trade_copier_latency_seconds", "Seconds spent processing a master order event"
+)
+
+log = logging.getLogger(__name__)
+
+DEFAULT_MAX_WORKERS = 10
+# Default per-child broker submission timeout in seconds. The value can be
+# overridden at runtime via the ``TRADE_COPIER_TIMEOUT`` environment variable
+# for brokers with slower APIs.  Setting the variable to ``0``, a negative
+# number or ``"none"`` disables the timeout entirely.  We guarantee this
+# timeout is never lower than the broker HTTP timeout so that child operations
+# are not cancelled before the underlying network request finishes.
+BROKER_HTTP_TIMEOUT = float(BROKER_DEFAULT_TIMEOUT)
+DEFAULT_CHILD_TIMEOUT = max(20.0, BROKER_HTTP_TIMEOUT)
+
+
+def _get_account_field(account: Any, field: str) -> Any:
+    if hasattr(account, field):
+        return getattr(account, field)
+    if isinstance(account, Mapping):
+        return account.get(field)
+    return None
+
+
+def _snapshot_account(account: Any) -> Any:
+    if isinstance(account, Mapping):
+        return dict(account)
+    if hasattr(account, "__dict__"):
+        return {
+            key: value
+            for key, value in vars(account).items()
+            if not key.startswith("_")
+        }
+    return account
+
+
+def _load_symbol_map_or_exit() -> None:
+    """Pre-load the broker symbol map, aborting on failure.
+
+    The trade copier relies on instrument dumps from Zerodha and Dhan to map
+    symbols for various child brokers such as AliceBlue.  If these dumps cannot
+    be retrieved (e.g. because neither network access nor cached copies are
+    available) the service would otherwise continue and silently fail later when
+    placing orders.  To prevent this we attempt to build the symbol map up front
+    and terminate the process if it cannot be loaded.
+    """
+
+    try:
+        symbol_map.ensure_symbol_cache()
+        log.info("Symbol cache prepared successfully")
+    except requests.RequestException as exc:  # pragma: no cover - network errors
+        log.error("failed to load instrument data: %s", exc)
+        raise SystemExit(1)
+
+def copy_order(master: Account, child: Account, order: Dict[str, Any]) -> Any:
+    """Instantiate the appropriate broker client for *child* and copy *order*.
+
+    Parameters
+    ----------
+    master: Account
+        Master account that generated the trade.
+    child: Account
+        Child account that should receive the replicated order.
+    order: Dict[str, Any]
+        Normalised order payload decoded from the ``trade_events`` stream.
+    """
+
+    if isinstance(master, Mapping):
+        master = SimpleNamespace(**master)
+    if isinstance(child, Mapping):
+        child = SimpleNamespace(**child)
+
+    master_broker = _get_account_field(master, "broker")
+    child_broker = _get_account_field(child, "broker")
+    child_client_id = _get_account_field(child, "client_id")
+
+    if not child_broker:
+        log.error(
+            "❌ Cannot copy order to child %s: missing broker configuration",
+            child_client_id or "<unknown>",
+        )
+        return None
+
+    # Look up the concrete broker implementation or service client.
+    client_cls = get_broker_client(child_broker)
+
+    # Credentials are stored on the ``Account`` model as a JSON blob.  We only
+    # require an access token for the tests so missing keys default to ``""``.
+    credentials = dict(_get_account_field(child, "credentials") or {})
+    access_token = credentials.pop("access_token", "")
+    credentials.pop("client_id", None)
+
+    broker = client_cls(
+        client_id=child_client_id, access_token=access_token, **credentials
+    )
+
+    # Get original symbol and metadata
+    original_symbol = order.get("symbol", "")
+    instrument_type = order.get("instrument_type", "")
+    exchange = extract_exchange_from_order(order) or ""
+    
+    if exchange:
+        normalized_exchange = extract_exchange_from_order({"exchange": exchange})
+        exchange = normalized_exchange or str(exchange).strip().upper()
+        
+    # Check if it's an F&O symbol
+    is_derivative = (
+        (instrument_type and instrument_type.upper() in {
+            "FUT", "FUTSTK", "FUTIDX", "OPT", "OPTSTK", "OPTIDX", "CE", "PE"
+        }) or bool(re.search(r'(FUT|CE|PE)$', original_symbol.upper()))
+    )
+
+    # Convert symbol if needed for different brokers
+    converted_symbol = original_symbol
+
+    # If we couldn't extract exchange, try deriving it from the broker symbol maps
+    if not exchange and not is_derivative:
+        inferred_exchange = None
+        inferred_symbol = None
+
+        for broker_name in (master_broker, child_broker):
+            if not broker_name:
+                continue
+
+            mapping = symbol_map.get_symbol_for_broker(original_symbol, broker_name)
+            if not mapping:
+                continue
+
+            mapped_exchange = mapping.get("exchange") or mapping.get("exch")
+            mapped_symbol = mapping.get("trading_symbol") or mapping.get("symbol")
+
+            if mapped_exchange:
+                normalized_exchange = str(mapped_exchange).strip().upper()
+                if normalized_exchange in {"NSE", "BSE"}:
+                    inferred_exchange = normalized_exchange
+
+            if mapped_symbol and inferred_symbol is None:
+                inferred_symbol = mapped_symbol
+
+            if inferred_exchange:
+                break
+
+        if inferred_exchange:
+            exchange = inferred_exchange
+        if inferred_symbol and converted_symbol == original_symbol:
+            converted_symbol = inferred_symbol
+    if is_derivative:
+        if master_broker and child_broker:
+            if master_broker != child_broker:
+                try:
+                    converted_symbol = convert_symbol_between_brokers(
+                        original_symbol,
+                        master_broker,
+                        child_broker,
+                        instrument_type,
+                    )
+                    if converted_symbol != original_symbol:
+                        log.info(
+                            "🔄 Converted F&O symbol from %s (%s) to %s (%s)",
+                            original_symbol,
+                            master_broker,
+                            converted_symbol,
+                            child_broker,
+                        )
+                except Exception as e:
+                    log.warning("Could not convert symbol %s: %s", original_symbol, e)
+                    converted_symbol = original_symbol
+        else:
+            log.warning(
+                "Skipping derivative symbol conversion for %s: missing broker info (master=%s, child=%s)",
+                original_symbol,
+                master_broker or "<unknown>",
+                child_broker or "<unknown>",
+            )
+    elif (
+        master_broker
+        and child_broker
+        and master_broker != child_broker
+        and exchange in {"NSE", "BSE"}
+        and str(child_broker).lower() != "finvasia"
+    ):
+        mapping = symbol_map.get_symbol_for_broker(original_symbol, child_broker, exchange)
+        if mapping:
+            mapped_symbol = mapping.get("trading_symbol") or mapping.get("symbol")
+            mapped_exchange = mapping.get("exchange") or mapping.get("exch")
+
+            if mapped_symbol:
+                converted_symbol = mapped_symbol
+            if mapped_exchange:
+                exchange = str(mapped_exchange).upper()
+                
+    raw_lot_size = order.get("lot_size")
+    lot_size = normalize_lot_size(raw_lot_size)
+    lot_size_multiplier = lot_size or 1
+
+    if is_derivative and lot_size is None:
+        exchange_hint = exchange or None
+        for broker_name in (child_broker, master_broker):
+            if not broker_name:
+                continue
+
+            mapping = symbol_map.get_symbol_for_broker(
+                converted_symbol, broker_name, exchange_hint
+            )
+            mapping_lot_size = normalize_lot_size(
+                (mapping or {}).get("lot_size")
+            )
+
+            if mapping_lot_size and mapping_lot_size > 0:
+                lot_size = mapping_lot_size
+                lot_size_multiplier = mapping_lot_size
+                log.debug(
+                    "Using fallback lot size %s for %s from %s symbol map entry",
+                    mapping_lot_size,
+                    converted_symbol,
+                    broker_name,
+                )
+                break
+
+    # Apply fixed quantity override for the child account if provided
+    copy_qty = _get_account_field(child, "copy_qty")
+    if copy_qty is not None:
+        qty = int(copy_qty) * lot_size_multiplier
+    else:
+        qty = int(order.get("qty", 0))
+    
+    # Handle lot size for F&O
+    if is_derivative:
+        if lot_size:
+            log.debug(
+                f"F&O order: {qty} lots of {converted_symbol} "
+                f"(lot size: {lot_size})"
+            )
+        elif raw_lot_size is not None:
+            log.warning(f"Invalid lot size {raw_lot_size} for F&O order")
+
+    finvasia_token = None
+    if str(child_broker).lower() == "finvasia":
+        mapping = symbol_map.get_symbol_for_broker(
+            converted_symbol, "finvasia", exchange
+        )
+
+        if not mapping:
+            log.warning(
+                "Skipping Finvasia order for %s: missing symbol map entry (exchange=%s)",
+                converted_symbol,
+                exchange or "<unknown>",
+            )
+            return {"status": "skipped", "reason": "finvasia_symbol_missing"}
+
+        mapped_symbol = mapping.get("trading_symbol") or mapping.get("symbol")
+        finvasia_token = mapping.get("token")
+        mapped_exchange = mapping.get("exchange") or mapping.get("exch")
+
+        if mapped_symbol:
+            converted_symbol = mapped_symbol
+
+        if mapped_exchange:
+            exchange = str(mapped_exchange).strip().upper()
+
+        log.debug(
+            "Resolved Finvasia mapping for %s: symbol=%s, token=%s, exchange=%s",
+            original_symbol,
+            converted_symbol,
+            finvasia_token,
+            exchange,
+        )
+
+    # Prepare order parameters
+    params = {
+        "symbol": converted_symbol,
+        "action": order.get("action"),
+        "qty": qty,
+    }
+
+    if finvasia_token:
+        params["token"] = finvasia_token
+    
+    # Handle exchange - special handling for different brokers
+    if exchange:
+        broker_lower = str(child_broker).lower()
+        
+        if broker_lower == "fyers":
+            # Fyers specific exchange handling
+            if exchange in {"NFO", "BFO"} and is_derivative:
+                # Fyers uses NSE/BSE for derivatives
+                params["exchange"] = "NSE" if exchange == "NFO" else "BSE"
+            elif exchange in {"NSE", "BSE"}:
+                if is_derivative:
+                    # Convert equity exchange to derivative exchange for F&O
+                    params["exchange"] = "NSE"  # Fyers uses NSE for NFO
+                else:
+                    params["exchange"] = exchange
+            else:
+                params["exchange"] = exchange
+        else:
+            # Other brokers use standard exchange codes
+            params["exchange"] = exchange
+    
+    # Handle product type with broker-specific mapping
+    product_type = order.get("product_type") or order.get("productType")
+    if product_type:
+        broker_lower = str(child_broker).lower()
+        
+        # Normalize product type first
+        pt_upper = str(product_type).upper()
+        
+        if broker_lower == "fyers":
+            # Fyers specific mapping
+            product_map = {
+                "MIS": "INTRADAY",
+                "INTRADAY": "INTRADAY",
+                "CNC": "CNC",
+                "DELIVERY": "CNC",
+                "NRML": "MARGIN",
+                "NORMAL": "MARGIN",
+                "MTF": "MARGIN",  # Fyers doesn't have MTF, use MARGIN
+                "BO": "BO",
+                "CO": "CO",
+            }
+            params["product_type"] = product_map.get(pt_upper, pt_upper)
+            
+        elif broker_lower == "dhan":
+            product_map = {
+                "MIS": "INTRADAY",
+                "INTRADAY": "INTRADAY",
+                "CNC": "CNC",
+                "DELIVERY": "CNC",
+                "NRML": "MARGIN",
+                "NORMAL": "MARGIN",
+                "MTF": "MTF",
+                "BO": "BO",
+                "CO": "CO",
+            }
+            params["product_type"] = product_map.get(pt_upper, pt_upper)
+            
+        elif broker_lower == "zerodha":
+            # Zerodha uses standard names
+            product_map = {
+                "INTRADAY": "MIS",
+                "MIS": "MIS",
+                "DELIVERY": "CNC",
+                "CNC": "CNC",
+                "MARGIN": "NRML",
+                "NORMAL": "NRML",
+                "NRML": "NRML",
+                "MTF": "CNC",  # Zerodha doesn't have MTF, use CNC
+                "BO": "BO",
+                "CO": "CO",
+            }
+            params["product_type"] = product_map.get(pt_upper, pt_upper)
+            
+        elif broker_lower == "aliceblue":
+            product_map = {
+                "INTRADAY": "MIS",
+                "MIS": "MIS",
+                "DELIVERY": "CNC",
+                "CNC": "CNC",
+                "NORMAL": "NRML",
+                "NRML": "NRML",
+                "MARGIN": "NRML",
+                "MTF": "MTF",
+                "BO": "BO",
+                "CO": "CO",
+            }
+            params["product_type"] = product_map.get(pt_upper, pt_upper)
+            
+        elif broker_lower == "finvasia":
+            product_map = {
+                "MIS": "M",
+                "INTRADAY": "M",
+                "CNC": "C",
+                "DELIVERY": "C",
+                "NRML": "H",
+                "NORMAL": "H",
+                "MARGIN": "H",
+                "MTF": "C",  # Use C for MTF
+                "BO": "B",
+                "CO": "H",
+            }
+            params["product_type"] = product_map.get(pt_upper, pt_upper)
+        else:
+            params["product_type"] = product_type
+    
+    # Copy other parameters
+    ignore_fields = {
+        "symbol", "action", "qty", "master_id", "id", 
+        "exchange", "product_type", "productType", "source"
+    }
+    for key, value in order.items():
+        if key in ignore_fields or value is None:
+            continue
+        params[key] = value
+    
+    try:
+        log.info(
+            f"📤 Placing order on {child_broker} for {child_client_id}: "
+            f"{params.get('action')} {params.get('qty')} {params.get('symbol')} "
+            f"at {params.get('exchange', 'NSE')} with product {params.get('product_type', 'MIS')}"
+        )
+        
+        result = broker.place_order(**params)
+        
+        if isinstance(result, dict) and result.get("status") == "success":
+            log.info(
+                f"✅ Successfully copied order to {child_broker} account {child_client_id}: "
+                f"Order ID: {result.get('order_id')}"
+            )
+        else:
+            log.warning(
+                f"⚠️ Order placed but status unclear for {child_broker} account {child_client_id}: {result}"
+            )
+        
+        return result
+        
+    except Exception as exc:
+        # Re-raise with the original broker message so that callers can log
+        # a concise error.  Many broker SDKs attach additional metadata to
+        # exceptions which makes the default ``repr`` noisy; here we capture
+        # just the human readable message.
+        message = getattr(exc, "message", None) or (
+            exc.args[0] if getattr(exc, "args", None) else str(exc)
+        )
+        log.error(
+            f"❌ Failed to copy order to {child_broker} account {child_client_id}: {message}"
+        )
+        raise RuntimeError(message) from exc
+
+async def _replicate_to_children(
+    db_session: Session,
+    master: Account,
+    order: Dict[str, Any],
+    processor: Callable[[Account, Account, Dict[str, Any]], Any],
+    *,
+    executor: ThreadPoolExecutor | None = None,
+    max_workers: int | None = None,
+    timeout: float | None = None,
+) -> None:
+    """Execute ``processor`` concurrently for all active children.
+
+    Parameters
+    ----------
+    executor:
+        Optional pre-created :class:`ThreadPoolExecutor` to use for broker
+        submissions.  If not supplied a new executor is created for the call.
+    max_workers:
+        Thread pool size when a new executor is created. Defaults to the
+        number of child accounts.
+    timeout:
+        Maximum time in seconds to wait for each child broker call. ``None``
+        disables the timeout.
+    """
+
+    try:
+        master_payload = _snapshot_account(master)
+        children = active_children_for_master(master, db_session, logger=log)
+    except TypeError:
+        # Fallback for older version without logger parameter
+        children = active_children_for_master(master, db_session)
+
+    if not children:
+        log.debug(f"No active children found for master {master.client_id}")
+        return
+
+    log.info(f"📊 Copying order to {len(children)} active child accounts")
+
+    loop = asyncio.get_running_loop()
+    own_executor = False
+    if executor is None:
+        max_workers = max_workers or len(children) or 1
+        executor = ThreadPoolExecutor(max_workers=max_workers)
+        own_executor = True
+
+    def _late_completion(child, fut):
+        client_id = _get_account_field(child, "client_id")
+        broker_name = _get_account_field(child, "broker")
+        try:
+            fut.result()
+            log.warning(
+                "⏰ child %s (%s) copy completed after timeout",
+                client_id,
+                broker_name,
+                extra={"child": client_id, "broker": broker_name},
+            )
+        except asyncio.CancelledError:
+            log.warning(
+                "🚫 child %s (%s) copy cancelled after timeout",
+                client_id,
+                broker_name,
+                extra={"child": client_id, "broker": broker_name},
+            )
+            return
+        except Exception as exc:
+            msg = str(exc)
+            log.warning(
+                "❌ child %s (%s) copy failed after timeout: %s",
+                client_id,
+                broker_name,
+                msg,
+                exc_info=exc,
+                extra={"child": client_id, "broker": broker_name, "error": msg},
+            )
+    
+    try:
+        async_tasks = []
+        timed_out: list[tuple[Account, asyncio.Future]] = []
+        for child in children:
+            child_payload = _snapshot_account(child)
+            master_for_processor: Any = master_payload
+            child_for_processor: Any = child_payload
+
+            if isinstance(master_payload, Mapping):
+                master_for_processor = SimpleNamespace(**master_payload)
+            if isinstance(child_payload, Mapping):
+                child_for_processor = SimpleNamespace(**child_payload)
+
+            orig_fut = loop.run_in_executor(
+                executor, processor, master_for_processor, child_for_processor, order
+            )
+            shielded = asyncio.shield(orig_fut)
+            wrapped = asyncio.wait_for(shielded, timeout) if timeout is not None else shielded
+            async_tasks.append((child_payload, wrapped, orig_fut))
+
+        results = await asyncio.gather(
+            *(f for _c, f, _of in async_tasks), return_exceptions=True
+        )
+
+        success_count = 0
+        failure_count = 0
+        
+        for (child, _wrapped, orig_fut), result in zip(async_tasks, results):
+            client_id = _get_account_field(child, "client_id")
+            broker_name = _get_account_field(child, "broker")
+            
+            if isinstance(result, (asyncio.TimeoutError, TimeoutError)):
+                if isinstance(result, asyncio.TimeoutError) and not orig_fut.done():
+                    timed_out.append((child, orig_fut))
+                log.warning(
+                    "⏰ child %s (%s) copy timed out; order may still have executed",
+                    client_id,
+                    broker_name,
+                    extra={"child": client_id, "broker": broker_name, "error": "TimeoutError"},
+                )
+                failure_count += 1
+            elif isinstance(result, Exception):
+                msg = str(result)
+                log.error(
+                    "❌ child %s (%s) copy failed: %s",
+                    client_id,
+                    broker_name,
+                    msg,
+                    exc_info=result,
+                    extra={
+                        "child": client_id,
+                        "broker": broker_name,
+                        "error": msg,
+                    },
+                )
+                failure_count += 1
+            else:
+                log.debug(
+                    f"✅ Successfully copied order to child {client_id} ({broker_name})"
+                )
+                success_count += 1
+
+        if success_count > 0 or failure_count > 0:
+            log.info(
+                f"📈 Order copy results: {success_count} successful, {failure_count} failed"
+            )
+
+        for child, fut in timed_out:
+            fut.add_done_callback(partial(_late_completion, child))
+    finally:
+        if own_executor:
+            executor.shutdown(wait=False)
+
+
+def poll_and_copy_trades(
+    db_session: Session,
+    processor: Optional[Callable[[Account, Account, Dict[str, Any]], Any]] = None,
+    *,
+    stream: str = "trade_events",
+    group: str = "trade_copier",
+    consumer: str = "worker-1",
+    redis_client=redis_client,
+    max_messages: int | None = None,
+    block: int = 0,
+    batch_size: int = 10,
+    max_workers: int | None = None,
+    child_timeout: float | None = None,
+) -> int:
+    """Consume trade events from *stream* using a consumer group.
+
+    Parameters
+    ----------
+    db_session:
+        SQLAlchemy session used for querying accounts.
+    processor:
+        Optional callback that executes the actual copy operation for each
+        child.  If omitted a no-op processor is used.
+    stream:
+        Redis Stream to consume events from. Defaults to ``"trade_events"``.
+    group:
+        Consumer group name used for coordinated processing.
+    consumer:
+        Consumer name within the group.
+    redis_client:
+        Redis client instance; a stub may be supplied for testing.
+    max_messages:
+        Optional limit for the number of messages processed. ``None`` means
+        process until the stream is exhausted.
+    block:
+        Milliseconds to block waiting for new events. ``0`` means do not block.
+    batch_size:
+        Maximum number of trade events fetched per call to ``xreadgroup``.
+    max_workers:
+        Optional thread pool size used when dispatching copy operations.
+        Defaults to the number of child accounts.
+    child_timeout:
+        Maximum time in seconds to wait for each child broker submission.
+        Defaults to the ``TRADE_COPIER_TIMEOUT`` environment variable or
+        ``20`` seconds if unset.  Values of ``0``, negative numbers or the
+        string ``"none"`` disable the timeout.
+
+    Returns
+    -------
+    int
+        Number of messages processed.
+    """
+
+    processor = processor or (lambda m, c, o: None)
+    max_workers = max_workers or int(
+        os.getenv("TRADE_COPIER_MAX_WORKERS", str(DEFAULT_MAX_WORKERS))
+    )
+    if child_timeout is None:
+        env_timeout_raw = os.getenv("TRADE_COPIER_TIMEOUT", str(DEFAULT_CHILD_TIMEOUT))
+        env_timeout = env_timeout_raw.strip().lower()
+        if env_timeout in {"none", ""}:
+            child_timeout = None
+        else:
+            try:
+                parsed = float(env_timeout_raw)
+            except ValueError:
+                parsed = DEFAULT_CHILD_TIMEOUT
+            if parsed <= 0:
+                child_timeout = None
+            else:
+                child_timeout = max(parsed, DEFAULT_CHILD_TIMEOUT)
+    elif child_timeout <= 0:
+        child_timeout = None
+
+    executor = ThreadPoolExecutor(max_workers=max_workers)
+    try:
+        # Ensure the consumer group exists. Ignore errors if already created.
+        try:
+            redis_client.xgroup_create(stream, group, id="0", mkstream=True)
+        except Exception as exc:  # pragma: no cover - stub may not raise
+            if "BUSYGROUP" not in str(exc):
+                raise
+
+        async def _consume() -> int:
+            processed = 0
+            while max_messages is None or processed < max_messages:
+                count = batch_size
+                if max_messages is not None:
+                    count = min(count, max_messages - processed)
+                messages: Iterable = redis_client.xreadgroup(
+                    group, consumer, {stream: ">"}, count=count, block=block
+                )
+                if not messages:
+                    break
+
+                tasks = []
+                count = 0
+                for _stream, events in messages:
+                    for msg_id, data in events:
+                        event = _decode_event(data)
+
+                        async def handle(msg_id=msg_id, event=event):
+                            start = time.time()
+                            try:
+                                # Refresh database session to see latest data
+                                db_session.rollback()
+                                db_session.expire_all()
+                                master_id = event.get("master_id")
+                                if not master_id:
+                                    legacy_master = event.get("master_client_id")
+                                    if legacy_master:
+                                        master_id = legacy_master
+                                        event["master_id"] = legacy_master
+                                    else:
+                                        log.error(
+                                            "⚠️ Trade event %s missing master identifier", msg_id
+                                        )
+                                        redis_client.xack(stream, group, msg_id)
+                                        return   
+                                master = (
+                                    db_session.query(Account)
+                                    .filter_by(client_id=str(master_id), role="master")
+                                    .first()
+                                )
+                                if master:
+                                    master_payload = _snapshot_account(master)
+                                    master_id = _get_account_field(master_payload, "client_id")
+                                    master_broker = _get_account_field(master_payload, "broker")
+                                    source = event.get("source", "unknown")
+                                    log.info(
+                                        f"📥 Processing trade event from master {master_id} "
+                                        f"({master_broker or 'unknown'}): {event.get('action')} "
+                                        f"{event.get('qty')} {event.get('symbol')} "
+                                        f"(source: {source}) [Event ID: {msg_id}]"
+                                    )
+                                    db_session.rollback()
+                                    db_session.expire_all()
+                                    await _replicate_to_children(
+                                        db_session,
+                                        master,
+                                        event,
+                                        processor,
+                                        executor=executor,
+                                        timeout=child_timeout,
+                                    )
+                                else:
+                                    log.warning(f"⚠️ Master account {event['master_id']} not found")
+                            except Exception as exc:  # pragma: no cover - exercised in tests
+                                log.exception(
+                                    "❌ error processing trade event %s", msg_id, exc_info=exc
+                                )
+                                db_session.rollback()
+                                log.debug(
+                                    "🔄 database session rolled back after error processing trade event %s",
+                                    msg_id,
+                                )
+                                raise
+                            else:
+                                redis_client.xack(stream, group, msg_id)
+                            finally:
+                                LATENCY.observe(time.time() - start)
+
+                        tasks.append((msg_id, asyncio.create_task(handle())))
+                        count += 1
+
+                if tasks:
+                    results = await asyncio.gather(
+                        *(t for _, t in tasks), return_exceptions=True
+                    )
+                    for (msg_id, _), result in zip(tasks, results):
+                        if isinstance(result, Exception):
+                            log.exception(
+                                "❌ error processing trade event %s", msg_id, exc_info=result
+                            )
+                processed += count
+                if max_messages is not None and processed >= max_messages:
+                    break
+
+            return processed
+
+        return asyncio.run(_consume())
+    finally:
+        executor.shutdown(wait=False)
+
+def main() -> None:
+    """Entry point for the trade copier service."""
+    
+    # Set up detailed logging
+    logging.basicConfig(
+        level=os.getenv("LOG_LEVEL", "INFO"),
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
+    block = int(os.getenv("TRADE_COPIER_BLOCK_MS", "5000"))
+
+    # Ensure symbol mappings are available before processing any trades.  The
+    # build uses instrument dumps from upstream brokers and falls back to
+    # cached data.  If neither is accessible the trade copier aborts so that
+    # orders are not submitted with missing tokens.
+    _load_symbol_map_or_exit()
+    log.info("🚀 Trade copier worker starting")
+    log.info(f"📊 Block time: {block}ms")
+
+    while True:
+        session = get_session()
+        client = get_redis_client()
+        try:
+            processed = poll_and_copy_trades(
+                session,
+                processor=copy_order,
+                redis_client=client,
+                block=block,
+            )
+            if processed > 0:
+                log.info(f"✅ Processed {processed} trade event(s)")
+        except redis.exceptions.RedisError as e:
+            log.exception(f"❌ Redis error while copying trades: {e}")
+            time.sleep(5)  # Wait before retry
+        except Exception as e:
+            log.exception(f"❌ Unexpected error in trade copier: {e}")
+            time.sleep(5)  # Wait before retry
+        finally:
+            session.close()
+
+
+__all__ = ["poll_and_copy_trades", "copy_order", "LATENCY", "main"]
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run the trade copier worker")
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="enable debug logging",
+    )
+    args = parser.parse_args()
+    level = "DEBUG" if args.verbose else os.getenv("LOG_LEVEL", "INFO")
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    try:
+        main()
+    except KeyboardInterrupt:
+        log.info("👋 Trade copier stopped by user")
+        pass

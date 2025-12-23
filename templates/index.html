@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        
+        <!-- SEO Meta Tags -->
+        <meta name="description" content="Your description">
+        <meta name="author" content="Your name">
+
+        <!-- OG Meta Tags to improve the way the post looks when you share the page on Facebook, Twitter, LinkedIn -->
+        <meta property="og:site_name" content="" /> <!-- website name -->
+        <meta property="og:site" content="" /> <!-- website link -->
+        <meta property="og:title" content=""/> <!-- title shown in the actual shared post -->
+        <meta property="og:description" content="" /> <!-- description shown in the actual shared post -->
+        <meta property="og:image" content="" /> <!-- image link, make sure it's jpg -->
+        <meta property="og:url" content="" /> <!-- where do you want your post to link to -->
+        <meta name="twitter:card" content="summary_large_image"> <!-- to have large image post format in Twitter -->
+
+        <!-- Webpage Title -->
+        <title>Xclusive Money</title>
+        
+        <!-- Styles -->
+        <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+        <link href="{{ url_for('static', filename='bootstrap.min.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='fontawesome-all.min.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='swiper.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='styles1.css') }}" rel="stylesheet">
+        
+        <!-- Favicon  -->
+        <link rel="icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    </head>
+    <body data-bs-spy="scroll" data-bs-target="#navbarExample">
+        
+        <!-- Navigation -->
+        <nav id="navbarExample" class="navbar navbar-expand-lg fixed-top navbar-light" aria-label="Main navigation">
+            <div class="container">
+
+                <!-- Image Logo -->
+                <a class="navbar-brand logo-image" href="{{ url_for('home') }}">
+                    <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Xclusive Money logo">
+                </a>
+                <!-- Text Logo - Use this if you don't have a graphic logo -->
+                <!-- <a class="navbar-brand logo-text" href="index.html">XM</a> -->
+
+                <button class="navbar-toggler p-0 border-0" type="button" id="navbarSideCollapse" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="navbar-collapse offcanvas-collapse" id="navbarsExampleDefault">
+                    <ul class="navbar-nav ms-auto navbar-nav-scroll">
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="#header"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#features">Features</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#details">Details</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#pricing">Pricing</a>
+                        </li>
+                        <span class="nav-item">
+                            <a class="btn-outline-sm" href="{{ url_for('auth.login') }}">Log in</a>
+                        </span>
+                        <!--
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="dropdown01" data-bs-toggle="dropdown" aria-expanded="false">Drop</a>
+                            <ul class="dropdown-menu" aria-labelledby="dropdown01">
+                                <li><a class="dropdown-item" href="templates/">-----</a></li>
+                            </ul>
+                        </li>
+                        -->
+                    </ul>
+                </div> <!-- end of navbar-collapse -->
+            </div> <!-- end of container -->
+        </nav> <!-- end of navbar -->
+        <!-- end of navigation -->
+
+        
+        <!-- Header -->
+        <header id="header" class="header">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="text-container">
+                            <h2 class="gradient-title">Xclusive Money</h2>
+                            <h3 class="sub-gradient-title">Copy Trading Platform</h3>
+                            <h1 class="h1-large">The Top Copy Trading platform for <span class="replace-me">new investors, retail traders, strategy testers</span></h1>
+                            <p class="p-large">Xclusive Money is a smart trading platform designed for modern investors.Whether you're a beginner or pro, copy top traders, automate strategies, and grow your wealth with confidence.</p>
+                            <a class="btn-solid-lg" href="{{ url_for('auth.signup') }}">Sign up for free</a>
+                        </div> <!-- end of text-container -->
+                    </div> <!-- end of col -->
+                    <div class="col-lg-6">
+                        <div class="image-container">
+                            <img class="img-fluid" src="{{ url_for('static', filename='images/dashboard-illustration.png') }}" alt="alternative">
+                        </div> <!-- end of image-container -->
+                    </div> <!-- end of col -->
+                </div> <!-- end of row -->
+            </div> <!-- end of container -->
+        </header> <!-- end of header -->
+        <!-- end of header -->
+
+
+        <!-- Features -->
+        <div id="features" class="cards-1">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h2 class="h2-heading">Xclusive Money is built for modern traders with <span>powerful automation tools</span></h2>
+                    </div> <!-- end of col -->
+                </div> <!-- end of row -->
+                <div class="row">
+                    <div class="col-lg-12">
+                        
+                        <!-- Card -->
+                        <div class="card">
+                            <div class="card-icon">
+                                <span class="fas fa-copy"></span>
+                            </div>
+                            <div class="card-body">
+                                <h4 class="card-title">Copy Trading</h4>
+                                <p>Connect a master account and sync trades in real-time across multiple child accounts.</p>
+                            </div>
+                        </div>
+                        <!-- end of card -->
+
+                        <!-- Card -->
+                        <div class="card">
+                            <div class="card-icon green">
+                                <span class="fas fa-code-branch"></span>
+                            </div>
+                            <div class="card-body">
+                                <h4 class="card-title">Webhook-Based Trading</h4>
+                                <p>Trigger trades instantly via webhook alerts from platforms like TradingView. Perfect for automated strategies and signal execution.</p>
+                            </div>
+                        </div>
+                        <!-- end of card -->
+
+                        <!-- Card -->
+                        <div class="card">
+                            <div class="card-icon blue">
+                                <span class="fas fa-tachometer-alt"></span>
+                            </div>
+                            <div class="card-body">
+                                <h4 class="card-title">Unified Trading Dashboard</h4>
+                                <p>Monitor all master and child accounts in one place — trades, P&L, performance, and sync status at a glance.</p>
+                            </div>
+                        </div>
+                        <!-- end of card -->
+
+                    </div> <!-- end of col -->
+                </div> <!-- end of row -->
+            </div> <!-- end of container -->
+        </div> <!-- end of cards-1 -->
+        <!-- end of services -->
+
+
+        <!-- Details 1 -->
+        <div id="details" class="basic-1 bg-gray">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-6 col-xl-5">
+                        <div class="text-container">
+                            <h2>Take control of your trades and let your strategies work for you</h2>
+                            <p>Xclusive Money gives you the power to automate, replicate, and monitor trades effortlessly across accounts — all in real-time. Connect your master account, manage child accounts, and trade smarter with webhook-based execution.</p>
+                        </div> <!-- end of text-container -->
+                    </div> <!-- end of col -->
+                    <div class="col-lg-6 col-xl-7">
+                        <div class="image-container">
+                            <img class="img-fluid" src="{{ url_for('static', filename='images/details-1.svg') }}" alt="alternative">
+                        </div> <!-- end of image-container -->
+                    </div> <!-- end of col -->
+                </div> <!-- end of row -->
+            </div> <!-- end of container -->
+        </div> <!-- end of basic-1 -->
+        <!-- end of details 1 -->
+
+
+        <!-- Details Modal -->
+        <div id="staticBackdrop" class="modal fade" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="row">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <div class="col-lg-8">
+                            <div class="image-container">
+                                <img class="img-fluid" src="{{ url_for('static', filename='images/details-modal.jpg') }}" alt="modal preview">
+                            </div> <!-- end of image-container -->
+                        </div> <!-- end of col -->
+                        <div class="col-lg-4">
+                            <h3>Goals Setting</h3>
+                            <hr>
+                            <p>In gravida at nunc sodales pretium. Vivamus semper, odio vitae mattis auctor, elit elit semper magna ac tum nico vela spider</p>
+                            <h4>User Feedback</h4>
+                            <p>Sapien vitae eros. Praesent ut erat a tellus posuere nisi more thico cursus pharetra finibus posuere nisi. Vivamus feugiat</p>
+                            <ul class="list-unstyled li-space-lg">
+                                <li class="d-flex">
+                                    <i class="fas fa-chevron-right"></i>
+                                    <div class="flex-grow-1">Tincidunt sem vel brita bet mala</div>
+                                </li>
+                                <li class="d-flex">
+                                    <i class="fas fa-chevron-right"></i>
+                                    <div class="flex-grow-1">Sapien condimentum sacoz sil necr</div>
+                                </li>
+                                <li class="d-flex">
+                                    <i class="fas fa-chevron-right"></i>
+                                    <div class="flex-grow-1">Fusce interdum nec ravon fro urna</div>
+                                </li>
+                                <li class="d-flex">
+                                    <i class="fas fa-chevron-right"></i>
+                                    <div class="flex-grow-1">Integer pulvinar biolot bat tortor</div>
+                                </li>
+                                <li class="d-flex">
+                                    <i class="fas fa-chevron-right"></i>
+                                    <div class="flex-grow-1">Id ultricies fringilla fangor raq trinit</div>
+                                </li>
+                            </ul>
+                            <a id="modalCtaBtn" class="btn-solid-reg" href="#your-link">Details</a>
+                            <button type="button" class="btn-outline-reg" data-bs-dismiss="modal">Close</button>
+                        </div> <!-- end of col -->
+                    </div> <!-- end of row -->
+                </div> <!-- end of modal-content -->
+            </div> <!-- end of modal-dialog -->
+        </div> <!-- end of modal -->
+        <!-- end of details modal -->
+
+
+        <!-- Details 2 -->
+        <div class="basic-2">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="image-container">
+                            <img class="img-fluid" src="{{ url_for('static', filename='images/details-2.png') }}" alt="alternative">
+
+                        </div> <!-- end of image-container -->
+                    </div> <!-- end of col -->
+                    <div class="col-lg-6">
+                        <div class="text-container">
+                            <h2>Anyone can start trading with zero technical background</h2>
+                            <p>Xclusive Money is designed for simplicity — whether you're a beginner or a busy pro, automation makes trading effortless.</p>
+                            <ul class="list-unstyled li-space-lg">
+                                <li class="d-flex">
+                                    <i class="fas fa-square"></i>
+                                    <div class="flex-grow-1">No coding or complex setup — just connect and go</div>
+                                </li>
+                                <li class="d-flex">
+                                    <i class="fas fa-square"></i>
+                                    <div class="flex-grow-1">Easily manage multiple accounts with a clean UI</div>
+                                </li>
+                                <li class="d-flex">
+                                    <i class="fas fa-square"></i>
+                                    <div class="flex-grow-1">Monitor trades and performance from one dashboard</div>
+                                </li>
+                            </ul>
+                        </div> <!-- end of text-container -->
+                    </div> <!-- end of col -->
+                </div> <!-- end of row -->
+            </div> <!-- end of container -->
+        </div> <!-- end of basic-2 -->
+        <!-- end of details 2 -->
+
+
+        <!-- Stats Section -->
+        <div class="stats-section bg-gray py-5">
+          <div class="container">
+            <div class="row text-center">
+        
+              <div class="col-md-3">
+                <div class="stat-icon mb-2"><i class="fas fa-rupee-sign"></i></div>
+                <h2 class="stat-number" data-count="50">0</h2>
+                <p class="stat-label">Cr+ Capital Traded</p>
+              </div>
+        
+              <div class="col-md-3">
+                <div class="stat-icon mb-2"><i class="fas fa-exchange-alt"></i></div>
+                <h2 class="stat-number" data-count="25000">0</h2>
+                <p class="stat-label">Trades Executed</p>
+              </div>
+        
+              <div class="col-md-3">
+                <div class="stat-icon mb-2"><i class="fas fa-users"></i></div>
+                <h2 class="stat-number" data-count="200">0</h2>
+                <p class="stat-label">Active Users</p>
+              </div>
+        
+              <div class="col-md-3">
+                <div class="stat-icon mb-2"><i class="fas fa-clock"></i></div>
+                <h2 class="stat-number" data-count="99.9">0</h2>
+                <p class="stat-label">Uptime</p>
+              </div>
+        
+            </div>
+          </div>
+        </div>
+
+        <!-- Invitation -->
+        <div class="basic-3">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h4>Xclusive Money changes the way you trade. Forget manual execution — automate trades, copy signals, and manage accounts with advanced tools built for modern traders.</h4>
+                        <a class="btn-outline-lg page-scroll" href="{{ url_for('auth.signup') }}">Sign up for free</a>
+                    </div> <!-- end of col -->
+                </div> <!-- end of row -->
+            </div> <!-- end of container -->
+        </div> <!-- end of basic-3 -->
+        <!-- end of invitation -->
+
+
+        <!-- Pricing -->
+        <div id="pricing" class="cards-2 bg-gray">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h2 class="h2-heading">XclusiveMoney Pricing Plans</h2>
+                    </div> <!-- end of col -->
+                </div> <!-- end of row -->
+                <div class="row">
+                    <div class="col-lg-12">
+                        
+                        <!-- Card -->
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="card-title">
+                                    <img class="decoration-lines" src="{{ url_for('static', filename='images/decoration-lines.svg') }}" alt="alternative"> <span>Free tier</span> <img class="decoration-lines flipped" src="{{ url_for('static', filename='images/decoration-lines.svg') }}" alt="alternative">
+                                </div>
+                                <ul class="list-unstyled li-space-lg">
+                                    <li>Connect 1 master & 1 child account</li>
+                                    <li>Access to smart trading dashboard</li>
+                                    <li>Webhook-based trade execution</li>
+                                    <li>Basic trade logs and analytics</li>
+                                    <li>Community-level support</li>
+                                    <li>No credit card required</li>
+                                    <li>Forever free</li>
+                                </ul>
+                                <div class="price">Free</div>
+                                <a href="{{ url_for('auth.signup') }}" class="btn-solid-reg">Sign up</a>
+                            </div>
+                        </div>
+                        <!-- end of card -->
+
+                        <!-- Card -->
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="card-title">
+                                    <img class="decoration-lines" src="{{ url_for('static', filename='images/decoration-lines.svg') }}" alt="alternative"> <span>Advance</span> <img class="decoration-lines flipped" src="{{ url_for('static', filename='images/decoration-lines.svg') }}" alt="alternative">
+                                </div>
+                                <ul class="list-unstyled li-space-lg">
+                                    <li>Up to 3 master-child setups</li>
+                                    <li>Advanced dashboard analytics</li>
+                                    <li>Telegram alert integration</li>
+                                    <li>Detailed trade execution logs</li>
+                                    <li>Priority support access</li>
+                                    <li>Strategy testing support</li>
+                                    <li>Perfect for part-time traders</li>
+                                </ul>
+                                <div class="price">₹999<span>/month</span></div>
+                                <a href="{{ url_for('auth.signup') }}" class="btn-solid-reg">Sign up</a>
+                            </div>
+                        </div>
+                        <!-- end of card -->
+
+                        <!-- Card -->
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="card-title">
+                                    <img class="decoration-lines" src="{{ url_for('static', filename='images/decoration-lines.svg') }}" alt="alternative"> <span>Professional</span> <img class="decoration-lines flipped" src="{{ url_for('static', filename='images/decoration-lines.svg') }}" alt="alternative">
+                                </div>
+                                <ul class="list-unstyled li-space-lg">
+                                    <li>Unlimited master-child connections</li>
+                                    <li>Custom webhook configurations</li>
+                                    <li>Real-time sync monitoring</li>
+                                    <li>Broker switch & account grouping</li>
+                                    <li>Role-based access control</li>
+                                    <li>Premium support with SLA</li>
+                                    <li>Best for agencies and pro traders</li>
+                                </ul>
+                                <div class="price">₹1999<span>/month</span></div>
+                                <a href="{{ url_for('auth.signup') }}" class="btn-solid-reg">Sign up</a>
+                            </div>
+                        </div>
+                        <!-- end of card -->
+
+                    </div> <!-- end of col -->
+                </div> <!-- end of row -->
+            </div> <!-- end of container -->
+        </div> <!-- end of cards-2 -->
+        <!-- end of pricing -->
+
+
+        <!-- Questions -->
+        <div class="accordion-1">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h2 class="h2-heading">Frequent questions</h2>
+                    </div> <!-- end of col -->
+                </div> <!-- end of row -->   
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="accordion" id="accordionExample">
+                            
+                            <!-- Accordion Item -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingOne">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">How can I get started with copy trading?</button>
+                                </h2>
+                                <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                                    <div class="accordion-body">Simply sign up, connect your master and child accounts, and start sending trades. No coding required.</div>
+                                </div>
+                            </div>
+                            <!-- end of accordion-item -->
+
+                            <!-- Accordion Item -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingTwo">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">Can I copy trades across different brokers?</button>
+                                </h2>
+                                <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                                    <div class="accordion-body">Yes, Xclusive Money supports multi-broker copy trading. You can connect master and child accounts from different supported brokers.</div>
+                                </div>
+                            </div>
+                            <!-- end of accordion-item -->
+
+                            <!-- Accordion Item -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingThree">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">Do I need a TradingView account to use webhooks?</button>
+                                </h2>
+                                <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
+                                    <div class="accordion-body">Yes, if you're triggering trades via webhook, you'll need a TradingView account (or any platform that supports webhook alerts).</div>
+                                </div>
+                            </div>
+                            <!-- end of accordion-item -->
+
+                        </div> <!-- end of accordion -->
+                    </div> <!-- end of col -->
+                </div> <!-- end of row -->
+            </div> <!-- end of container -->
+        </div> <!-- end of accordion-1 -->
+        <!-- end of questions -->
+
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+        
+                        <!-- About -->
+                        <div class="footer-col first">
+                            <h6>About Xclusive Money</h6>
+                            <p class="p-small">Xclusive Money is your all-in-one platform for master-child copy trading, webhook execution, and live account management — built for serious traders, firms, and strategists.</p>
+                        </div>
+        
+                        <!-- Links -->
+                        <div class="footer-col second">
+                            <h6>Quick Links</h6>
+                            <ul class="list-unstyled li-space-lg p-small">
+                                <li>Legal: <a href="terms.html">Terms & Conditions</a>, <a href="privacy.html">Privacy Policy</a></li>
+                                <li>Resources: <a href="#">Blog</a>, <a href="#">FAQs</a>, <a href="#">Help Center</a></li>
+                                <li>Tools: <a href="#">GitHub Repo</a>, <a href="#">Changelog</a></li>
+                                <li>Menu: <a href="#header">Home</a>, <a href="#features">Features</a>, <a href="#pricing">Pricing</a>, <a href="#contact">Contact</a></li>
+                            </ul>
+                        </div>
+        
+                        <!-- Contact & Social -->
+                        <div class="footer-col third">
+                            <span class="fa-stack">
+                                <a href="https://facebook.com/">
+                                    <i class="fas fa-circle fa-stack-2x"></i>
+                                    <i class="fab fa-facebook-f fa-stack-1x"></i>
+                                </a>
+                            </span>
+                            <span class="fa-stack">
+                                <a href="https://twitter.com/">
+                                    <i class="fas fa-circle fa-stack-2x"></i>
+                                    <i class="fab fa-twitter fa-stack-1x"></i>
+                                </a>
+                            </span>
+                            <span class="fa-stack">
+                                <a href="https://t.me/yourchannel">
+                                    <i class="fas fa-circle fa-stack-2x"></i>
+                                    <i class="fab fa-telegram-plane fa-stack-1x"></i>
+                                </a>
+                            </span>
+                            <span class="fa-stack">
+                                <a href="https://instagram.com/">
+                                    <i class="fas fa-circle fa-stack-2x"></i>
+                                    <i class="fab fa-instagram fa-stack-1x"></i>
+                                </a>
+                            </span>
+                            <p class="p-small">Need help? Email us at <a href="mailto:support@xclusivemoney.com"><strong>support@xclusivemoney.com</strong></a></p>
+                            
+                            <!-- WhatsApp Support -->
+                            <p class="p-small">Chat on WhatsApp: <a href="https://wa.me/911234567890"><strong>+91 12345 67890</strong></a></p>
+        
+                            <!-- Newsletter -->
+                            <form class="newsletter-form" action="#" method="post">
+                                <input type="email" class="form-control" placeholder="Subscribe to our newsletter" required>
+                                <button type="submit" class="btn btn-primary mt-2">Subscribe</button>
+                            </form>
+                        </div>
+        
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Footer -->
+        
+        
+        <!-- Copyright -->
+        <div class="copyright">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <p class="p-small">© 2025 <a href="#">Xclusive Money</a>. All rights reserved.</p>
+                    </div>
+                    <div class="col-lg-6">
+                        <p class="p-small">Designed by <a href="#">Ankit Singh Garia</a> & customized for Xclusive Money</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Copyright -->
+        
+        
+        <!-- Back To Top Button -->
+        <button onclick="topFunction()" id="myBtn">
+            <img src="{{ url_for('static', filename='images/up-arrow.png') }}" alt="back to top">
+        </button>
+        <!-- End Back To Top -->
+
+            
+        <!-- Scripts -->
+        <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/swiper.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/purecounter.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/replaceme.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+        <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+          document.querySelectorAll('form').forEach(function (form) {
+            if (!form.querySelector('input[name="csrf_token"]')) {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = 'csrf_token';
+              input.value = token;
+              form.appendChild(input);
+            }
+          });
+        });
+        </script>
+
+    </body>
+</html>
+
+

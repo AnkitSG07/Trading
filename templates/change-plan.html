@@ -1,0 +1,1823 @@
+{% extends "layout.html" %}
+
+{% block title %}Pricing - XClusive Money{% endblock %}
+
+{% block styles %}
+  {{ super() }}
+    <style>
+
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Design System Colors (from index.css) */
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .main-container {
+            min-height: 100vh;
+            background: hsl(var(--background));
+            padding: 16px;
+        }
+
+        .content-wrapper {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        /* Hero Banner */
+        .hero-banner {
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+            background: linear-gradient(to bottom right, 
+                hsla(250, 70%, 60%, 0.1), 
+                hsl(var(--background)), 
+                hsla(250, 70%, 60%, 0.1));
+            border: 1px solid hsl(var(--border));
+            padding: 48px 32px;
+            margin-bottom: 32px;
+        }
+
+        .hero-subtitle {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: hsl(var(--muted-foreground));
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+
+        .hero-title {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: hsl(var(--foreground));
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+
+        /* Card Styles */
+        .card {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header {
+            padding: 24px;
+            padding-bottom: 12px;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: hsl(var(--foreground));
+        }
+
+        .card-description {
+            font-size: 0.875rem;
+            color: hsl(var(--muted-foreground));
+            margin-top: 4px;
+        }
+
+        .card-content {
+            padding: 24px;
+        }
+
+        /* Current Subscription Section */
+        .subscription-section {
+            margin-bottom: 32px;
+        }
+
+        .subscription-inner-card {
+            border: 1px solid hsl(var(--border));
+            border-radius: 8px;
+        }
+
+        .subscription-content {
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .plan-details {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .plan-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .billing-date {
+            font-size: 0.875rem;
+            color: hsl(var(--muted-foreground));
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 150ms;
+            cursor: pointer;
+            outline: none;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-lg {
+            padding: 12px 32px;
+            font-size: 1rem;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+        }
+
+        .btn-outline:hover {
+            background: hsl(var(--muted));
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, hsl(24, 95%, 53%), hsl(48, 96%, 53%));
+            color: white;
+            font-weight: 700;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(to right, hsl(24, 95%, 48%), hsl(48, 96%, 48%));
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-full {
+            width: 100%;
+        }
+
+        /* Manage Subscription Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            padding: 16px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .modal-content {
+            background-color: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px;
+            width: 100%;
+            max-width: 640px;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            animation: modalIn 0.3s ease-out;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .close-button {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: hsl(var(--muted));
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .close-button:hover {
+            background-color: hsl(var(--muted-foreground));
+            transform: scale(1.05);
+        }
+
+        .modal-header {
+            padding: 24px;
+            padding-bottom: 12px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: hsl(var(--foreground));
+            line-height: 1.2;
+        }
+
+        .modal-subtitle {
+            font-size: 0.9rem;
+            color: hsl(var(--muted-foreground));
+            margin-top: 4px;
+        }
+
+        .plan-section {
+            padding: 0 24px 24px 24px;
+        }
+
+        .plan-card {
+            background-color: hsl(var(--muted));
+            border: 1px solid hsl(var(--border));
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .plan-card-content {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        @media (min-width: 640px) {
+            .plan-card-content {
+                flex-direction: row;
+                align-items: center;
+                gap: 16px;
+            }
+        }
+
+        .plan-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            width: 100%;
+        }
+
+        .plan-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: linear-gradient(to bottom right, #f97316, #ec4899, #9333ea);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .plan-icon svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+            fill: white;
+        }
+
+        .plan-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: hsl(var(--foreground));
+        }
+
+        .plan-renewal {
+            font-size: 0.95rem;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .downgrade-button {
+            width: 100%;
+            padding: 10px 16px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: hsl(var(--foreground));
+            background-color: hsl(var(--background));
+            border: 1px solid hsl(var(--border));
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            flex-shrink: 0;
+        }
+
+        @media (min-width: 640px) {
+            .downgrade-button {
+                width: auto;
+                height: 44px;
+            }
+        }
+
+        .downgrade-button:hover {
+            background-color: hsl(var(--muted));
+        }
+
+        .actions-section {
+            padding: 0 24px 24px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-button {
+            width: 100%;
+            height: 48px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-button.primary {
+            background-color: hsl(var(--foreground));
+            color: hsl(var(--background));
+            border: none;
+        }
+
+        .action-button.primary:hover {
+            background-color: hsl(var(--foreground) / 0.9);
+        }
+
+        .action-button.outline {
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+            border: 1px solid hsl(var(--border));
+        }
+
+        .action-button.outline:hover {
+            background-color: hsl(var(--muted));
+        }
+      
+        /* Pricing Calculator */
+        .calculator-card {
+            border: 2px solid hsla(250, 70%, 60%, 0.2);
+            background: linear-gradient(to bottom right, 
+                hsla(250, 70%, 60%, 0.05), 
+                hsl(var(--background)));
+            margin-bottom: 32px;
+        }
+
+        .calculator-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .calculator-icon-wrapper {
+            padding: 8px;
+            border-radius: 8px;
+            background: hsla(250, 70%, 60%, 0.1);
+        }
+
+        .calculator-icon {
+            width: 24px;
+            height: 24px;
+            color: hsl(var(--primary));
+        }
+
+        .calculator-title-wrapper h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .calculator-title-wrapper p {
+            font-size: 0.875rem;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .calculator-inputs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: hsl(var(--foreground));
+        }
+
+        .custom-select {
+            height: 48px;
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--background));
+            padding: 8px 12px;
+            font-size: 0.875rem;
+            color: hsl(var(--foreground));
+            cursor: pointer;
+        }
+
+        .custom-select:focus {
+            outline: none;
+            border-color: hsl(var(--primary));
+            box-shadow: 0 0 0 2px hsla(250, 70%, 60%, 0.1);
+        }
+
+        /* Multi-select dropdown */
+        .multi-select-wrapper {
+            position: relative;
+        }
+
+        .multi-select-trigger {
+            height: 48px;
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--background));
+            padding: 8px 12px;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .multi-select-trigger:hover {
+            background: hsl(240, 5%, 94%);
+        }
+
+        .multi-select-text {
+            color: hsl(var(--foreground));
+        }
+
+        .multi-select-text.placeholder {
+            color: hsl(var(--muted-foreground));
+        }
+
+        .chevron-down {
+            width: 16px;
+            height: 16px;
+            opacity: 0.5;
+            flex-shrink: 0;
+        }
+
+        .multi-select-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 4px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 50;
+        }
+
+        .multi-select-dropdown.active {
+            display: block;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            cursor: pointer;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            border: 1px solid hsl(var(--primary));
+            accent-color: hsl(var(--primary));
+        }
+
+        .checkbox-item label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            flex: 1;
+            line-height: 1;
+        }
+
+        /* Price Summary */
+        .price-summary {
+            background: linear-gradient(to bottom right, 
+                hsla(250, 70%, 60%, 0.1), 
+                hsla(268, 65%, 66%, 0.1));
+            border: 2px solid hsla(250, 70%, 60%, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .price-display-section {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .price-label-text {
+            font-size: 0.875rem;
+            color: hsl(var(--muted-foreground));
+            margin-bottom: 8px;
+        }
+
+        .price-wrapper {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .price-value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: hsl(var(--foreground));
+        }
+
+        .price-original {
+            font-size: 1.125rem;
+            color: hsl(var(--muted-foreground));
+            text-decoration: line-through;
+        }
+
+        .price-period {
+            font-size: 1.125rem;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .price-discount {
+            margin-top: 8px;
+            font-size: 0.875rem;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .price-breakdown {
+            font-size: 0.875rem;
+            color: hsl(var(--muted-foreground));
+            margin-top: 16px;
+            padding: 0 16px;
+        }
+
+        .price-per-product {
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+            margin-top: 8px;
+        }
+
+        .pay-button {
+            max-width: 28rem;
+            margin: 0 auto 24px;
+            padding: 20px 24px;
+            font-size: 1.125rem;
+        }
+
+        .guarantee-badge {
+            display: inline-block;
+            background: hsla(268, 65%, 66%, 0.2);
+            color: hsl(271, 76%, 53%);
+            padding: 6px 24px;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        /* Security Card */
+        .security-card {
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 36rem;
+            margin: 0 auto;
+        }
+
+        .security-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .security-subtitle {
+            color: hsl(var(--muted-foreground));
+            margin-bottom: 16px;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+
+        .security-icons-wrapper {
+            margin-top: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .security-feature {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .security-icon-box {
+            padding: 8px;
+            background: hsla(250, 70%, 60%, 0.1);
+            border-radius: 6px;
+        }
+
+        .security-icon {
+            width: 20px;
+            height: 20px;
+            color: hsl(var(--primary));
+        }
+
+        .security-text-box p:first-child {
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .security-text-box p:last-child {
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .payment-methods {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .payment-card {
+            width: 74px;
+            height: 32px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        .payment-card.visa {
+            background: linear-gradient(135deg, #1a1f71, #004fba);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .payment-card.visa .brand-text {
+            font-weight: 800;
+            letter-spacing: 0.15em;
+        }
+
+        .payment-card.mastercard {
+            background: #101010;
+        }
+
+        .payment-card.mastercard .mc-logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .payment-card.mastercard .mc-circle {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .payment-card.mastercard .mc-circle.left {
+            background: #eb001b;
+            margin-right: -7px;
+        }
+
+        .payment-card.mastercard .mc-circle.right {
+            background: #f79e1b;
+            mix-blend-mode: screen;
+        }
+
+        .payment-card.amex {
+            background: linear-gradient(135deg, #0077c5, #00599d);
+            font-family: 'Helvetica Neue', 'Inter', sans-serif;
+            flex-direction: column;
+            gap: 0px;
+            padding: 8px 10px;
+            letter-spacing: 0;
+        }
+
+        .payment-card.amex .brand-line {
+            font-size: 0.6rem;
+            font-weight: 700;
+        }
+
+        .payment-card.amex .brand-line:last-child {
+            font-size: 0.6rem;
+            letter-spacing: 0.08em;
+        }
+
+        .payment-card.rupay {
+            background: linear-gradient(135deg, #002970, #011a44);
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .payment-card.rupay .brand-text {
+            display: flex;
+            align-items: baseline;
+            gap: 2px;
+        }
+
+        .payment-card.rupay .accent-orange {
+            color: #ff7a00;
+        }
+
+        .payment-card.rupay .accent-green {
+            color: #45b649;
+        }
+
+        .payment-card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(140deg, rgba(255, 255, 255, 0.15), transparent 55%);
+            pointer-events: none;
+        }
+
+        /* Comparison Table */
+        .comparison-wrapper {
+            margin-top: 32px;
+        }
+
+        .comparison-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .table-container {
+            border: 1px solid hsl(var(--border));
+            border-radius: 8px;
+            overflow-x: auto;
+            background: hsl(var(--card));
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead tr {
+            background: hsla(250, 70%, 60%, 0.1);
+            border-bottom: 2px solid hsla(250, 70%, 60%, 0.2);
+        }
+
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.875rem;
+            color: hsl(var(--foreground));
+        }
+
+        th:first-child {
+            width: 140px;
+            position: sticky;
+            left: 0;
+            background: hsla(250, 70%, 60%, 0.1);
+            z-index: 10;
+        }
+
+        th:not(:first-child) {
+            text-align: center;
+            width: 90px;
+        }
+
+        @media (max-width: 640px) {
+            table {
+                width: 100%;
+            }
+
+            th {
+                padding: 8px 4px;
+                font-size: 0.75rem;
+            }
+
+            th:first-child {
+                width: 100px;
+                padding-left: 12px;
+            }
+
+            th:not(:first-child) {
+                width: 70px;
+                padding: 8px 2px;
+            }
+
+            .product-name-row td {
+                padding: 12px 4px;
+                font-size: 0.875rem;
+            }
+
+            .tier-header-row td {
+                padding: 6px 4px;
+                font-size: 0.75rem;
+            }
+
+            .tier-header-row td:first-child {
+                padding-left: 12px;
+            }
+
+            td {
+                padding: 8px 4px;
+                font-size: 0.75rem;
+            }
+
+            td:first-child {
+                width: 100px;
+                padding-left: 12px;
+            }
+
+            td:not(:first-child) {
+                padding: 8px 2px;
+            }
+
+            .check-mark, .x-mark {
+                width: 16px;
+                height: 16px;
+            }
+
+            .table-container {
+                overflow-x: visible;
+            }
+        }
+
+        .product-name-row td {
+            background: hsla(250, 70%, 60%, 0.2);
+            font-weight: 700;
+            text-align: center;
+            padding: 12px 16px;
+            font-size: 1.125rem;
+        }
+
+        .tier-header-row {
+            background: hsla(0, 0%, 0%, 0.02);
+            border-bottom: 1px solid hsl(var(--border));
+        }
+
+        .tier-header-row td {
+            padding: 8px 7px;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .tier-header-row td:first-child {
+            background: hsla(0, 0%, 0%, 0.02);
+            position: sticky;
+            left: 0;
+            z-index: 10;
+        }
+
+        .tier-header-row td:not(:first-child) {
+            text-align: center;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid hsla(240, 6%, 90%, 0.5);
+        }
+
+        tbody tr:hover {
+            background: hsla(240, 5%, 96%, 0.3);
+        }
+
+        td {
+            padding: 12px 16px;
+            font-size: 0.875rem;
+        }
+
+        td:first-child {
+            font-weight: 500;
+            background: hsl(var(--card));
+            position: sticky;
+            left: 0;
+            z-index: 10;
+        }
+
+        td:not(:first-child) {
+            text-align: center;
+        }
+
+        .check-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            color: hsl(var(--success));
+        }
+
+        .x-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            color: hsl(var(--muted-foreground));
+            opacity: 0.3;
+        }
+
+        /* FAQ Section */
+        .faq-section {
+            margin-top: 32px;
+        }
+
+        .faq-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .faq-container {
+            padding: 24px;
+        }
+
+        .faq-item {
+            border-bottom: 1px solid hsl(var(--border));
+        }
+
+        .faq-item:last-child {
+            border-bottom: none;
+        }
+
+        .faq-trigger {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: hsl(var(--foreground));
+        }
+
+        .faq-trigger:hover {
+            text-decoration: underline;
+        }
+
+        .faq-arrow {
+            transition: transform 0.2s;
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .faq-item.active .faq-arrow {
+            transform: rotate(180deg);
+        }
+
+        .faq-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+        }
+
+        .faq-item.active .faq-content {
+            max-height: 500px;
+            transition: max-height 0.3s ease-in;
+        }
+
+        .faq-answer {
+            font-size: 0.875rem;
+            color: hsl(var(--muted-foreground));
+            padding-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 8px;
+            }
+            .pay-button {
+                max-width: 28rem;
+                margin: 0 auto 24px;
+                padding: 20px 24px;
+            }
+            .hero-banner {
+                padding: 32px 20px;
+            }
+
+            .hero-title {
+                font-size: 1.875rem;
+            }
+
+            .subscription-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .calculator-inputs {
+                grid-template-columns: 1fr;
+            }
+
+            .price-value {
+                font-size: 2.5rem;
+            }
+
+            .card-header, .card-content {
+                padding: 16px;
+            }
+
+            th, td {
+                padding: 8px 12px;
+                font-size: 0.75rem;
+            }
+
+            th:first-child,
+            td:first-child {
+                min-width: 0px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .hero-title {
+                font-size: 1.5rem;
+            }
+
+            .price-value {
+                font-size: 2rem;
+            }
+
+            .card-title {
+                font-size: 1.25rem;
+            }
+
+            .comparison-title,
+            .faq-title {
+                font-size: 1.25rem;
+            }
+
+            th, td {
+                padding: 6px 8px;
+            }
+            
+        }
+    /* Tablet & Desktop only */
+            @media (min-width: 641px) {
+              /* Undo older broad .pay-button rules */
+              .price-summary .pay-button {
+                display: unset !important;
+                width: auto !important;
+                margin: 0 0 24px !important;
+              }
+
+              /* Center PAY NOW by default (non-Enterprise) */
+              #payButton {
+                display: block !important;               /* centers with margin:auto */
+                width: auto !important;
+                max-width: 28rem;
+                margin: 0 auto 24px !important;
+                padding: 20px 150px;
+              }
+
+              /* Respect JS hiding in Enterprise */
+              #payButton[style*="display: none"] { display: none !important; }
+              #contactButton[style*="display: none"] { display: none !important; }
+
+              /* When CONTACT is shown (Enterprise), center it */
+              #contactButton:not([style*="display: none"]) {
+                display: block !important;
+                width: auto;
+                max-width: 28rem;
+                margin: 0 auto 24px !important;
+                padding: 20px 24px;
+                text-align: center;
+              }
+            }
+
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="main-container">
+        <div class="content-wrapper">
+            <!-- Hero Banner Section -->
+            <div class="hero-banner">
+                <div>
+                    <p class="hero-subtitle">PLANS & PACKAGES</p>
+                    <h1 class="hero-title">Choose the Product</h1>
+                    <h2 class="hero-title">That's Right for Your Business</h2>
+                </div>
+            </div>
+
+            <!-- Current Subscription Section -->
+            <div class="card subscription-section">
+                <div class="card-header">
+                    <h2 class="card-title">Current Subscription</h2>
+                    <p class="card-description">Manage your active subscription</p>
+                </div>
+                <div class="card-content">
+                    <div class="subscription-inner-card">
+                        <div class="subscription-content">
+                            <div class="plan-details">
+                                <p class="plan-name">Pro Plan</p>
+                                <p class="billing-date">Next billing date: January 15, 2026</p>
+                            </div>
+                            <button class="btn btn-outline btn-lg" onclick="openManageModal()">
+                                Manage Subscription
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manage Subscription Modal -->
+            <div class="modal-overlay hidden" id="manageModalOverlay" onclick="handleManageOverlayClick(event)">
+                <div class="modal-content" onclick="event.stopPropagation()">
+                    <button class="close-button" onclick="closeManageModal()" aria-label="Close">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+
+                    <div class="modal-header">
+                        <h2 class="modal-title">Manage Plan</h2>
+                        <p class="modal-subtitle">Subscription & Billing Settings</p>
+                    </div>
+
+                    <div class="plan-section">
+                        <div class="plan-card">
+                            <div class="plan-card-content">
+                                <div class="plan-info">
+                                    <div class="plan-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="plan-details">
+                                        <p class="plan-name">You're on Pro Plan</p>
+                                        <p class="plan-renewal">Renews Nov 14, 2025</p>
+                                    </div>
+                                </div>
+                                <button class="downgrade-button" onclick="handleDowngrade()">
+                                    Downgrade to Free
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="actions-section">
+                        <button class="action-button primary" onclick="handleUpdateSubscription()">
+                            Update subscription
+                        </button>
+                        <button class="action-button outline" onclick="handleViewInvoice()">
+                            View Invoice
+                        </button>
+                        <button class="action-button outline" onclick="handleCancelSubscription()">
+                            Cancel subscription
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing Calculator -->
+            <div class="card calculator-card">
+                <div class="card-content">
+                    <div class="calculator-header">
+                        <div class="calculator-icon-wrapper">
+                            <svg class="calculator-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="4" y="2" width="16" height="20" rx="2"/>
+                                <line x1="8" y1="6" x2="16" y2="6"/>
+                                <line x1="16" y1="14" x2="16" y2="14"/>
+                                <line x1="8" y1="14" x2="8" y2="14"/>
+                                <line x1="12" y1="14" x2="12" y2="14"/>
+                                <line x1="8" y1="18" x2="8" y2="18"/>
+                                <line x1="12" y1="18" x2="12" y2="18"/>
+                                <line x1="16" y1="18" x2="16" y2="18"/>
+                            </svg>
+                        </div>
+                        <div class="calculator-title-wrapper">
+                            <h2>Pricing Calculator</h2>
+                            <p>Customize your plan and see the cost</p>
+                        </div>
+                    </div>
+
+                    <div class="calculator-inputs">
+                        <!-- Products Multi-Select -->
+                        <div class="input-group">
+                            <label class="input-label">Products (Select Multiple)</label>
+                            <div class="multi-select-wrapper">
+                                <div class="multi-select-trigger" onclick="toggleDropdown()">
+                                    <span class="multi-select-text" id="selectedProductsText">1 product selected</span>
+                                    <svg class="chevron-down" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="multi-select-dropdown" id="productsDropdown">
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="product-copy-trading" value="copy-trading" checked onchange="updateSelectedProducts()">
+                                        <label for="product-copy-trading">Copy Trading</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="product-alert2trade" value="alert2trade" onchange="updateSelectedProducts()">
+                                        <label for="product-alert2trade">Alert2Trade</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Billing Cycle -->
+                        <div class="input-group">
+                            <label class="input-label">Billing Cycle</label>
+                            <select class="custom-select" id="billingCycle" onchange="updatePrice()">
+                                <option value="trial">7 Day Free Trial</option>
+                                <option value="monthly" selected>Monthly</option>
+                                <option value="quarterly">Quarterly (Save 16.69%)</option>
+                                <option value="yearly">Yearly (Save 40.02%)</option>
+                            </select>
+                        </div>
+
+                        <!-- Plan Tier -->
+                        <div class="input-group">
+                            <label class="input-label">Plan Tier</label>
+                            <select class="custom-select" id="planTier" onchange="updatePrice()">
+                                <option value="pro" selected>Pro</option>
+                                <option value="enterprise">Enterprise</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Price Summary -->
+                    <div class="price-summary">
+                        <div class="price-display-section">
+                            <p class="price-label-text">Your Total</p>
+                            <div class="price-wrapper">
+                                <span class="price-value" id="totalPrice">₹0</span>
+                                <span class="price-original" id="originalPrice"></span>
+                                <span class="price-period" id="pricePeriod">/ month</span>
+                            </div>
+                            <p class="price-discount" id="discountLabel"></p>  
+                            <p class="price-breakdown" id="priceBreakdown">Copy Trading • Pro • Monthly</p>
+                            <p class="price-per-product" id="perProductPrice"></p>
+                        </div>
+
+                        <button class="btn btn-primary btn-full pay-button" id="payButton">
+                            Pay Now
+                        </button>
+                        <a class="btn btn-primary btn-full pay-button" id="contactButton" href="/WhatsApp" target="_blank" rel="noopener" style="display: none;">
+                            Contact Us
+                        </a>
+                      
+                        <div style="text-align: center;">
+                            <div class="guarantee-badge">30 days refund guarantee</div>
+                        </div>
+
+                        <div class="security-card">
+                            <h3 class="security-title">Safe and Secure Checkout</h3>
+                            <p class="security-subtitle">Payments are processed securely</p>
+                            <div class="security-icons-wrapper">
+                                <div class="security-feature">
+                                    <div class="security-icon-box">
+                                        <svg class="security-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                        </svg>
+                                    </div>
+                                    <div class="security-text-box">
+                                        <p>SECURE</p>
+                                        <p>SSL Encryption</p>
+                                    </div>
+                                </div>
+                                <div class="payment-methods" aria-label="Accepted payment methods">
+                                    <div class="payment-card visa" role="img" aria-label="Visa">
+                                        <span class="brand-text">Visa</span>
+                                    </div>
+                                    <div class="payment-card mastercard" role="img" aria-label="Mastercard">
+                                        <div class="mc-logo" aria-hidden="true">
+                                            <span class="mc-circle left"></span>
+                                            <span class="mc-circle right"></span>
+                                        </div>
+                                    </div>
+                                    <div class="payment-card amex" role="img" aria-label="American Express">
+                                        <span class="brand-line">American</span>
+                                        <span class="brand-line">Express</span>
+                                    </div>
+                                    <div class="payment-card rupay" role="img" aria-label="RuPay">
+                                        <span class="brand-text">Ru<span class="accent-orange">P</span><span class="accent-green">ay</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Table -->
+                    <div class="comparison-wrapper">
+                        <h3 class="comparison-title">Compare Plan Features</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Features</th>
+                                        <th>Pro</th>
+                                        <th>Enterprise</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Copy Trading -->
+                                    <tr class="product-name-row">
+                                        <td colspan="3">Copy Trading</td>
+                                    </tr>
+                                    <tr class="tier-header-row">
+                                        <td></td>
+                                        <td>Pro</td>
+                                        <td>Enterprise</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Auto Login - 30 days</td>
+                                        <td>Yes</td>
+                                        <td>Yes</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Copy Trading Accounts</td>
+                                        <td>30</td>
+                                        <td>500</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Master Account allowed</td>
+                                        <td>10</td>
+                                        <td>100</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Scheduled Phone Support</td>
+                                        <td>Yes</td>
+                                        <td>Yes</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Account onboarding Support (via whatsapp/Discord)</td>
+                                        <td>Dedicated</td>
+                                        <td>Dedicated</td>
+                                    </tr>
+
+                                    <!-- Alert2 Trade -->
+                                    <tr class="product-name-row">
+                                        <td colspan="3">Alert2 Trade</td>
+                                    </tr>
+                                    <tr class="tier-header-row">
+                                        <td></td>
+                                        <td>Pro</td>
+                                        <td>Enterprise</td>
+                                    </tr>
+                                    <tr>
+                                        <td>No. of Demat Account Connect</td>
+                                        <td>10</td>
+                                        <td>100</td>
+                                    </tr>
+                                    <tr>
+                                        <td>No. of Alerts LIVE</td>
+                                        <td>50</td>
+                                        <td>Unlimited</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Monthly Real-time Alerts</td>
+                                        <td>100</td>
+                                        <td>Unlimited</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Scheduled Phone Support</td>
+                                        <td>Yes</td>
+                                        <td>Yes</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Account onboarding Support (via whatsapp/Discord)</td>
+                                        <td>Dedicated</td>
+                                        <td>Dedicated</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ Section -->
+            <div class="card faq-section">
+                <div class="card-header">
+                    <h2 class="faq-title">Frequently Asked Questions</h2>
+                </div>
+                <div class="faq-container">
+                    <div class="faq-item">
+                        <button class="faq-trigger" onclick="toggleFAQ(this.parentElement)">
+                            <span>Does this work with my broker?</span>
+                            <svg class="faq-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <div class="faq-content">
+                            <div class="faq-answer">
+                                Yes! TradeEdge Pro integrates with Alert2Trade, which supports 100+ brokers including Zerodha, Interactive Brokers, TD Ameritrade, Binance, and more.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-trigger" onclick="toggleFAQ(this.parentElement)">
+                            <span>What if I'm new to Pine Script?</span>
+                            <svg class="faq-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <div class="faq-content">
+                            <div class="faq-answer">
+                                No problem! Our platform is designed for traders of all experience levels. We provide comprehensive tutorials, documentation, and support to help you get started with automated trading strategies.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-trigger" onclick="toggleFAQ(this.parentElement)">
+                            <span>How is this different from other TradingView strategies?</span>
+                            <svg class="faq-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <div class="faq-content">
+                            <div class="faq-answer">
+                                Our platform offers advanced automation, real-time alerts, copy trading capabilities, and seamless broker integration. We focus on making automated trading accessible and reliable for everyone.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-trigger" onclick="toggleFAQ(this.parentElement)">
+                            <span>Can I use this for crypto trading?</span>
+                            <svg class="faq-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <div class="faq-content">
+                            <div class="faq-answer">
+                                Absolutely! Our platform supports crypto trading through multiple exchanges including Binance, Coinbase, and other major platforms via Alert2Trade integration.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-trigger" onclick="toggleFAQ(this.parentElement)">
+                            <span>What about risk management?</span>
+                            <svg class="faq-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <div class="faq-content">
+                            <div class="faq-answer">
+                                We provide built-in risk management tools including stop-loss, take-profit automation, position sizing calculators, and portfolio diversification features to help protect your capital.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+
+    <script>
+        // Product selection state
+        let selectedProducts = ['copy-trading'];
+
+        // Pricing data in INR
+        const pricingMatrix = {
+            pro: {
+                monthly: { base: 499, discount: 0, unit: 'month' },
+                quarterly: { base: 1499, discount: 0.4670, unit: 'month' },
+                yearly: { base: 3999, discount: 0.5001, unit: 'year' }
+            }
+        };
+
+        // Fallback pricing for enterprise leverages pro plan values to avoid gaps
+        pricingMatrix.enterprise = {
+            monthly: { ...pricingMatrix.pro.monthly },
+            quarterly: { ...pricingMatrix.pro.quarterly },
+            yearly: { ...pricingMatrix.pro.yearly }
+        };
+
+        const currencyFormatter = new Intl.NumberFormat('en-IN', {
+            maximumFractionDigits: 0
+        });
+
+        function formatCurrency(value) {
+            return `₹${currencyFormatter.format(Math.round(value))}`;
+        }
+
+        // Manage subscription modal handlers
+        function openManageModal() {
+            const overlay = document.getElementById('manageModalOverlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeManageModal() {
+            const overlay = document.getElementById('manageModalOverlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function handleManageOverlayClick(event) {
+            if (event.target === event.currentTarget) {
+                closeManageModal();
+            }
+        }
+
+        function handleDowngrade() {
+            alert('Downgrade to Free clicked');
+        }
+
+        function handleUpdateSubscription() {
+            alert('Update subscription clicked');
+        }
+
+        function handleViewInvoice() {
+            alert('View Invoice clicked');
+        }
+
+        function handleCancelSubscription() {
+            alert('Cancel subscription clicked');
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeManageModal();
+            }
+        });
+      
+        const productNames = {
+            'copy-trading': 'Copy Trading',
+            'alert2trade': 'Alert2Trade'
+        };
+
+        const tierNames = {
+            pro: 'Pro',
+            enterprise: 'Enterprise'
+        };
+
+        const cycleNames = {
+            trial: '7 Day Free Trial',
+            monthly: 'Monthly',
+            quarterly: 'Quarterly',
+            yearly: 'Yearly'
+        };
+
+        // Toggle multi-select dropdown
+        function toggleDropdown() {
+            const dropdown = document.getElementById('productsDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const wrapper = document.querySelector('.multi-select-wrapper');
+            if (wrapper && !wrapper.contains(event.target)) {
+                document.getElementById('productsDropdown').classList.remove('active');
+            }
+        });
+
+        // Update selected products
+        function updateSelectedProducts() {
+            selectedProducts = [];
+            const checkboxes = document.querySelectorAll('#productsDropdown input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    selectedProducts.push(checkbox.value);
+                }
+            });
+
+            // Update display text
+            const displayText = document.getElementById('selectedProductsText');
+            if (selectedProducts.length === 0) {
+                displayText.textContent = 'Select products...';
+                displayText.classList.add('placeholder');
+            } else {
+                displayText.textContent = `${selectedProducts.length} product${selectedProducts.length > 1 ? 's' : ''} selected`;
+                displayText.classList.remove('placeholder');
+            }
+            updatePrice();
+        }
+
+        // Update price calculation
+        function updatePrice() {
+            const cycle = document.getElementById('billingCycle').value;
+            const tier = document.getElementById('planTier').value;
+
+            const payButton = document.getElementById('payButton');
+            const contactButton = document.getElementById('contactButton');
+            const isEnterprise = tier === 'enterprise';
+
+            const tierPricing = pricingMatrix[tier] || pricingMatrix.pro;
+            const productCount = Math.max(selectedProducts.length, 1);
+
+            let basePricePerProduct = 0;
+            let finalPricePerProduct = 0;
+            let discount = 0;
+            let periodLabel = 'month';
+            let discountText = '';
+
+            const productText = selectedProducts.length === 0
+                ? 'No products selected'
+                : selectedProducts.map(id => productNames[id]).join(' + ');
+
+            if (isEnterprise) {
+                document.getElementById('totalPrice').textContent = cycle === 'trial'
+                    ? 'Contact us to start your free trial'
+                    : 'Enquire now';
+                document.getElementById('pricePeriod').textContent = '';
+
+                const originalPriceElement = document.getElementById('originalPrice');
+                originalPriceElement.textContent = '';
+                originalPriceElement.style.display = 'none';
+
+                const discountLabel = document.getElementById('discountLabel');
+                discountLabel.textContent = cycle === 'trial'
+                    ? "We'll help you activate your 7-day enterprise trial."
+                    : 'Custom enterprise pricing — contact us for details.';
+
+                document.getElementById('priceBreakdown').textContent =
+                    `${productText} • ${tierNames[tier]} • ${cycleNames[cycle]}`;
+
+                document.getElementById('perProductPrice').textContent = '';
+
+                payButton.style.display = 'none';
+                payButton.disabled = true;
+                contactButton.style.display = 'inline-flex';
+
+                if (selectedProducts.length === 0) {
+                    contactButton.style.pointerEvents = 'none';
+                    contactButton.style.opacity = '0.5';
+                    contactButton.setAttribute('aria-disabled', 'true');
+                } else {
+                    contactButton.style.pointerEvents = '';
+                    contactButton.style.opacity = '';
+                    contactButton.removeAttribute('aria-disabled');
+                }
+
+                return;
+            }
+
+            if (cycle === 'trial') {
+                finalPricePerProduct = 0;
+                periodLabel = '7 days';
+                discountText = 'Free for the first 7 days';
+            } else {
+                const cyclePricing = tierPricing[cycle];
+                if (!cyclePricing) {
+                    console.warn('Missing pricing for tier/cycle combination', tier, cycle);
+                    return;
+                }
+
+                basePricePerProduct = cyclePricing.base;
+                discount = cyclePricing.discount;
+                finalPricePerProduct = Math.round(basePricePerProduct * (1 - discount));
+
+                if (cycle === 'monthly') {
+                    periodLabel = 'month';
+                    discountText = 'Billed monthly';
+                } else if (cycle === 'quarterly') {
+                    periodLabel = 'month';
+                    discountText = `${(discount * 100).toFixed(2)}% OFF • Billed quarterly`;
+                } else if (cycle === 'yearly') {
+                    periodLabel = 'year';
+                    discountText = `${(discount * 100).toFixed(2)}% OFF • Billed annually`;
+                }
+            }
+
+            let totalFinalPrice = finalPricePerProduct * productCount;
+            let totalBasePrice = basePricePerProduct * productCount;
+
+            if (selectedProducts.length === 0) {
+                totalFinalPrice = 0;
+                totalBasePrice = 0;
+            }
+
+            contactButton.style.pointerEvents = '';
+            contactButton.style.opacity = '';
+            contactButton.removeAttribute('aria-disabled');
+
+            document.getElementById('totalPrice').textContent = formatCurrency(totalFinalPrice);
+            document.getElementById('pricePeriod').textContent = `/ ${periodLabel}`;
+
+            const originalPriceElement = document.getElementById('originalPrice');
+            if (discount > 0) {
+                originalPriceElement.textContent = formatCurrency(totalBasePrice);
+                originalPriceElement.style.display = 'inline';
+            } else {
+                originalPriceElement.textContent = '';
+                originalPriceElement.style.display = 'none';
+            }
+
+            const discountLabel = document.getElementById('discountLabel');
+            discountLabel.textContent = discountText;
+
+            document.getElementById('priceBreakdown').textContent =
+                `${productText} • ${tierNames[tier]} • ${cycleNames[cycle]}`;
+
+            // Show per-product price if multiple products
+            const perProductElement = document.getElementById('perProductPrice');
+            if (selectedProducts.length > 1) {
+                perProductElement.textContent = `${formatCurrency(finalPricePerProduct)} per product`;
+            } else {
+                perProductElement.textContent = '';
+            }
+
+            // Disable pay button if no products selected
+            if (selectedProducts.length === 0) {
+                payButton.disabled = true;
+                payButton.style.display = 'inline-flex';
+                contactButton.style.display = 'none';
+            } else {
+                payButton.disabled = false;
+                payButton.style.display = 'inline-flex';
+                contactButton.style.display = 'none';
+            }
+        }
+
+        // Toggle FAQ item
+        function toggleFAQ(element) {
+            const isActive = element.classList.contains('active');
+
+            // Close all FAQ items
+            document.querySelectorAll('.faq-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Open clicked item if it wasn't active
+            if (!isActive) {
+                element.classList.add('active');
+            }
+        }
+
+        // Initialize immediately and expose for SPA navigation
+        window.pageScripts = window.pageScripts || {};
+        window.pageScripts['change-plan'] = function() {
+            updateSelectedProducts();
+            updatePrice();
+        };
+
+        window.pageScripts['change-plan']();
+    </script>
+{% endblock %}

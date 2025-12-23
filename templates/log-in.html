@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - Xclusive Money</title>
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: hsl(240, 20%, 97%);
+            color: hsl(240, 10%, 15%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 28rem;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: hsl(240, 10%, 15%);
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: hsl(240, 4%, 46%);
+        }
+        
+        .link {
+            color: hsl(250, 70%, 60%);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .link:hover {
+            text-decoration: underline;
+        }
+        
+        .form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        label {
+            color: hsl(240, 4%, 46%);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        input,
+        .country-trigger {
+            padding: 0.625rem 0.75rem;
+            border: 1px solid hsl(240, 6%, 90%);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        input {
+            flex: 1;
+            width: 100%;
+        }
+
+        .country-selector {
+            position: relative;
+            min-width: 10rem;
+        }
+
+        .country-trigger {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            justify-content: space-between;
+        }
+
+        .country-trigger:hover,
+        .country-trigger:focus-visible,
+        input:focus {
+            outline: none;
+            border-color: hsl(250, 70%, 60%);
+            box-shadow: 0 0 0 3px hsla(250, 70%, 60%, 0.1);
+        }
+
+        .country-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .country-dropdown {
+            position: absolute;
+            top: calc(100% + 0.25rem);
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid hsl(240, 6%, 90%);
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 30px hsla(240, 10%, 20%, 0.1);
+            z-index: 10;
+            overflow: hidden;
+            display: none;
+        }
+
+        .country-dropdown.open {
+            display: block;
+            width: 250px;
+        }
+
+        .country-search {
+            padding: 0.5rem;
+            border-bottom: 1px solid hsl(240, 6%, 90%);
+        }
+
+        .country-search input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid hsl(240, 6%, 90%);
+            border-radius: 0.375rem;
+            font-size: 0.95rem;
+        }
+
+        .country-search input:focus {
+            border-color: hsl(250, 70%, 60%);
+            box-shadow: 0 0 0 3px hsla(250, 70%, 60%, 0.1);
+            outline: none;
+        }
+
+        .country-list {
+            max-height: 14rem;
+            overflow-y: auto;
+        }
+
+        .country-option {
+            width: 100%;
+            padding: 0.65rem 0.75rem;
+            background: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.15s ease;
+        }
+
+        .country-option[aria-selected="true"] {
+            background: hsl(250, 70%, 96%);
+            color: hsl(250, 70%, 35%);
+            font-weight: 600;
+        }
+
+        .country-option:hover,
+        .country-option:focus-visible {
+            background: hsl(250, 70%, 97%);
+            outline: none;
+        }
+
+        .country-option .country-name {
+            color: hsl(240, 10%, 20%);
+        }
+
+        .country-option .country-code {
+            color: hsl(240, 4%, 46%);
+        }
+        
+        .password-wrapper {
+            position: relative;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: hsl(240, 4%, 46%);
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+        
+        .toggle-password:hover {
+            color: hsl(240, 10%, 15%);
+        }
+        
+        .forgot-password {
+            text-align: left;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+            min-height: 3.25rem;
+        }
+        
+        .btn-primary {
+            background: hsl(250, 70%, 60%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: hsl(250, 70%, 55%);
+        }
+
+        .btn.loading {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            opacity: 0.9;
+            cursor: not-allowed;
+        }
+
+        .button-content {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .button-label {
+            white-space: nowrap;
+        }
+
+        .button-status {
+            display: none;
+            font-weight: 600;
+        }
+
+        .btn.loading .button-status {
+            display: inline;
+        }
+
+        .spinner {
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid hsla(0, 0%, 100%, 0.4);
+            border-top-color: white;
+            border-radius: 9999px;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        .btn.loading .spinner {
+            display: inline-block;
+        }
+
+        .loading-text {
+            font-weight: 600;
+        }
+
+        .status-message {
+            position: fixed;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(34, 34, 42, 0.9);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.95rem;
+            display: none;
+            max-width: calc(100% - 2rem);
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            z-index: 900;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .btn-secondary {
+            background: hsl(240, 5%, 96%);
+            color: hsl(240, 10%, 15%);
+        }
+
+        .btn-secondary:hover {
+            background: hsl(240, 5%, 92%);
+        }
+
+        .btn.disabled,
+        .btn[aria-disabled="true"] {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .toast {
+            --toast-offset-x: 0;
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+            max-width: min(24rem, calc(100% - 2rem));
+            word-break: break-word;
+            transform: translateX(var(--toast-offset-x));
+        }
+        
+        .toast.success {
+            background: hsl(142, 76%, 36%);
+        }
+        
+        .toast.error {
+            background: hsl(0, 72%, 51%);
+        }
+        
+        .toast.show {
+            display: block;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(calc(var(--toast-offset-x) + 100%));
+            }
+            to {
+                opacity: 1;
+                transform: translateX(var(--toast-offset-x));
+            }
+        }
+
+        @media (max-width: 640px) {
+            .toast {
+                --toast-offset-x: -50%;
+                left: 50%;
+                right: auto;
+                width: calc(100% - 2rem);
+                text-align: center;
+            }
+        }
+        
+        @media (min-width: 640px) {
+            h1 {
+                font-size: 2.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Sign in to Xclusive Money</h1>
+            <p class="subtitle">
+                New user? 
+                <a href="{{ url_for('auth.signup') }}" class="link">Create an account</a>
+            </p>
+        </div>
+        {% set selected_code = request.form.get('country_code', '+91') %}
+        <form class="form" id="signInForm" method="post" action="{{ url_for('auth.login') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% if next %}
+            <input type="hidden" name="next" id="nextField" value="{{ next }}">
+            {% endif %}
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="you@example.com"
+                    value="{{ request.form.get('email', '') }}"
+                    autocomplete="email"
+                />
+            </div>
+            <div class="form-group">
+                <label for="phone">mobile</label>
+                <div class="input-row">
+                    <div class="country-selector" data-default-code="{{ selected_code }}">
+                        <button type="button" class="country-trigger" id="loginCountryTrigger">
+                            <span class="country-label">
+                                <span class="flag" aria-hidden="true">🇮🇳</span>
+                                <span class="country-name">India</span>
+                            </span>
+                            <span class="country-code">+91</span>
+                            <span aria-hidden="true">▾</span>
+                        </button>
+                        <div class="country-dropdown" id="loginCountryDropdown" aria-label="Select country">
+                            <div class="country-search">
+                                <input type="text" id="loginCountrySearch" placeholder="Search country..." aria-label="Search country" />
+                            </div>
+                            <div class="country-list" id="loginCountryList" role="listbox"></div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="country_code" id="loginCountryCodeInput" value="{{ selected_code }}" />
+                    <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        placeholder="XXXXXXXXXX"
+                        maxlength="10"
+                        value="{{ request.form.get('phone', '') }}"
+                        autocomplete="tel"
+                    />
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="password-wrapper">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password"
+                        placeholder="Enter your password" 
+                        required
+                    />
+                    <button type="button" class="toggle-password" onclick="togglePassword()">
+                        <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="forgot-password">
+                <a href="{{ url_for('auth.request_password_reset') }}" class="link">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="loginButton">
+                <span class="button-content">
+                    <span class="spinner" id="loginSpinner" aria-hidden="true"></span>
+                    <span class="button-label" id="loginButtonLabel">Login</span>
+                    <span class="button-status" id="buttonStatus" aria-live="polite"></span>
+                </span>
+            </button>
+
+            <a href="{{ url_for('auth.login_otp') }}" class="btn btn-secondary" id="loginOtpLink">Login with OTP</a>
+        </form>
+
+    </div>
+
+
+    <div id="toast" class="toast"></div>
+
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    <script>
+        window.serverMessages = {{ messages | tojson | safe }};
+    </script>
+    {% endwith %}
+    
+    <script src="{{ url_for('static', filename='js/countries.js') }}"></script>
+
+    <script>
+        const countryOptions = Array.isArray(window.countryOptions) && window.countryOptions.length
+            ? window.countryOptions
+            : [{ code: '+91', name: 'India', flag: '🇮🇳' }];
+
+        function renderCountryOptions(listEl, search, selectedCode) {
+            listEl.innerHTML = '';
+            const query = search.value.trim().toLowerCase();
+            countryOptions
+                .filter(({ name, code }) => {
+                    if (!query) return true;
+                    return name.toLowerCase().includes(query) || code.includes(query.replace('+', ''));
+                })
+                .forEach(option => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'country-option';
+                    button.setAttribute('role', 'option');
+                    button.dataset.code = option.code;
+                    button.innerHTML = `
+                        <span class="flag" aria-hidden="true">${option.flag}</span>
+                        <span class="country-name">${option.name}</span>
+                        <span class="country-code">${option.code}</span>
+                    `;
+                    if (option.code === selectedCode) {
+                        button.setAttribute('aria-selected', 'true');
+                    }
+                    listEl.appendChild(button);
+                });
+        }
+
+        function initCountrySelector() {
+            const selector = document.querySelector('.country-selector');
+            if (!selector) return;
+
+            const trigger = selector.querySelector('.country-trigger');
+            const dropdown = selector.querySelector('.country-dropdown');
+            const search = selector.querySelector('#loginCountrySearch');
+            const list = selector.querySelector('#loginCountryList');
+            const hiddenInput = document.getElementById('loginCountryCodeInput');
+            const defaultCode = selector.dataset.defaultCode || '+91';
+
+            function updateSelection(code) {
+                const option = countryOptions.find(item => item.code === code) || countryOptions[0];
+                hiddenInput.value = option.code;
+                trigger.querySelector('.flag').textContent = option.flag;
+                trigger.querySelector('.country-name').textContent = option.name;
+                trigger.querySelector('.country-code').textContent = option.code;
+            }
+
+            function toggleDropdown(forceState) {
+                const shouldOpen = typeof forceState === 'boolean' ? forceState : !dropdown.classList.contains('open');
+                dropdown.classList.toggle('open', shouldOpen);
+                if (shouldOpen) {
+                    search.focus();
+                }
+            }
+
+            renderCountryOptions(list, search, hiddenInput.value || defaultCode);
+            updateSelection(hiddenInput.value || defaultCode);
+
+            trigger.addEventListener('click', () => toggleDropdown());
+
+            search.addEventListener('input', () => {
+                renderCountryOptions(list, search, hiddenInput.value || defaultCode);
+            });
+
+            list.addEventListener('click', (event) => {
+                const button = event.target.closest('.country-option');
+                if (!button) return;
+                const code = button.dataset.code;
+                updateSelection(code);
+                renderCountryOptions(list, search, code);
+                toggleDropdown(false);
+                search.value = '';
+            });
+
+            document.addEventListener('click', (event) => {
+                if (!selector.contains(event.target)) {
+                    toggleDropdown(false);
+                }
+            });
+        }
+
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+            }
+        }
+        
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        }
+        const phoneInput = document.getElementById('phone');
+        const emailInput = document.getElementById('email');
+        const loginOtpLink = document.getElementById('loginOtpLink');
+        const loginSpinner = document.getElementById('loginSpinner');
+        const buttonStatus = document.getElementById('buttonStatus');
+        const loginButtonLabel = document.getElementById('loginButtonLabel');
+
+        initCountrySelector();
+
+        function disableOtpLink() {
+            if (!loginOtpLink) return;
+            if (!loginOtpLink.dataset.href) {
+                loginOtpLink.dataset.href = loginOtpLink.getAttribute('href') || '';
+            }
+            loginOtpLink.setAttribute('aria-disabled', 'true');
+            loginOtpLink.classList.add('disabled');
+            loginOtpLink.removeAttribute('href');
+        }
+
+        function enableOtpLink() {
+            if (!loginOtpLink) return;
+            const originalHref = loginOtpLink.dataset.href;
+            if (originalHref) {
+                loginOtpLink.setAttribute('href', originalHref);
+            }
+            loginOtpLink.removeAttribute('aria-disabled');
+            loginOtpLink.classList.remove('disabled');
+        }
+
+        if (loginOtpLink) {
+            loginOtpLink.addEventListener('click', function(event) {
+                if (loginOtpLink.getAttribute('aria-disabled') === 'true') {
+                    event.preventDefault();
+                }
+            });
+        }
+
+        window.addEventListener('pageshow', enableOtpLink);
+
+        phoneInput.addEventListener('input', function(e) {
+            this.value = this.value.replace(/\D/g, '');
+        });
+
+
+        document.getElementById('signInForm').addEventListener('submit', function(e) {
+
+            const passwordInput = document.getElementById('password');
+
+            const phoneValue = phoneInput.value.trim();
+
+            const emailValue = emailInput.value.trim();
+
+            const loginButton = document.getElementById('loginButton');
+
+            const loginStatus = document.getElementById('loginStatus');
+
+
+
+            if (!phoneValue && !emailValue) {
+
+                e.preventDefault();
+
+                showToast('Please enter your email or phone number', 'error');
+
+                emailInput.focus();
+
+                return;
+
+            }
+
+
+
+            if (phoneValue && phoneValue.length < 10) {
+
+                e.preventDefault();
+
+                showToast('Please enter a valid phone number', 'error');
+
+                phoneInput.focus();
+
+                return;
+
+            }
+
+
+
+            if (!passwordInput.value.trim()) {
+
+                e.preventDefault();
+
+                showToast('Please enter your password', 'error');
+
+                passwordInput.focus();
+
+                return;
+
+            }
+
+
+
+            if (loginButton) {
+                loginButton.disabled = true;
+                loginButton.classList.add('loading');
+            }
+
+            if (loginSpinner) {
+                loginSpinner.setAttribute('aria-hidden', 'true');
+            }
+
+            if (buttonStatus) {
+                buttonStatus.textContent = '';
+            }
+
+            if (loginButtonLabel) {
+                loginButtonLabel.textContent = '';
+            }
+
+            disableOtpLink();
+
+            showToast('Logged in successfully. Please wait while we prepare your dashboard.', 'success');
+        });
+        
+        if (Array.isArray(window.serverMessages)) {
+            window.serverMessages.forEach(function(messageTuple) {
+                if (!Array.isArray(messageTuple) || messageTuple.length < 2) {
+                    return;
+
+                }
+
+                const category = messageTuple[0];
+                const message = messageTuple[1];
+                const type = category === 'error' ? 'error' : 'success';
+                showToast(message, type);
+
+                if (type === 'error') {
+                    enableOtpLink();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+

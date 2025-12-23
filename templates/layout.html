@@ -1,0 +1,4101 @@
+{% set spa_partial = spa_partial if spa_partial is defined else request.headers.get('X-Requested-With') ==
+'XMLHttpRequest' %}
+{% if spa_partial %}
+<title>{{ self.title() }}</title>
+<div class="page-wrapper container py-4" id="page-container" data-page="{{ request.path|replace('/', '') }}">
+  {{ self.content() }}
+</div>
+{{ self.styles() }}
+{{ self.scripts() }}
+{% else %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}DhanBot - Modern Trading Platform{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    data-global-style="true">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+    data-global-style="true">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"
+    data-global-style="true">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer
+    data-global-script="true"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.umd.min.js"
+    defer data-global-script="true"></script>
+  <script src="{{ url_for('static', filename='js/prefetch.js') }}" defer data-global-script="true"></script>
+  {% block styles %}{% endblock %}
+  <style data-global-style="true">
+    <style>* {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --background: 240 20% 97%;
+      --foreground: 240 10% 15%;
+      --card: 0 0% 100%;
+      --primary: 250 70% 60%;
+      --primary-foreground: 0 0% 100%;
+      --muted: 240 5% 96%;
+      --muted-foreground: 240 4% 46%;
+      --border: 240 6% 90%;
+      --sidebar-background: 0 0% 100%;
+      --sidebar-foreground: 240 10% 15%;
+      --success: 142 71% 45%;
+      --shadow-soft: rgba(19, 33, 68, 0.08);
+      --shadow-strong: rgba(55, 81, 255, 0.24);
+    }
+
+    body {
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: hsl(var(--background));
+      color: hsl(var(--foreground));
+      margin: 0;
+      padding: 0;
+      zoom: 0.9;
+    }
+
+    @supports not (zoom: 1) {
+      body {
+        transform: scale(0.8);
+        transform-origin: top left;
+        width: 125%;
+      }
+    }
+
+    .page-wrapper {
+      width: 100%;
+      max-width: 100%;
+      margin-top: -80px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: var(--bs-gutter-x, 0.75rem);
+      padding-right: var(--bs-gutter-x, 0.75rem);
+    }
+
+    .page-prefetch-shell {
+      position: relative;
+      min-height: 220px;
+      border: 1px dashed hsl(var(--border));
+      border-radius: 16px;
+      background: hsl(var(--card));
+      box-shadow: 0 10px 40px rgba(27, 38, 57, 0.08);
+      padding: 28px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .page-shell-spinner {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: 3px solid rgba(79, 70, 229, 0.18);
+      border-top-color: rgb(79, 70, 229);
+      animation: page-shell-spin 0.9s linear infinite;
+    }
+
+    .page-shell-hint {
+      font-size: 14px;
+      color: hsl(var(--muted-foreground));
+      text-align: center;
+      margin: 0;
+    }
+
+    .page-shell-skeletons {
+      width: 100%;
+      max-width: 620px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .page-shell-skeleton {
+      height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #f5f7fb 0%, #eef2ff 50%, #f5f7fb 100%);
+      background-size: 200% 100%;
+      animation: page-shell-shimmer 1.3s ease-in-out infinite;
+    }
+
+    .page-shell-skeleton.is-wide {
+      height: 16px;
+    }
+
+    .page-shell-prefetched {
+      width: 100%;
+      margin-top: 4px;
+      overflow: hidden;
+    }
+
+    @keyframes page-shell-spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes page-shell-shimmer {
+      0% {
+        background-position: 200% 0;
+      }
+
+      100% {
+        background-position: -200% 0;
+      }
+    }
+
+    @media (min-width: 576px) {
+      .page-wrapper {
+        max-width: 540px;
+      }
+    }
+
+    @media (min-width: 768px) {
+      .page-wrapper {
+        max-width: 720px;
+      }
+    }
+
+    @media (min-width: 992px) {
+      .page-wrapper {
+        max-width: 960px;
+      }
+    }
+
+    @media (min-width: 1200px) {
+      .page-wrapper {
+        max-width: 1140px;
+      }
+    }
+
+    @media (min-width: 1400px) {
+      .page-wrapper {
+        max-width: 1320px;
+      }
+    }
+
+    /* Header/Navbar Styles */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      width: 100%;
+      height: 64px;
+      border-bottom: 1px solid hsl(var(--border));
+      background: hsl(var(--card));
+      backdrop-filter: blur(8px);
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+      padding: 0 24px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo {
+      height: 32px;
+      width: auto;
+    }
+
+    .header .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .header .btn-ghost {
+      background: transparent;
+      color: hsl(var(--foreground));
+      padding: 8px;
+    }
+
+    .header .btn-ghost:hover {
+      background: hsl(var(--muted));
+    }
+
+    .header .btn-primary {
+      background: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
+      padding: 8px 16px;
+      border: none;
+    }
+
+    .header .btn-primary:hover {
+      opacity: 0.9;
+    }
+
+    .header .btn-icon {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+    }
+
+    .header .dropdown .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid transparent;
+    }
+
+    .profile-dropdown {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .profile-trigger {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      border-radius: 9999px;
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .profile-trigger:focus-visible {
+      outline: 2px solid hsl(var(--primary));
+      outline-offset: 2px;
+    }
+
+    .profile-trigger:hover .profile-avatar {
+      box-shadow: 0 0 0 2px hsl(var(--foreground) / 0.1);
+    }
+
+    .profile-avatar {
+      position: relative;
+      display: flex;
+      height: 36px;
+      width: 36px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9999px;
+      overflow: hidden;
+      background: linear-gradient(135deg, hsl(250 70% 60%), hsl(260 80% 65%));
+      color: hsl(0 0% 100%);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    @media (min-width: 640px) {
+      .profile-avatar {
+        height: 40px;
+        width: 40px;
+      }
+    }
+
+    .profile-avatar img {
+      height: 100%;
+      width: 100%;
+      object-fit: cover;
+    }
+
+    .profile-avatar-fallback {
+      display: flex;
+      height: 100%;
+      width: 100%;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+    }
+
+    .profile-dropdown-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 12px);
+      min-width: 340px;
+      width: min(280px, calc(100vw - 24px));
+      border-radius: 12px;
+      border: 1px solid hsl(var(--border));
+      background: #ffffff;
+      box-shadow: 0 10px 25px -10px rgba(15, 23, 42, 0.35), 0 4px 6px -4px rgba(15, 23, 42, 0.15);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-6px);
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+      z-index: 60;
+    }
+
+    .profile-dropdown-menu.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .profile-dropdown-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 16px 12px;
+    }
+
+    .profile-dropdown-avatar {
+      height: 48px;
+      width: 48px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, hsl(250 70% 60%), hsl(260 80% 65%));
+      color: hsl(0 0% 100%);
+      font-weight: 600;
+      font-size: 1.1rem;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .profile-dropdown-avatar img {
+      height: 100%;
+      width: 100%;
+      object-fit: cover;
+    }
+
+    .profile-dropdown-user {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .profile-dropdown-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: hsl(var(--foreground));
+    }
+
+    .profile-dropdown-email {
+      font-size: 0.8125rem;
+      color: hsl(var(--muted-foreground));
+      line-height: 1.3;
+      overflow-wrap: anywhere;
+    }
+
+    .profile-dropdown-list {
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      gap: 4px;
+    }
+
+    .profile-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      color: hsl(var(--foreground));
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+      text-decoration: none;
+    }
+
+    .profile-dropdown-item:hover {
+      background: hsl(var(--muted));
+      color: hsl(var(--foreground));
+      box-shadow: inset 0 0 0 1px hsl(var(--border));
+    }
+
+    .profile-dropdown-item .profile-dropdown-icon {
+      width: 20px;
+      height: 20px;
+      color: hsl(var(--muted-foreground));
+      flex-shrink: 0;
+    }
+
+    .profile-dropdown-item:hover .profile-dropdown-icon {
+      color: hsl(var(--foreground));
+    }
+
+    .profile-dropdown-item.is-active {
+      background: linear-gradient(135deg, hsl(250 70% 60%), hsl(260 80% 65%));
+      color: hsl(0 0% 100%);
+      box-shadow: none;
+    }
+
+    .profile-dropdown-item.is-active .profile-dropdown-icon {
+      color: hsl(0 0% 100%);
+    }
+
+    @media (max-width: 640px) {
+      .profile-dropdown-menu {
+        top: calc(100% + 8px);
+        min-width: 0;
+        width: min(220px, calc(100vw - 16px));
+        border-radius: 10px;
+      }
+
+      .profile-dropdown-header {
+        padding: 12px 12px 8px;
+        gap: 10px;
+      }
+
+      .profile-dropdown-avatar {
+        height: 42px;
+        width: 42px;
+      }
+
+      .profile-dropdown-list {
+        padding: 6px;
+        gap: 2px;
+      }
+
+      .profile-dropdown-item {
+        padding: 10px 12px;
+        border-radius: 8px;
+      }
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      overflow: hidden;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .avatar:hover {
+      box-shadow: 0 0 0 2px hsl(var(--primary));
+    }
+
+    .header #notificationsToggle .header-notification-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 20px;
+      height: 20px;
+      background: hsl(0 72% 51%);
+      color: white;
+      border-radius: 50%;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hide-mobile {
+      display: none;
+    }
+
+    @media (min-width: 768px) {
+      .hide-mobile {
+        display: inline-flex;
+      }
+    }
+
+    /* Sidebar Overlay */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 70;
+    }
+
+    .sidebar-overlay.active {
+      display: block;
+    }
+
+    /* Sidebar Styles */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 64px;
+      height: calc(100vh - 64px);
+      width: 256px;
+      border-right: 1px solid hsl(var(--border));
+      background: hsl(var(--sidebar-background));
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      overflow-y: auto;
+      z-index: 80;
+      transition: transform 0.3s ease;
+      transform: translateX(-100%);
+    }
+
+    .sidebar.open {
+      transform: translateX(0);
+    }
+
+    .sidebar-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px;
+    }
+
+    .sidebar-header {
+      padding: 12px;
+      font-size: 10px;
+      font-weight: 600;
+      color: hsl(var(--muted-foreground));
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 12px;
+    }
+
+    .sidebar-header:first-child {
+      margin-top: 0;
+    }
+
+    .sidebar .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      cursor: pointer;
+      background: transparent;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: hsl(var(--muted-foreground));
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+      text-decoration: none;
+    }
+
+    .sidebar-item:hover {
+      background: hsl(var(--muted) / 0.5);
+      color: hsl(var(--foreground));
+    }
+
+    .sidebar-item.active {
+      background: hsl(var(--primary) / 0.1);
+      color: hsl(var(--primary));
+      border-left: 4px solid hsl(var(--primary));
+      margin-left: -16px;
+      padding-left: 12px;
+    }
+
+    .sidebar-item.nested {
+      margin-left: 24px;
+    }
+
+    .sidebar-item.nested.active {
+      margin-left: 8px;
+    }
+
+    .sidebar-item-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .sidebar.collapsible-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .chevron {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.2s;
+    }
+
+    .chevron.rotate {
+      transform: rotate(180deg);
+    }
+
+    .sidebar.collapsible-content {
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .sidebar.collapsible-content.open {
+      display: flex;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 767.98px) {
+      body.sidebar-open {
+        overflow: hidden;
+      }
+
+      .sidebar {
+        position: fixed;
+        left: 0;
+        transform: translateX(-100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0%);
+      }
+    }
+
+    /* Desktop Styles */
+    @media (min-width: 768px) {
+      .sidebar {
+        transform: translateX(0);
+      }
+
+      .sidebar-overlay {
+        display: none !important;
+      }
+
+      body.sidebar-open {
+        overflow: auto;
+      }
+    }
+
+    /* Main Content Area */
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      margin-left: 0;
+      min-height: 100vh;
+      padding-top: 64px;
+    }
+
+    @media (min-width: 768px) {
+      .main-content {
+        margin-left: 256px;
+      }
+    }
+
+    /* Section/Card Styling */
+    .section-box {
+      background-color: hsl(var(--card));
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px 0 var(--shadow-soft);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .custom-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1050;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+    }
+
+    .custom-modal-backdrop.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .custom-modal-content {
+      background-color: hsl(var(--card));
+      border-radius: 0.75rem;
+      box-shadow: 0 10px 15px -3px var(--shadow-soft), 0 4px 6px -2px var(--shadow-soft);
+      padding: 1.5rem;
+      width: 90%;
+      max-width: 450px;
+      transform: translateY(-20px);
+      transition: transform 0.3s ease-in-out;
+    }
+
+    .custom-modal-backdrop.show .custom-modal-content {
+      transform: translateY(0);
+    }
+
+    .custom-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid hsl(var(--border));
+    }
+
+    .custom-modal-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: hsl(var(--foreground));
+    }
+
+    .custom-modal-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: hsl(var(--muted-foreground));
+      cursor: pointer;
+    }
+
+    .custom-modal-body {
+      margin-bottom: 1.5rem;
+      color: hsl(var(--foreground));
+    }
+
+    .custom-modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+
+    .custom-modal-footer .btn {
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .custom-modal-footer .btn-primary {
+      background: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
+      border: none;
+    }
+
+    .custom-modal-footer .btn-secondary {
+      background: hsl(var(--muted));
+      color: hsl(var(--foreground));
+      border: 1px solid hsl(var(--border));
+    }
+
+    /* Notification Drawer */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      z-index: 1040;
+    }
+
+    .drawer-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .notification-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(450px, 100vw);
+      height: 100vh;
+      background-color: white;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+      border-left: 1px solid hsl(var(--border));
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      z-index: 1050;
+    }
+
+    .notification-drawer.active {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid hsl(var(--border));
+    }
+
+    .drawer-header-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .drawer-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .drawer-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: hsl(var(--foreground));
+      margin-bottom: 8px;
+    }
+
+    .notification-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .unread-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      background-color: hsl(0, 72%, 51%);
+      color: hsl(0, 0%, 100%);
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .unread-text {
+      font-size: 14px;
+      color: hsl(0, 72%, 51%);
+      font-weight: 500;
+    }
+
+    .clear-button {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid hsl(var(--border));
+      background: transparent;
+      color: hsl(var(--foreground));
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .clear-button:hover:not(:disabled) {
+      background-color: hsl(var(--muted));
+    }
+
+    .clear-button:disabled,
+    .clear-button[aria-disabled="true"] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .close-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: hsl(var(--muted-foreground));
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .close-button:hover {
+      color: hsl(var(--foreground));
+    }
+
+    .drawer-tabs {
+      padding: 12px 16px 8px;
+      border-bottom: 1px solid hsl(var(--border));
+      background-color: hsl(var(--background));
+    }
+
+    .tabs-list {
+      display: flex;
+      gap: 8px;
+    }
+
+    .tab-button {
+      padding: 6px 16px;
+      background: transparent;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: hsl(var(--foreground));
+      transition: all 0.2s ease;
+    }
+
+    .tab-button:hover {
+      background-color: hsl(240, 5%, 96%);
+    }
+
+    .tab-button.active {
+      background-color: hsla(142, 76%, 36%, 0.12);
+      color: hsl(142, 76%, 36%);
+    }
+
+    .tab-button .tab-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background-color: hsl(var(--muted));
+      color: hsl(var(--muted-foreground));
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .drawer-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .drawer-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 48px 16px;
+      font-size: 14px;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .drawer-loading .loader {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(79, 70, 229, 0.2);
+      border-top-color: hsl(250, 70%, 60%);
+      animation: drawerSpinner 0.75s linear infinite;
+    }
+
+    @keyframes drawerSpinner {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .drawer-content .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .drawer-content .empty-state-text {
+      font-size: 14px;
+    }
+
+    .notifications-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .notification-card {
+      background-color: hsla(38, 92%, 50%, 0.05);
+      border: 1px solid hsla(38, 92%, 50%, 0.2);
+      border-radius: 12px;
+      padding: 12px;
+      transition: background-color 0.2s ease;
+    }
+
+    .notification-card:hover {
+      background-color: hsla(38, 92%, 50%, 0.1);
+    }
+
+    .notification-inner {
+      display: flex;
+      gap: 12px;
+    }
+
+    .badge-column {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .type-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 36px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .type-badge.level-info {
+      background-color: hsl(219, 81%, 66%);
+      color: #fff;
+    }
+
+    .type-badge.level-success {
+      background-color: hsl(142, 76%, 36%);
+      color: #fff;
+    }
+
+    .type-badge.level-warning {
+      background-color: hsl(38, 92%, 50%);
+      color: #3f2a02;
+    }
+
+    .type-badge.level-error {
+      background-color: hsl(0, 72%, 51%);
+      color: #fff;
+    }
+
+    .type-badge.level-default {
+      background-color: hsl(240, 5%, 80%);
+      color: hsl(240, 10%, 20%);
+    }
+
+    .notification-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .notification-title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .notification-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: hsl(var(--foreground));
+      line-height: 1.3;
+      margin: 0;
+    }
+
+    .notification-time {
+      font-size: 12px;
+      color: hsl(var(--muted-foreground));
+      white-space: nowrap;
+    }
+
+    .notification-description {
+      font-size: 14px;
+      color: hsl(var(--foreground));
+      opacity: 0.8;
+      line-height: 1.5;
+      margin: 0 0 8px;
+    }
+
+    .notification-footer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .account-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border: 1px solid hsl(var(--border));
+      border-radius: 12px;
+      font-size: 12px;
+      color: hsl(var(--foreground));
+      font-weight: 500;
+    }
+
+    .date-text {
+      font-size: 12px;
+      color: hsl(var(--muted-foreground));
+    }
+
+    @media (max-width: 768px) {
+      .notification-drawer {
+        width: 100%;
+      }
+    }
+
+    .broker-icon-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0 clamp(0.25rem, 1.2vw, 0.4rem);
+      flex-shrink: 0;
+      min-width: 0;
+      flex-basis: clamp(3.2rem, 12vw, 4.2rem);
+    }
+
+    .broker-icon {
+      width: clamp(2.8rem, 10vw, 3.8rem);
+      height: clamp(2.8rem, 10vw, 3.8rem);
+      border-radius: 50%;
+      background: hsl(var(--muted));
+      box-shadow: var(--shadow-soft);
+      border: 1px solid hsl(var(--border));
+      object-fit: contain;
+      padding: clamp(0.25rem, 1vw, 0.35rem);
+      transition: all 0.15s ease;
+      cursor: pointer;
+      margin-bottom: 0.5rem;
+    }
+
+    .broker-icon:hover,
+    .broker-icon.selected,
+    .broker-icon.border-primary {
+      border-color: hsl(var(--primary));
+      box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+      background: hsl(var(--muted));
+      transform: translateY(-0.05rem);
+    }
+
+    .profile-photo {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid hsl(var(--primary));
+    }
+
+    /* Mobile Header Compact Override */
+
+    /* Even more compact header for mobile */
+    @media (max-width: 767.98px) {
+      .header {
+        height: 64px !important;
+      }
+
+      .header-content {
+        padding: 0 0px !important;
+      }
+
+      .header-left {
+        gap: 1px !important;
+        margin: 10px;
+      }
+
+      .header-right {
+        gap: 1px !important;
+        margin-right: 18px;
+      }
+
+      .logo {
+        height: 40px !important;
+      }
+
+      .header .btn-icon {
+        width: 30px !important;
+        height: 30px !important;
+      }
+
+      .header .btn-primary {
+        padding: 6px 10px !important;
+        font-size: 0px !important;
+        margin-right: 12px
+      }
+
+      .avatar {
+        width: 25px !important;
+        height: 25px !important;
+        font-size: 14px !important;
+      }
+
+      .header #notificationsToggle .header-notification-badge {
+        top: -3px !important;
+        right: -3px !important;
+        min-width: 18px !important;
+        height: 18px !important;
+        font-size: 9px !important;
+      }
+
+      /* Hamburger menu button */
+      .header .btn-ghost {
+        padding: 6px !important;
+      }
+    }
+
+    <style>.collapse:not(.tw-collapse) {
+      visibility: visible !important;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --background: 240 20% 97%;
+      --foreground: 240 10% 15%;
+      --card: 0 0% 100%;
+      --primary: 250 70% 60%;
+      --primary-foreground: 0 0% 100%;
+      --muted: 240 5% 96%;
+      --muted-foreground: 240 4% 46%;
+      --border: 240 6% 90%;
+      --sidebar-background: 0 0% 100%;
+      --sidebar-foreground: 240 10% 15%;
+      --success: 142 71% 45%;
+      --shadow-soft: rgba(19, 33, 68, 0.08);
+      --shadow-strong: rgba(55, 81, 255, 0.24);
+    }
+
+    body {
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: hsl(var(--background));
+      color: hsl(var(--foreground));
+      margin: 0;
+      padding: 0;
+    }
+
+    .page-wrapper {
+      width: 100%;
+      max-width: 100%;
+      margin-top: -80px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: var(--bs-gutter-x, 0.75rem);
+      padding-right: var(--bs-gutter-x, 0.75rem);
+    }
+
+    @media (min-width: 576px) {
+      .page-wrapper {
+        max-width: 540px;
+      }
+    }
+
+    @media (min-width: 768px) {
+      .page-wrapper {
+        max-width: 720px;
+      }
+    }
+
+    @media (min-width: 992px) {
+      .page-wrapper {
+        max-width: 960px;
+      }
+    }
+
+    @media (min-width: 1200px) {
+      .page-wrapper {
+        max-width: 1140px;
+      }
+    }
+
+    @media (min-width: 1400px) {
+      .page-wrapper {
+        max-width: 1320px;
+      }
+    }
+
+    /* Header/Navbar Styles */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      width: 100%;
+      height: 64px;
+      border-bottom: 1px solid hsl(var(--border));
+      background: hsl(var(--card));
+      backdrop-filter: blur(8px);
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+      padding: 0 24px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo {
+      margin-top: 5px;
+      height: 115px;
+      width: auto;
+    }
+
+    .header .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .header .btn-ghost {
+      background: transparent;
+      color: hsl(var(--foreground));
+      padding: 8px;
+    }
+
+    .header .btn-ghost:hover {
+      background: hsl(var(--muted));
+    }
+
+    .header .btn-primary {
+      background: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
+      padding: 8px 16px;
+      border: none;
+    }
+
+    .header .btn-primary:hover {
+      opacity: 0.9;
+    }
+
+    .header .btn-icon {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+    }
+
+    .header .dropdown .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid transparent;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      overflow: hidden;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .avatar:hover {
+      box-shadow: 0 0 0 2px hsl(var(--primary));
+    }
+
+    .header #notificationsToggle .header-notification-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 20px;
+      height: 20px;
+      background: hsl(0 72% 51%);
+      color: white;
+      border-radius: 50%;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hide-mobile {
+      display: none;
+    }
+
+    @media (min-width: 768px) {
+      .hide-mobile {
+        display: inline-flex;
+      }
+    }
+
+    /* Sidebar Overlay */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 70;
+    }
+
+    .sidebar-overlay.active {
+      display: block;
+    }
+
+    /* Sidebar Styles */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 64px;
+      height: calc(100vh - 64px);
+      width: 256px;
+      border-right: 1px solid hsl(var(--border));
+      background: hsl(var(--sidebar-background));
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      overflow-y: auto;
+      z-index: 80;
+      transition: transform 0.3s ease;
+      transform: translateX(-100%);
+    }
+
+    .sidebar.open {
+      transform: translateX(0);
+    }
+
+    .sidebar-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px;
+    }
+
+    .sidebar-header {
+      padding: 12px;
+      font-size: 10px;
+      font-weight: 600;
+      color: hsl(var(--muted-foreground));
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 12px;
+    }
+
+    .sidebar-header:first-child {
+      margin-top: 0;
+    }
+
+    .sidebar .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      cursor: pointer;
+      background: transparent;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: hsl(var(--muted-foreground));
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+      text-decoration: none;
+    }
+
+    .sidebar-item:hover {
+      background: hsl(var(--muted) / 0.5);
+      color: hsl(var(--foreground));
+    }
+
+    .sidebar-item.active {
+      background: hsl(var(--primary) / 0.1);
+      color: hsl(var(--primary));
+      border-left: 4px solid hsl(var(--primary));
+      margin-left: -16px;
+      padding-left: 12px;
+    }
+
+    .sidebar-item.nested {
+      margin-left: 24px;
+    }
+
+    .sidebar-item.nested.active {
+      margin-left: 8px;
+    }
+
+    .sidebar-item-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .sidebar.collapsible-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .chevron {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.2s;
+    }
+
+    .chevron.rotate {
+      transform: rotate(180deg);
+    }
+
+    .sidebar.collapsible-content {
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .sidebar.collapsible-content.open {
+      display: flex;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 767.98px) {
+      body.sidebar-open {
+        overflow: hidden;
+      }
+
+      .sidebar {
+        position: fixed;
+        left: 0;
+        transform: translateX(-100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0%);
+      }
+    }
+
+    /* Desktop Styles */
+    @media (min-width: 768px) {
+      .sidebar {
+        transform: translateX(0);
+      }
+
+      .sidebar-overlay {
+        display: none !important;
+      }
+
+      body.sidebar-open {
+        overflow: auto;
+      }
+    }
+
+    /* Main Content Area */
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      margin-left: 0;
+      min-height: 100vh;
+      padding-top: 64px;
+    }
+
+    @media (min-width: 768px) {
+      .main-content {
+        margin-left: 256px;
+      }
+    }
+
+    /* Section/Card Styling */
+    .section-box {
+      background-color: hsl(var(--card));
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px 0 var(--shadow-soft);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .custom-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1050;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+    }
+
+    .custom-modal-backdrop.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .custom-modal-content {
+      background-color: hsl(var(--card));
+      border-radius: 0.75rem;
+      box-shadow: 0 10px 15px -3px var(--shadow-soft), 0 4px 6px -2px var(--shadow-soft);
+      padding: 1.5rem;
+      width: 90%;
+      max-width: 450px;
+      transform: translateY(-20px);
+      transition: transform 0.3s ease-in-out;
+    }
+
+    .custom-modal-backdrop.show .custom-modal-content {
+      transform: translateY(0);
+    }
+
+    .custom-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid hsl(var(--border));
+    }
+
+    .custom-modal-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: hsl(var(--foreground));
+    }
+
+    .custom-modal-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: hsl(var(--muted-foreground));
+      cursor: pointer;
+    }
+
+    .custom-modal-body {
+      margin-bottom: 1.5rem;
+      color: hsl(var(--foreground));
+    }
+
+    .custom-modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+
+    .custom-modal-footer .btn {
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .custom-modal-footer .btn-primary {
+      background: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
+      border: none;
+    }
+
+    .custom-modal-footer .btn-secondary {
+      background: hsl(var(--muted));
+      color: hsl(var(--foreground));
+      border: 1px solid hsl(var(--border));
+    }
+
+    .broker-icon-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0 clamp(0.25rem, 1.2vw, 0.4rem);
+      flex-shrink: 0;
+      min-width: 0;
+      flex-basis: clamp(3.2rem, 12vw, 4.2rem);
+    }
+
+    .broker-icon {
+      width: clamp(2.8rem, 10vw, 3.8rem);
+      height: clamp(2.8rem, 10vw, 3.8rem);
+      border-radius: 50%;
+      background: hsl(var(--muted));
+      box-shadow: var(--shadow-soft);
+      border: 1px solid hsl(var(--border));
+      object-fit: contain;
+      padding: clamp(0.25rem, 1vw, 0.35rem);
+      transition: all 0.15s ease;
+      cursor: pointer;
+      margin-bottom: 0.5rem;
+    }
+
+    .broker-icon:hover,
+    .broker-icon.selected,
+    .broker-icon.border-primary {
+      border-color: hsl(var(--primary));
+      box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+      background: hsl(var(--muted));
+      transform: translateY(-0.05rem);
+    }
+
+    .profile-photo {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid hsl(var(--primary));
+    }
+
+    /* Mobile Header Compact Override */
+
+    /* Even more compact header for mobile */
+    @media (max-width: 767.98px) {
+      .header {
+        height: 64px !important;
+      }
+
+      .header-content {
+        padding: 0 0px !important;
+      }
+
+      .header-left {
+        gap: 1px !important;
+        margin: 10px;
+      }
+
+      .header-right {
+        gap: 1px !important;
+        margin-right: 18px;
+      }
+
+      .logo {
+        height: 40px !important;
+      }
+
+      .header .btn-icon {
+        width: 30px !important;
+        height: 30px !important;
+      }
+
+      .header .btn-primary {
+        padding: 6px 10px !important;
+        font-size: 0px !important;
+        margin-right: 12px
+      }
+
+      .avatar {
+        width: 25px !important;
+        height: 25px !important;
+        font-size: 14px !important;
+      }
+
+      .header #notificationsToggle .header-notification-badge {
+        top: -3px !important;
+        right: -3px !important;
+        min-width: 18px !important;
+        height: 18px !important;
+        font-size: 9px !important;
+      }
+
+      /* Hamburger menu button */
+      .header .btn-ghost {
+        padding: 6px !important;
+      }
+    }
+
+    /* --- FIX SELECTORS (descendants, not the same element) --- */
+    .sidebar .collapsible-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .sidebar .collapsible-content {
+      display: none;
+      /* hidden by default */
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .sidebar .collapsible-content.open {
+      display: flex;
+      /* show when .open is toggled by JS */
+    }
+
+    /* Chevron on the RIGHT: right-facing when closed, down when open */
+    .sidebar .chevron {
+      margin-left: auto;
+      width: 16px;
+      height: 16px;
+      transition: transform .2s;
+      transform: rotate(-90deg);
+      /* ▶ (closed) */
+    }
+
+    .sidebar .chevron.rotate {
+      transform: rotate(0deg);
+      /* ▼ (open) */
+    }
+
+    /* Optional: keep active styling tidy for nested items */
+    .sidebar .collapsible-content .sidebar-item {
+      margin-left: 8px;
+    }
+
+    /* Turbo Router Loading State */
+    body.loading::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, hsl(var(--primary)), #fff);
+      animation: loading 1s infinite;
+      z-index: 9999;
+    }
+
+    @keyframes loading {
+      0% {
+        transform: translateX(-100%);
+      }
+
+      100% {
+        transform: translateX(100%);
+      }
+    }
+  
+  </style>
+</head>
+
+<body data-user-id="{{ logged_in_user.id if logged_in_user else '' }}">
+  <!-- Header/Navbar -->
+  <header class="header">
+    <div class="header-content">
+      <div class="header-left">
+        <button class="btn btn-ghost btn-icon" id="menuToggle">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <a href="/Summary">
+          <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="DhanBot" class="logo">
+        </a>
+      </div>
+
+      <div class="header-right">
+        <a href="{{ url_for('demat_strategies') }}" class="btn btn-primary hide-mobile">
+          <span style="font-size: 18px; margin-right: 8px;">+</span>
+          New Automation
+        </a>
+        <button class="btn btn-ghost btn-icon" id="notificationsToggle" style="position: relative;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span class="badge header-notification-badge" id="notificationBadge" style="display: none;">0</span>
+        </button>
+        {% set profile_image_url = '' %}
+        {% set raw_name = '' %}
+        {% set raw_full_name = '' %}
+        {% set raw_email = '' %}
+        {% if logged_in_user %}
+        {% set raw_name = logged_in_user.name | default('', true) %}
+        {% set raw_full_name = logged_in_user.full_name | default('', true) %}
+        {% set raw_email = logged_in_user.email | default('', true) %}
+        {% if logged_in_user.profile_image %}
+        {% if logged_in_user.profile_image.startswith('data:') %}
+        {% set profile_image_url = logged_in_user.profile_image %}
+        {% else %}
+        {% set profile_image_url = url_for('profile_image_file', filename=logged_in_user.profile_image.split('/')[-1])
+        %}
+        {% endif %}
+        {% endif %}
+        {% endif %}
+        {% set display_name = (raw_full_name or raw_name or 'Xclusive Money') %}
+        {% set display_email = (raw_email or 'xclusive.moneyy@gmail.com') %}
+        {% set fallback_text = (display_name or display_email) | trim %}
+        {% set avatar_initials = 'XM' %}
+        {% if fallback_text %}
+        {% set name_parts = fallback_text.split() %}
+        {% if name_parts|length > 1 %}
+        {% set avatar_initials = name_parts[0][0] ~ name_parts[-1][0] %}
+        {% else %}
+        {% set avatar_initials = fallback_text[:2] %}
+        {% endif %}
+        {% endif %}
+
+        <div class="profile-dropdown" id="profileDropdown">
+          <button class="profile-trigger" type="button" id="profileDropdownButton" aria-haspopup="true"
+            aria-expanded="false">
+            <span class="visually-hidden">Open profile menu</span>
+            <div class="profile-avatar">
+              {% if profile_image_url %}
+              <img src="{{ profile_image_url }}" alt="{{ display_name }} avatar">
+              {% else %}
+              <span class="profile-avatar-fallback">{{ avatar_initials | upper }}</span>
+              {% endif %}
+            </div>
+          </button>
+          <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu"
+            aria-labelledby="profileDropdownButton">
+            <div class="profile-dropdown-header">
+              <div class="profile-dropdown-avatar">
+                {% if profile_image_url %}
+                <img src="{{ profile_image_url }}" alt="{{ display_name }} avatar">
+                {% else %}
+                <span class="profile-avatar-fallback">{{ avatar_initials | upper }}</span>
+                {% endif %}
+              </div>
+              <div class="profile-dropdown-user">
+                <div class="profile-dropdown-name">{{ display_name }}</div>
+                <div class="profile-dropdown-email">{{ display_email }}</div>
+              </div>
+            </div>
+            <div class="profile-dropdown-list">
+              <a class="profile-dropdown-item is-active" href="{{ url_for('user_profile') }}" role="menuitem">
+                <svg class="profile-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                Account
+              </a>
+              <a class="profile-dropdown-item" href="/Summary" role="menuitem">
+                <svg class="profile-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                Dashboard
+              </a>
+              <button type="button" class="profile-dropdown-item" id="profileLogoutButton" role="menuitem"
+                onclick="logout()">
+                <svg class="profile-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sidebar Overlay (mobile only) -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-content">
+      <!-- Dashboard Section -->
+      <div class="sidebar-header">Dashboard</div>
+      <a class="sidebar-item" href="/Summary">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span>Summary</span>
+      </a>
+      <a class="sidebar-item" href="/Add-Account">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+        <span>Account Config</span>
+      </a>
+      <a class="sidebar-item" href="/copy-trading">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        <span>Copy Trading</span>
+      </a>
+
+      <!-- Alert to Trade Collapsible -->
+      <button class="sidebar-item" id="alertToTradeToggle">
+        <div class="collapsible-trigger">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span>Alert to Trade</span>
+          </div>
+          <svg class="chevron" id="alertChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+      </button>
+      <div class="collapsible-content" id="alertContent">
+        <a class="sidebar-item nested" href="/demat-strategies">
+          <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span>Existing Alerts</span>
+        </a>
+        <a class="sidebar-item nested" href="/create-alerts">
+          <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="20" x2="12" y2="10"></line>
+            <line x1="18" y1="20" x2="18" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="16"></line>
+          </svg>
+          <span>Create Alert</span>
+        </a>
+      </div>
+
+      <a class="sidebar-item" href="/groups">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <circle cx="16" cy="7" r="4"></circle>
+        </svg>
+        <span>Groups</span>
+      </a>
+      <a class="sidebar-item" href="/strategy-marketplace">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path>
+          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+          <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path>
+          <path d="M2 7h20"></path>
+          <path
+            d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7">
+          </path>
+        </svg>
+        <span>Marketplace</span>
+      </a>
+
+      <!-- Management Section -->
+      <div class="sidebar-header">Management</div>
+      <a class="sidebar-item" href="/users">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>Users</span>
+      </a>
+      <a class="sidebar-item" href="/invoices">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        <span>Invoices</span>
+      </a>
+      <a class="sidebar-item" href="/change-plan">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect width="20" height="14" x="2" y="5" rx="2"></rect>
+          <line x1="2" x2="22" y1="10" y2="10"></line>
+        </svg>
+        <span>Pricing</span>
+      </a>
+
+      <!-- Support Section -->
+      <div class="sidebar-header">Support</div>
+      <a class="sidebar-item" href="{{ url_for('Whatsapp_support') }}">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path
+            d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+          </path>
+        </svg>
+        <span>WhatsApp</span>
+      </a>
+      <a class="sidebar-item" href="{{ url_for('discord_page') }}">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path
+            d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037 11.356 11.356 0 0 0-.608 1.25 16.406 16.406 0 0 0-5.487 0 11.484 11.484 0 0 0-.618-1.25.077.077 0 0 0-.078-.037 19.736 19.736 0 0 0-4.885 1.515.07.07 0 0 0-.032.028C.533 9.046-.319 13.58.1 18.058a.082.082 0 0 0 .031.056 19.286 19.286 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 13.546 13.546 0 0 0 1.226-1.994.076.076 0 0 0-.042-.106 12.41 12.41 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .078-.01c3.927 1.793 8.179 1.793 12.06 0a.074.074 0 0 1 .079.01c.12.1.246.198.373.292a.077.077 0 0 1-.007.128 12.304 12.304 0 0 1-1.873.891.077.077 0 0 0-.04.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .085.029 19.37 19.37 0 0 0 6.002-3.03.077.077 0 0 0 .031-.055c.5-5.177-.838-9.674-3.548-13.661a.061.061 0 0 0-.031-.028zM8.02 15.331c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.419 0 1.333-.956 2.419-2.157 2.419zm7.976 0c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.419 0 1.333-.946 2.419-2.157 2.419z">
+          </path>
+        </svg>
+        <span>Discord</span>
+      </a>
+      <a class="sidebar-item" href="{{ url_for('tutorials') }}">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="23 7 16 12 23 17 23 7"></polygon>
+          <rect width="15" height="14" x="1" y="5" rx="2" ry="2"></rect>
+        </svg>
+        <span>Tutorials</span>
+      </a>
+      <button class="sidebar-item" id="bugReportButton" type="button" aria-label="Report a bug">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 8l1-2-2-2-2 1a5 5 0 0 0-6 0l-2-1-2 2 1 2a5 5 0 0 0 0 6l-1 2 2 2 2-1a5 5 0 0 0 6 0l2 1 2-2-1-2a5 5 0 0 0 0-6z"></path>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>Report Bug</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="page-wrapper container py-4" id="page-container" data-page="{{ request.path|replace('/', '') }}">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+
+  <!-- Notifications Drawer -->
+  <div class="drawer-overlay" id="notificationsOverlay" aria-hidden="true"></div>
+  <aside class="notification-drawer" id="notificationsDrawer" aria-hidden="true" aria-labelledby="notificationsTitle"
+    role="dialog">
+    <div class="drawer-header">
+      <div class="drawer-header-info">
+        <h2 class="drawer-title" id="notificationsTitle">Notifications Center</h2>
+        <div class="notification-badge" id="drawerNotificationBadge" hidden>
+          <span class="unread-badge" id="drawerUnreadBadge">0</span>
+          <span class="unread-text">New notifications for you</span>
+        </div>
+      </div>
+      <div class="drawer-header-actions">
+        <button type="button" class="clear-button" id="notificationsClear" aria-label="Clear all notifications"
+          disabled>Clear all</button>
+        <button type="button" class="close-button" id="notificationsClose"
+          aria-label="Close notifications">&times;</button>
+      </div>
+    </div>
+    <div class="drawer-tabs">
+      <div class="tabs-list">
+        <button class="tab-button active" type="button" data-tab="all">All <span class="tab-count" data-tab-count="all"
+            hidden>0</span></button>
+        <button class="tab-button" type="button" data-tab="strategies">Strategies <span class="tab-count"
+            data-tab-count="strategies" hidden>0</span></button>
+        <button class="tab-button" type="button" data-tab="brokers">Brokers <span class="tab-count"
+            data-tab-count="brokers" hidden>0</span></button>
+        <button class="tab-button" type="button" data-tab="billing">Billing <span class="tab-count"
+            data-tab-count="billing" hidden>0</span></button>
+        <button class="tab-button" type="button" data-tab="system">System <span class="tab-count"
+            data-tab-count="system" hidden>0</span></button>
+      </div>
+    </div>
+    <div class="drawer-content">
+      <div class="drawer-loading" id="notificationsLoading" role="status">
+        <span class="loader" aria-hidden="true"></span>
+        <span>Loading notifications…</span>
+      </div>
+      <div class="empty-state" id="notificationsEmpty" hidden>
+        <div class="empty-state-text">No notifications</div>
+      </div>
+      <div class="notifications-list" id="notificationsList" hidden aria-live="polite"></div>
+    </div>
+  </aside>
+
+  <!-- Bug Report Modal -->
+  <div id="bugReportModal" class="custom-modal-backdrop" aria-hidden="true" role="dialog"
+    aria-labelledby="bugReportTitle">
+    <div class="custom-modal-content">
+      <div class="custom-modal-header">
+        <h5 class="custom-modal-title" id="bugReportTitle">Report a Bug</h5>
+        <button type="button" class="custom-modal-close-btn" id="bugReportClose" aria-label="Close bug report modal">
+          &times;
+        </button>
+      </div>
+      <form id="bugReportForm" class="d-flex flex-column gap-2">
+        <div class="custom-modal-body">
+          <div class="mb-3">
+            <label for="bugSummary" class="form-label">Summary</label>
+            <input type="text" class="form-control" id="bugSummary" name="summary" placeholder="Short summary" required>
+          </div>
+          <div class="mb-3">
+            <label for="bugDescription" class="form-label">Description</label>
+            <textarea class="form-control" id="bugDescription" name="description" rows="4"
+              placeholder="Steps to reproduce, expected vs actual behavior" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="bugAttachment" class="form-label">Attachments</label>
+            <input class="form-control" type="file" id="bugAttachment" name="attachments" accept="image/*,video/*"
+              multiple required>
+            <small class="text-muted">Add screenshots or recordings to help us debug faster.</small>
+          </div>
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label for="bugPageUrl" class="form-label">Page URL (optional)</label>
+              <input type="url" class="form-control" id="bugPageUrl" name="page_url" placeholder="https://...">
+            </div>
+            <div class="col-12 col-md-6">
+              <label for="bugBrowserInfo" class="form-label">Browser info (optional)</label>
+              <input type="text" class="form-control" id="bugBrowserInfo" name="browser_info"
+                placeholder="Browser / OS">
+            </div>
+          </div>
+          <div class="mt-2 d-none" id="bugReportStatus" role="alert"></div>
+        </div>
+        <div class="custom-modal-footer">
+          <button type="button" class="btn btn-secondary" id="bugReportCancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="bugReportSubmit">
+            <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"
+              id="bugReportSpinner"></span>
+            Submit Report
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Custom Alert Modal -->
+  <div id="custom-alert-modal" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <div class="custom-modal-header">
+        <h5 class="custom-modal-title" id="custom-alert-title">Alert</h5>
+        <button type="button" class="custom-modal-close-btn" onclick="hideCustomAlert()">&times;</button>
+      </div>
+      <div class="custom-modal-body" id="custom-alert-message"></div>
+      <div class="custom-modal-footer">
+        <button type="button" class="btn btn-primary" onclick="hideCustomAlert()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Confirm Modal -->
+  <div id="custom-confirm-modal" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <div class="custom-modal-header">
+        <h5 class="custom-modal-title" id="custom-confirm-title">Confirm Action</h5>
+        <button type="button" class="custom-modal-close-btn" onclick="cancelCustomConfirm()">&times;</button>
+      </div>
+      <div class="custom-modal-body" id="custom-confirm-message"></div>
+      <div class="custom-modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cancelCustomConfirm()">Cancel</button>
+        <button type="button" class="btn btn-primary" id="custom-confirm-ok-btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script id="bug-report-script" data-global-script="true">
+    document.addEventListener('DOMContentLoaded', function () {
+      const bugReportModal = document.getElementById('bugReportModal');
+      const bugReportButton = document.getElementById('bugReportButton');
+      const bugReportClose = document.getElementById('bugReportClose');
+      const bugReportCancel = document.getElementById('bugReportCancel');
+      const bugReportForm = document.getElementById('bugReportForm');
+      const bugReportStatus = document.getElementById('bugReportStatus');
+      const bugReportSubmit = document.getElementById('bugReportSubmit');
+      const bugReportSpinner = document.getElementById('bugReportSpinner');
+      const bugPageUrl = document.getElementById('bugPageUrl');
+      const bugBrowserInfo = document.getElementById('bugBrowserInfo');
+      const bugAttachment = document.getElementById('bugAttachment');
+
+      if (!bugReportModal) return;
+
+      const resetStatus = () => {
+        bugReportStatus.className = 'mt-2 d-none';
+        bugReportStatus.textContent = '';
+      };
+
+      const setStatus = (variant, message) => {
+        bugReportStatus.className = `mt-2 alert alert-${variant}`;
+        bugReportStatus.textContent = message;
+      };
+
+      const toggleModal = (show) => {
+        if (show) {
+          bugReportModal.classList.add('show');
+          bugReportModal.setAttribute('aria-hidden', 'false');
+        } else {
+          bugReportModal.classList.remove('show');
+          bugReportModal.setAttribute('aria-hidden', 'true');
+        }
+      };
+
+      const fillMetadata = () => {
+        bugPageUrl.value = window.location.href;
+        bugBrowserInfo.value = navigator.userAgent;
+      };
+
+      const resetForm = () => {
+        bugReportForm.reset();
+        fillMetadata();
+        resetStatus();
+        bugReportSpinner.classList.add('d-none');
+        bugReportSubmit.disabled = false;
+        bugReportCancel.disabled = false;
+      };
+
+      const handleOpen = () => {
+        resetForm();
+        toggleModal(true);
+      };
+
+      const handleClose = () => {
+        toggleModal(false);
+      };
+
+      bugReportButton?.addEventListener('click', handleOpen);
+      bugReportClose?.addEventListener('click', handleClose);
+      bugReportCancel?.addEventListener('click', handleClose);
+
+      bugReportModal.addEventListener('click', (event) => {
+        if (event.target === bugReportModal) {
+          handleClose();
+        }
+      });
+
+      bugReportForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        resetStatus();
+        bugReportSubmit.disabled = true;
+        bugReportCancel.disabled = true;
+        bugReportSpinner.classList.remove('d-none');
+
+        const formData = new FormData(bugReportForm);
+        formData.set('page_url', bugPageUrl.value.trim());
+        formData.set('browser_info', bugBrowserInfo.value.trim());
+
+        try {
+          setStatus('info', 'Sending your report…');
+          const response = await fetch('/api/report-bug', {
+            method: 'POST',
+            body: formData,
+          });
+
+          const contentType = response.headers.get('content-type') || '';
+          const isJson = contentType.includes('application/json');
+          const payload = isJson ? await response.json() : null;
+
+          if (!response.ok) {
+            throw new Error(payload?.message || 'Failed to submit bug report. Please try again.');
+          }
+
+          setStatus('success', payload?.message || 'Bug report sent! Thank you for helping us improve.');
+          bugAttachment.value = '';
+          bugReportForm.reset();
+          fillMetadata();
+        } catch (error) {
+          console.error('Bug report submission failed:', error);
+          setStatus('danger', error.message || 'Something went wrong while sending your report.');
+        } finally {
+          bugReportSpinner.classList.add('d-none');
+          bugReportSubmit.disabled = false;
+          bugReportCancel.disabled = false;
+        }
+      });
+
+      fillMetadata();
+    });
+  </script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+    data-global-script="true"></script>
+  <script src="{{ url_for('static', filename='js/notifications-panel.js') }}" defer data-global-script="true"></script>
+  <!-- Disabled turbo-router.js - conflicts with main SPA cache system in layout.html -->
+  <!-- <script src="{{ url_for('static', filename='js/turbo-router.js') }}" defer data-global-script="true"></script> -->
+  <script id="spa-script" data-global-script="true">
+    function initializeProfileDropdown() {
+      const dropdown = document.getElementById('profileDropdownMenu');
+      const trigger = document.getElementById('profileDropdownButton');
+
+      if (window.__profileDropdownCleanup) {
+        window.__profileDropdownCleanup();
+        window.__profileDropdownCleanup = null;
+      }
+
+      if (!dropdown || !trigger) {
+        return;
+      }
+
+      const closeDropdown = () => {
+        dropdown.classList.remove('show');
+        trigger.setAttribute('aria-expanded', 'false');
+      };
+
+      const openDropdown = () => {
+        dropdown.classList.add('show');
+        trigger.setAttribute('aria-expanded', 'true');
+      };
+
+      closeDropdown();
+
+      const onTriggerClick = (event) => {
+        event.preventDefault();
+        const isOpen = dropdown.classList.contains('show');
+        if (isOpen) {
+          closeDropdown();
+        } else {
+          openDropdown();
+        }
+      };
+
+      const onDocumentClick = (event) => {
+        if (!dropdown.contains(event.target) && !trigger.contains(event.target)) {
+          closeDropdown();
+        }
+      };
+
+      const onKeydown = (event) => {
+        if (event.key === 'Escape') {
+          closeDropdown();
+          trigger.focus();
+        }
+      };
+
+      trigger.addEventListener('click', onTriggerClick);
+      document.addEventListener('click', onDocumentClick);
+      document.addEventListener('keydown', onKeydown);
+
+      window.__profileDropdownCleanup = () => {
+        trigger.removeEventListener('click', onTriggerClick);
+        document.removeEventListener('click', onDocumentClick);
+        document.removeEventListener('keydown', onKeydown);
+      };
+    }
+
+    window.initializeProfileDropdown = initializeProfileDropdown;
+
+    // Sidebar toggle
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    function toggleSidebar(forceOpen) {
+      if (!sidebar || !sidebarOverlay) return;
+
+      const isCurrentlyOpen = sidebar.classList.contains('open');
+      const shouldOpen = forceOpen !== undefined ? forceOpen : !isCurrentlyOpen;
+
+      sidebar.classList.toggle('open', shouldOpen);
+      sidebarOverlay.classList.toggle('active', shouldOpen);
+      document.body.classList.toggle('sidebar-open', shouldOpen);
+    }
+
+    if (menuToggle) {
+      menuToggle.addEventListener('click', () => {
+        const shouldOpen = !sidebar.classList.contains('open');
+        toggleSidebar(shouldOpen);
+      });
+    }
+
+    if (sidebarOverlay) {
+      sidebarOverlay.addEventListener('click', () => {
+        toggleSidebar(false);
+      });
+    }
+
+    // Alert to Trade collapsible
+    const alertToggle = document.getElementById('alertToTradeToggle');
+    const alertContent = document.getElementById('alertContent');
+    const alertChevron = document.getElementById('alertChevron');
+
+    if (alertToggle) {
+      alertToggle.addEventListener('click', () => {
+        alertContent.classList.toggle('open');
+        alertChevron.classList.toggle('rotate');
+      });
+    }
+
+    // Highlight active page in sidebar
+    function highlightActivePage() {
+      const currentPath = window.location.pathname;
+      document.querySelectorAll('.sidebar-item').forEach(item => {
+        const href = item.getAttribute('href');
+        if (href && currentPath === href) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+    }
+
+    // Custom Alert/Confirm Modals
+    let _confirmCallback = null;
+
+    function showCustomAlert(message, title = 'Alert') {
+      document.getElementById('custom-alert-title').textContent = title;
+      document.getElementById('custom-alert-message').textContent = message;
+      document.getElementById('custom-alert-modal').classList.add('show');
+    }
+
+    function hideCustomAlert() {
+      document.getElementById('custom-alert-modal').classList.remove('show');
+    }
+
+    function showCustomConfirm(message, callback, title = 'Confirm Action') {
+      document.getElementById('custom-confirm-title').textContent = title;
+      document.getElementById('custom-confirm-message').textContent = message;
+      _confirmCallback = callback;
+      document.getElementById('custom-confirm-modal').classList.add('show');
+    }
+
+    function confirmCustomConfirm() {
+      if (_confirmCallback) {
+        _confirmCallback(true);
+      }
+      document.getElementById('custom-confirm-modal').classList.remove('show');
+      _confirmCallback = null;
+    }
+
+    function cancelCustomConfirm() {
+      if (_confirmCallback) {
+        _confirmCallback(false);
+      }
+      document.getElementById('custom-confirm-modal').classList.remove('show');
+      _confirmCallback = null;
+    }
+
+    document.getElementById('custom-confirm-ok-btn').addEventListener('click', confirmCustomConfirm);
+
+    const STRATEGY_PAYLOAD_STORAGE_PREFIX = 'strategyPayload_';
+
+    function getDashboardUserId() {
+      if (typeof window.__dashboardUserId === 'string') {
+        return window.__dashboardUserId;
+      }
+      const datasetId = document.body?.dataset?.userId;
+      if (datasetId) {
+        window.__dashboardUserId = datasetId;
+        return datasetId;
+      }
+      let storedId = '';
+      try {
+        storedId = window.localStorage ? window.localStorage.getItem('user_id') || '' : '';
+      } catch (error) {
+        storedId = '';
+      }
+      window.__dashboardUserId = storedId || '';
+      return window.__dashboardUserId;
+    }
+
+    window.getDashboardUserId = getDashboardUserId;
+
+    function purgeStrategyPayloadCache(options = {}) {
+      if (!window.localStorage) {
+        return;
+      }
+      const userId = options.userId || getDashboardUserId();
+      if (!userId) {
+        return;
+      }
+      const preserveStrategyId = options.preserveStrategyId ?? null;
+      const preserveUpdatedAt = options.preserveUpdatedAt ?? null;
+      const storage = window.localStorage;
+      const keysToRemove = [];
+      for (let i = 0; i < storage.length; i += 1) {
+        const key = storage.key(i);
+        if (!key || !key.startsWith(STRATEGY_PAYLOAD_STORAGE_PREFIX)) {
+          continue;
+        }
+        let entry = null;
+        try {
+          entry = JSON.parse(storage.getItem(key));
+        } catch (error) {
+          entry = null;
+        }
+        if (!entry || typeof entry !== 'object' || !entry.userId) {
+          keysToRemove.push(key);
+          continue;
+        }
+        if (entry.userId !== userId) {
+          continue;
+        }
+        if (preserveStrategyId && entry.strategyId === preserveStrategyId) {
+          if (preserveUpdatedAt) {
+            const entryTime = Date.parse(entry.updatedAt);
+            const preserveTime = Date.parse(preserveUpdatedAt);
+            if (!Number.isNaN(entryTime) && !Number.isNaN(preserveTime) && entryTime === preserveTime) {
+              continue;
+            }
+            if (!entry.updatedAt && !Number.isNaN(preserveTime)) {
+              continue;
+            }
+          } else {
+            continue;
+          }
+        }
+        keysToRemove.push(key);
+      }
+      keysToRemove.forEach(key => storage.removeItem(key));
+    }
+
+    window.purgeStrategyPayloadCache = purgeStrategyPayloadCache;
+
+    // Logout function
+    function logout() {
+      const userId = getDashboardUserId();
+      try {
+        if (typeof window.purgeStrategyPayloadCache === 'function') {
+          window.purgeStrategyPayloadCache({ userId });
+        }
+      } catch (error) {
+        console.warn('Failed to purge strategy payload cache on logout', error);
+      }
+      try {
+        localStorage.clear();
+      } catch (error) {
+        // ignore storage issues
+      }
+      window.location.href = "/logout";
+    }
+
+    // Enable all dropdowns
+    function enableDropdowns() {
+      document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(trigger => {
+        bootstrap.Dropdown.getOrCreateInstance(trigger);
+      });
+    }
+
+    // SPA Navigation
+    let currentSPAFetchController = null;
+    let currentSPARequestId = 0;
+    const currentUserId = document.body.dataset.userId || 'guest';
+    const SPA_SCRIPT_ID = 'spa-script';
+    const PAGE_SCRIPT_ATTR = 'data-page-script';
+    const PAGE_SCRIPT_KEY_ATTR = 'data-page-script-key';
+    const PAGE_STYLE_ATTR = 'data-page-style';
+    const PAGE_STYLE_KEY_ATTR = 'data-page-style-key';
+    const spaCache = new Map();
+    const SPA_CACHE_STORAGE_KEY = `spa:fragment-cache:${currentUserId}:v1`;
+    const SPA_CACHE_MAX_ENTRIES = 20;
+    const SPA_CACHE_TTL = 60 * 60 * 1000; // Increased to 60 minutes
+    const SPA_CACHE_STALE_GRACE_PERIOD = 24 * 60 * 60 * 1000; // 24 hours grace period to ensure we always have stale data
+    const SPA_CACHE_REFRESH_LEAD_TIME = 60 * 1000;
+    const SPA_CACHE_REFRESH_INTERVAL = Math.max(60 * 1000, SPA_CACHE_TTL - SPA_CACHE_REFRESH_LEAD_TIME);
+    let spaCacheHydrated = false;
+
+    // Priority pages for smart cache pruning
+    const PRIORITY_PAGES = new Set(['summary', 'copy-trading', 'Add-Account', 'demat-strategies', 'create-alerts', 'change-plan', 'subscriptions']);
+    const spaCacheStorageAvailable = (() => {
+      try {
+        const testKey = '__spa_cache_test__';
+        sessionStorage.setItem(testKey, '1');
+        sessionStorage.removeItem(testKey);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    })();
+    window.pagePrefetchers = window.pagePrefetchers || {};
+
+    const PREFETCH_KEY_DEFAULTS = {
+      summary: 'page:summary-data',
+      accountInfo: 'page:account-info',
+      dashboard: 'page:dashboard-data',
+      notifications: 'page:notifications-feed'
+    };
+    const existingPrefetchKeys = (window.PAGE_PREFETCH_KEYS && typeof window.PAGE_PREFETCH_KEYS === 'object')
+      ? window.PAGE_PREFETCH_KEYS
+      : {};
+    window.PAGE_PREFETCH_KEYS = Object.freeze({ ...PREFETCH_KEY_DEFAULTS, ...existingPrefetchKeys });
+
+    const PAGE_PREFETCH_STORAGE_NAMESPACE = 'spa:page-prefetch-cache';
+    const PAGE_PREFETCH_STORAGE_VERSION = 2;
+    const PAGE_PREFETCH_STORAGE_KEY = `${PAGE_PREFETCH_STORAGE_NAMESPACE}:${currentUserId}:v${PAGE_PREFETCH_STORAGE_VERSION}`;
+    const PAGE_PREFETCH_DEFAULT_TTL = Number.isFinite(window.PAGE_PREFETCH_DEFAULT_TTL)
+      ? Math.max(window.PAGE_PREFETCH_DEFAULT_TTL, 10 * 60 * 1000)
+      : 60 * 60 * 1000; // Increased default to 60 minutes to match SPA cache
+    window.PAGE_PREFETCH_DEFAULT_TTL = PAGE_PREFETCH_DEFAULT_TTL;
+    const pagePrefetchCache = new Map();
+    const pagePrefetchPromises = new Map();
+    const pagePrefetchExpiryTimers = new Map();
+    let pagePrefetchHydrated = false;
+    const pagePrefetchPersistentStorage = (() => {
+      try {
+        const testKey = '__spa_prefetch_persist_test__';
+        localStorage.setItem(testKey, '1');
+        localStorage.removeItem(testKey);
+        return localStorage;
+      } catch (error) {
+        return null;
+      }
+    })();
+    const pagePrefetchLegacySessionStorage = (() => {
+      try {
+        const testKey = '__spa_prefetch_session_test__';
+        sessionStorage.setItem(testKey, '1');
+        sessionStorage.removeItem(testKey);
+        return sessionStorage;
+      } catch (error) {
+        return null;
+      }
+    })();
+
+    function createPrefetchEntry(value, ttl) {
+      const now = Date.now();
+      const expiresAt = typeof ttl === 'number' && Number.isFinite(ttl) && ttl > 0
+        ? now + ttl
+        : null;
+      return { value, storedAt: now, expiresAt };
+    }
+
+    function normalizePrefetchEntry(raw) {
+      if (raw && typeof raw === 'object' && 'value' in raw) {
+        const storedAt = typeof raw.storedAt === 'number' ? raw.storedAt : Date.now();
+        const expiresAt = typeof raw.expiresAt === 'number' ? raw.expiresAt : null;
+        return { value: raw.value, storedAt, expiresAt };
+      }
+      return createPrefetchEntry(raw, null);
+    }
+
+    function isPrefetchEntryExpired(entry) {
+      if (!entry || typeof entry !== 'object') return false;
+      if (!entry.expiresAt) return false;
+      return entry.expiresAt <= Date.now();
+    }
+
+    function readPrefetchEntriesFromStorage(storage, key) {
+      if (!storage) return null;
+      try {
+        const raw = storage.getItem(key);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') {
+          storage.removeItem(key);
+          return null;
+        }
+        if ('version' in parsed) {
+          if (parsed.version !== PAGE_PREFETCH_STORAGE_VERSION || typeof parsed.entries !== 'object') {
+            storage.removeItem(key);
+            return null;
+          }
+          return parsed.entries;
+        }
+        // Legacy payloads were plain objects of entries
+        if (storage === pagePrefetchPersistentStorage) {
+          storage.removeItem(key);
+          return null;
+        }
+        return parsed;
+      } catch (error) {
+        storage.removeItem(key);
+        return null;
+      }
+    }
+
+    function hydratePagePrefetchCache() {
+      if (pagePrefetchHydrated) return;
+      pagePrefetchHydrated = true;
+
+      const hydrateFromEntries = (entries) => {
+        if (!entries) return false;
+        Object.entries(entries).forEach(([page, value]) => {
+          const entry = normalizePrefetchEntry(value);
+          if (!isPrefetchEntryExpired(entry)) {
+            pagePrefetchCache.set(page, entry);
+            schedulePrefetchRefresh(page, entry);
+          }
+        });
+        return true;
+      };
+
+      if (hydrateFromEntries(readPrefetchEntriesFromStorage(pagePrefetchPersistentStorage, PAGE_PREFETCH_STORAGE_KEY))) {
+        return;
+      }
+
+      // Fallback to any legacy session entries (older hydration strategy)
+      if (hydrateFromEntries(readPrefetchEntriesFromStorage(pagePrefetchLegacySessionStorage, PAGE_PREFETCH_STORAGE_NAMESPACE))) {
+        persistPagePrefetchCache();
+      }
+    }
+
+    function persistPagePrefetchCache() {
+      if (!pagePrefetchPersistentStorage) return;
+      try {
+        const activeEntries = Array.from(pagePrefetchCache.entries()).filter(([, entry]) => !isPrefetchEntryExpired(entry));
+        const serialized = JSON.stringify({
+          version: PAGE_PREFETCH_STORAGE_VERSION,
+          entries: Object.fromEntries(activeEntries)
+        });
+        pagePrefetchPersistentStorage.setItem(PAGE_PREFETCH_STORAGE_KEY, serialized);
+      } catch (error) {
+        // Ignore persistence errors (quota exceeded, etc.)
+      }
+    }
+
+    function getPagePrefetchData(page, options = {}) {
+      const { allowStale = true } = options; // Default to true to enable SWR pattern
+      if (!page) return undefined;
+      hydratePagePrefetchCache();
+      const entry = pagePrefetchCache.get(page);
+      if (!entry) return undefined;
+      const expired = isPrefetchEntryExpired(entry);
+      if (!expired) {
+        return entry.value;
+      }
+
+      if (allowStale) {
+        if (!pagePrefetchPromises.has(page)) {
+          Promise.resolve()
+            .then(() => runPagePrefetch(page, { force: true }))
+            .catch(error => {
+              console.error(`Failed to refresh stale prefetch for ${page}`, error);
+            });
+        }
+        return entry.value;
+      }
+
+      _impl_clearPagePrefetchData(page);
+      return undefined;
+    }
+
+    function updatePagePrefetchData(page, data, { persist = true, ttl } = {}) {
+      if (!page) return data;
+      hydratePagePrefetchCache();
+      let resolvedTtl = PAGE_PREFETCH_DEFAULT_TTL;
+      if (typeof ttl === 'number' && Number.isFinite(ttl) && ttl > 0) {
+        resolvedTtl = ttl;
+      } else if (ttl === null || (typeof ttl === 'number' && ttl <= 0)) {
+        resolvedTtl = null;
+      }
+      const entry = createPrefetchEntry(data, resolvedTtl);
+      pagePrefetchCache.set(page, entry);
+      schedulePrefetchRefresh(page, entry);
+      if (persist) {
+        persistPagePrefetchCache();
+      }
+      return data;
+    }
+
+    function _impl_clearPagePrefetchData(page, { persist = true } = {}) {
+      if (!pagePrefetchCache.has(page)) return;
+      pagePrefetchCache.delete(page);
+      cancelPrefetchRefresh(page);
+      if (persist) {
+        persistPagePrefetchCache();
+      }
+    }
+
+    function cancelPrefetchRefresh(page) {
+      const existingTimer = pagePrefetchExpiryTimers.get(page);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+        pagePrefetchExpiryTimers.delete(page);
+      }
+    }
+
+    function triggerPrefetchRefresh(page) {
+      if (!page) return;
+      cancelPrefetchRefresh(page);
+      runPagePrefetch(page, { force: true })
+        .catch(error => {
+          console.error(`Failed to refresh prefetch for ${page}`, error);
+        });
+    }
+
+    function schedulePrefetchRefresh(page, entry) {
+      if (!page) return;
+      cancelPrefetchRefresh(page);
+      if (!entry || !entry.expiresAt) return;
+      const delay = entry.expiresAt - Date.now();
+      if (delay <= 0) {
+        triggerPrefetchRefresh(page);
+        return;
+      }
+      const timerId = setTimeout(() => triggerPrefetchRefresh(page), delay);
+      pagePrefetchExpiryTimers.set(page, timerId);
+    }
+
+    function refreshExpiredPrefetchEntries() {
+      hydratePagePrefetchCache();
+      const now = Date.now();
+      pagePrefetchCache.forEach((entry, page) => {
+        if (entry?.expiresAt) {
+          if (entry.expiresAt <= now) {
+            triggerPrefetchRefresh(page);
+          } else {
+            schedulePrefetchRefresh(page, entry);
+          }
+        }
+      });
+    }
+
+    function registerPagePrefetcher(page, loader) {
+      if (!page || typeof loader !== 'function') return null;
+      hydratePagePrefetchCache();
+
+      const runner = function ({ force = false } = {}) {
+        const cached = getPagePrefetchData(page);
+        if (cached !== undefined && !force) {
+          return Promise.resolve(cached);
+        }
+
+        if (!force && pagePrefetchPromises.has(page)) {
+          return pagePrefetchPromises.get(page);
+        }
+
+        const context = {
+          cached,
+          getCached: () => getPagePrefetchData(page),
+          setCached: (value, options) => updatePagePrefetchData(page, value, options),
+          clearCached: (options) => _impl_clearPagePrefetchData(page, options)
+        };
+
+        const promise = Promise.resolve()
+          .then(() => loader(context))
+          .then(result => {
+            if (result !== undefined) {
+              updatePagePrefetchData(page, result);
+              return result;
+            }
+            const latest = getPagePrefetchData(page);
+            return latest !== undefined ? latest : null;
+          })
+          .catch(error => {
+            const fallback = getPagePrefetchData(page);
+            if (fallback !== undefined) {
+              console.error(`Prefetcher for ${page} failed`, error);
+              return fallback;
+            }
+            throw error;
+          })
+          .finally(() => {
+            pagePrefetchPromises.delete(page);
+          });
+
+        pagePrefetchPromises.set(page, promise);
+        return promise;
+      };
+
+      window.pagePrefetchers[page] = runner;
+      return runner;
+    }
+
+    function runPagePrefetch(page, options = {}) {
+      if (!page) return Promise.resolve(null);
+      const runner = window.pagePrefetchers && window.pagePrefetchers[page];
+      if (typeof runner !== 'function') {
+        const cached = getPagePrefetchData(page);
+        return Promise.resolve(cached !== undefined ? cached : null);
+      }
+
+      try {
+        const result = runner(options);
+        if (result && typeof result.then === 'function') {
+          return result.catch(error => {
+            console.error(`Prefetch execution failed for ${page}`, error);
+            const fallback = getPagePrefetchData(page);
+            return fallback !== undefined ? fallback : null;
+          });
+        }
+        return Promise.resolve(result ?? getPagePrefetchData(page) ?? null);
+      } catch (error) {
+        console.error(`Prefetch execution threw for ${page}`, error);
+        const fallback = getPagePrefetchData(page);
+        return Promise.resolve(fallback !== undefined ? fallback : null);
+      }
+    }
+
+    window.registerPagePrefetcher = registerPagePrefetcher;
+    window.runPagePrefetch = runPagePrefetch;
+    window.getPagePrefetchData = getPagePrefetchData;
+    window.getStalePagePrefetchData = (page) => getPagePrefetchData(page, { allowStale: true });
+    window.setPagePrefetchData = (page, data, options) => updatePagePrefetchData(page, data, options);
+    window.clearPagePrefetchData = (page, options) => _impl_clearPagePrefetchData(page, options);
+
+    function handleVisibilityRefresh() {
+      if (document.visibilityState === 'visible') {
+        refreshExpiredPrefetchEntries();
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityRefresh);
+    window.addEventListener('focus', refreshExpiredPrefetchEntries);
+    refreshExpiredPrefetchEntries();
+
+    function getCacheKey(url) {
+      try {
+        return new URL(url, window.location.origin).pathname;
+      } catch (error) {
+        return url;
+      }
+    }
+
+    function getPageNameFromUrl(url) {
+      if (!url || typeof url !== 'string') return '';
+      try {
+        const normalized = new URL(url, window.location.origin).pathname;
+        return normalized.replace(/^\/+/, '').replace(/\/+$/, '');
+      } catch (error) {
+        return url.replace(/^\/+/, '').split(/[?#]/)[0];
+      }
+    }
+
+    function renderPrefetchLoadingShell({ page, prefetchData } = {}) {
+      const pageContainer = document.querySelector('#page-container');
+      if (!pageContainer) return null;
+
+      if (page) {
+        pageContainer.dataset.page = page;
+      }
+
+      const shell = document.createElement('div');
+      shell.className = 'page-prefetch-shell';
+      shell.setAttribute('role', 'status');
+      shell.setAttribute('aria-live', 'polite');
+
+      const spinner = document.createElement('div');
+      spinner.className = 'page-shell-spinner';
+      spinner.setAttribute('aria-hidden', 'true');
+
+      const hint = document.createElement('p');
+      hint.className = 'page-shell-hint';
+      hint.textContent = prefetchData ? 'Preparing your data while the page loads…' : 'Loading page…';
+
+      const skeletons = document.createElement('div');
+      skeletons.className = 'page-shell-skeletons';
+      ['is-wide', '', ''].forEach(modifier => {
+        const bar = document.createElement('div');
+        bar.className = `page-shell-skeleton ${modifier}`.trim();
+        skeletons.appendChild(bar);
+      });
+
+      shell.appendChild(spinner);
+      shell.appendChild(hint);
+      shell.appendChild(skeletons);
+
+      if (prefetchData && typeof prefetchData === 'object') {
+        const html = prefetchData.shellHtml || prefetchData.html || prefetchData.fragmentHtml;
+        if (typeof html === 'string' && html.trim()) {
+          const preserved = document.createElement('div');
+          preserved.className = 'page-shell-prefetched';
+          preserved.innerHTML = html;
+          shell.appendChild(preserved);
+        }
+      }
+
+      pageContainer.innerHTML = '';
+      pageContainer.appendChild(shell);
+      return shell;
+    }
+
+    function setActiveSidebarLink(link) {
+      document.querySelectorAll('.sidebar .sidebar-item.active').forEach(activeLink => {
+        if (activeLink !== link) {
+          activeLink.classList.remove('active');
+        }
+      });
+      if (link) {
+        link.classList.add('active');
+      }
+    }
+
+    function normalizeScriptSrc(src) {
+      try {
+        return new URL(src, window.location.href).href;
+      } catch (error) {
+        return src;
+      }
+    }
+
+    function computeScriptKey(scriptEl) {
+      if (!scriptEl) return null;
+      if (scriptEl.src) {
+        return `src:${normalizeScriptSrc(scriptEl.src)}`;
+      }
+      const inlineContent = scriptEl.textContent ? scriptEl.textContent.trim() : '';
+      if (!inlineContent) return null;
+      return `inline:${inlineContent}`;
+    }
+
+    function normalizeStylesheetHref(href) {
+      try {
+        return new URL(href, window.location.href).href;
+      } catch (error) {
+        return href;
+      }
+    }
+
+    function computeStyleKey(styleEl) {
+      if (!styleEl) return null;
+      const tag = styleEl.tagName;
+      if (tag === 'LINK') {
+        if ((styleEl.rel || '').toLowerCase() !== 'stylesheet') return null;
+        const href = styleEl.getAttribute('href') || styleEl.href;
+        if (!href) return null;
+        return `href:${normalizeStylesheetHref(href)}`;
+      }
+      if (tag === 'STYLE') {
+        const inlineContent = styleEl.textContent ? styleEl.textContent.trim() : '';
+        if (!inlineContent) return null;
+        return `inline:${inlineContent}`;
+      }
+      return null;
+    }
+
+    function describeStyleElement(styleEl) {
+      const descriptor = {
+        tag: styleEl.tagName.toLowerCase(),
+        attrs: {},
+        text: ''
+      };
+      Array.from(styleEl.attributes || []).forEach(attr => {
+        descriptor.attrs[attr.name] = attr.value;
+      });
+      if (descriptor.tag === 'style') {
+        descriptor.text = styleEl.textContent || '';
+      }
+      descriptor.key = computeStyleKey(styleEl);
+      return descriptor;
+    }
+
+    function describeScriptElement(scriptEl) {
+      const descriptor = {
+        attrs: {},
+        src: '',
+        text: ''
+      };
+      Array.from(scriptEl.attributes || []).forEach(attr => {
+        if (attr.name === 'src') {
+          descriptor.src = attr.value;
+        } else {
+          descriptor.attrs[attr.name] = attr.value;
+        }
+      });
+      descriptor.key = computeScriptKey(scriptEl);
+      if (!descriptor.src) {
+        descriptor.text = scriptEl.textContent || '';
+      }
+      return descriptor;
+    }
+
+    function cloneDescriptor(descriptor) {
+      if (!descriptor || typeof descriptor !== 'object') return {};
+      const cloned = { ...descriptor };
+      if (descriptor.attrs && typeof descriptor.attrs === 'object') {
+        cloned.attrs = { ...descriptor.attrs };
+      }
+      return cloned;
+    }
+
+    function getFragmentTimestamp(fragment) {
+      if (!fragment || typeof fragment !== 'object') return 0;
+      if (typeof fragment.storedAt === 'number') return fragment.storedAt;
+      if (typeof fragment.cachedAt === 'number') return fragment.cachedAt;
+      return 0;
+    }
+
+    function isSpaCacheEntryStale(fragment, now = Date.now()) {
+      const storedAt = getFragmentTimestamp(fragment);
+      if (!storedAt) return false; // No timestamp = not stale, just invalid
+      const age = now - storedAt;
+      // Stale if older than TTL but younger than TTL + grace period
+      return age >= SPA_CACHE_TTL && age < (SPA_CACHE_TTL + SPA_CACHE_STALE_GRACE_PERIOD);
+    }
+
+    function isSpaCacheEntryExpired(fragment, now = Date.now()) {
+      const storedAt = getFragmentTimestamp(fragment);
+      if (!storedAt) return true;
+      return (now - storedAt) >= (SPA_CACHE_TTL + SPA_CACHE_STALE_GRACE_PERIOD);
+    }
+
+    function normalizeFragmentForCache(fragment, fallbackTimestamp) {
+      if (!fragment || typeof fragment !== 'object') return null;
+      const normalized = {
+        url: fragment.url || '',
+        html: fragment.html || '',
+        page: fragment.page || '',
+        styles: Array.isArray(fragment.styles) ? fragment.styles.map(cloneDescriptor) : [],
+        scripts: Array.isArray(fragment.scripts) ? fragment.scripts.map(cloneDescriptor) : [],
+        title: fragment.title || '',
+        storedAt: typeof fragment.storedAt === 'number' ? fragment.storedAt : (fallbackTimestamp || Date.now()),
+        lastAccessedAt: typeof fragment.lastAccessedAt === 'number' ? fragment.lastAccessedAt : Date.now(),
+        accessCount: typeof fragment.accessCount === 'number' ? fragment.accessCount : 0
+      };
+      return normalized;
+    }
+
+    function pruneSpaCache(maxEntries = SPA_CACHE_MAX_ENTRIES, { evictExpired = false } = {}) {
+      const now = Date.now();
+
+      if (evictExpired) {
+        spaCache.forEach((fragment, key) => {
+          if (isSpaCacheEntryExpired(fragment, now)) {
+            spaCache.delete(key);
+          }
+        });
+      }
+      if (!Number.isFinite(maxEntries) || maxEntries <= 0) return;
+      if (spaCache.size <= maxEntries) return;
+
+      // Smart cache pruning: prioritize frequently accessed and priority pages
+      const ordered = Array.from(spaCache.entries())
+        .map(([key, fragment]) => {
+          const page = fragment.page || getPageNameFromUrl(fragment.url || key);
+          const isPriority = PRIORITY_PAGES.has(page);
+          const lastAccessed = fragment.lastAccessedAt || getFragmentTimestamp(fragment);
+          const accessCount = fragment.accessCount || 0;
+
+          // Calculate score: higher = keep longer
+          // Priority pages get bonus, recent access and high access count increase score
+          const priorityBonus = isPriority ? 1000000 : 0;
+          const recencyScore = lastAccessed;
+          const frequencyScore = accessCount * 10000;
+          const score = priorityBonus + recencyScore + frequencyScore;
+
+          return { key, score, lastAccessed };
+        })
+        .sort((a, b) => a.score - b.score); // Lower score = evict first
+
+      while (spaCache.size > maxEntries && ordered.length) {
+        const next = ordered.shift();
+        if (next) {
+          spaCache.delete(next.key);
+        }
+      }
+    }
+
+    function persistSpaCache() {
+      if (!spaCacheStorageAvailable) return;
+      pruneSpaCache(SPA_CACHE_MAX_ENTRIES);
+      try {
+        const entries = [];
+        spaCache.forEach((fragment, key) => {
+          const normalized = normalizeFragmentForCache(fragment);
+          if (!normalized) return;
+          entries.push({
+            key,
+            cachedAt: normalized.cachedAt || Date.now(),
+            storedAt: normalized.storedAt || normalized.cachedAt || Date.now(),
+            fragment: normalized
+          });
+        });
+        const payload = {
+          version: 1,
+          entries
+        };
+        sessionStorage.setItem(SPA_CACHE_STORAGE_KEY, JSON.stringify(payload));
+      } catch (error) {
+        // Ignore persistence errors
+      }
+    }
+
+    function hydrateSpaCache() {
+      if (spaCacheHydrated) return;
+      spaCacheHydrated = true;
+      if (!spaCacheStorageAvailable) return;
+      try {
+        const raw = sessionStorage.getItem(SPA_CACHE_STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        const entries = Array.isArray(parsed?.entries) ? parsed.entries : [];
+        let hydrated = false;
+        entries
+          .filter(entry => entry && typeof entry.key === 'string' && entry.fragment && typeof entry.fragment === 'object')
+          .sort((a, b) => (getFragmentTimestamp(a) || 0) - (getFragmentTimestamp(b) || 0))
+          .forEach(entry => {
+            const normalized = normalizeFragmentForCache(entry.fragment, getFragmentTimestamp(entry));
+            if (!normalized) return;
+            spaCache.set(entry.key, normalized);
+            hydrated = true;
+          });
+        pruneSpaCache(SPA_CACHE_MAX_ENTRIES);
+        if (hydrated) {
+          persistSpaCache();
+        }
+      } catch (error) {
+        // Ignore hydration errors
+      }
+    }
+
+    function parsePageFragment(html, url) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const container = doc.querySelector('#page-container');
+      if (!container) {
+        return null;
+      }
+
+      const fragment = {
+        url,
+        html: container.innerHTML,
+        page: container.dataset.page || '',
+        styles: [],
+        scripts: [],
+        title: doc.querySelector('title')?.textContent?.trim() || ''
+      };
+
+      doc.querySelectorAll('link[rel="stylesheet"], style').forEach(styleEl => {
+        fragment.styles.push(describeStyleElement(styleEl));
+      });
+
+      doc.querySelectorAll('script').forEach(scriptEl => {
+        if (scriptEl.id === SPA_SCRIPT_ID) return;
+        fragment.scripts.push(describeScriptElement(scriptEl));
+      });
+
+      return fragment;
+    }
+
+    function injectStyleDescriptor(descriptor) {
+      const element = descriptor.tag === 'link'
+        ? document.createElement('link')
+        : document.createElement('style');
+      Object.entries(descriptor.attrs || {}).forEach(([name, value]) => {
+        if (value != null) {
+          element.setAttribute(name, value);
+        }
+      });
+      if (descriptor.tag === 'link' && !element.rel) {
+        element.rel = 'stylesheet';
+      }
+
+      if (descriptor.tag === 'style' && descriptor.text) {
+        element.textContent = descriptor.text;
+      }
+      element.setAttribute(PAGE_STYLE_ATTR, 'true');
+      if (descriptor.key) {
+        element.setAttribute(PAGE_STYLE_KEY_ATTR, descriptor.key);
+      }
+      document.head.appendChild(element);
+      return element;
+    }
+
+    function injectScriptDescriptor(descriptor) {
+      const script = document.createElement('script');
+      Object.entries(descriptor.attrs || {}).forEach(([name, value]) => {
+        if (value != null) {
+          script.setAttribute(name, value);
+        }
+      });
+      if (descriptor.src) {
+        script.src = descriptor.src;
+      } else if (descriptor.text) {
+        script.textContent = descriptor.text;
+      }
+      script.setAttribute(PAGE_SCRIPT_ATTR, 'true');
+      if (descriptor.key) {
+        script.setAttribute(PAGE_SCRIPT_KEY_ATTR, descriptor.key);
+      }
+      document.body.appendChild(script);
+    }
+
+    function removeInjectedPageScripts() {
+      document.querySelectorAll(`script[${PAGE_SCRIPT_ATTR}]`).forEach(script => script.remove());
+    }
+
+    // Per-page script hook
+    function reinitializePageScripts() {
+      const page = document.querySelector('#page-container')?.dataset.page;
+      if (window.pageScripts && typeof window.pageScripts[page] === "function") {
+        window.pageScripts[page]();
+      }
+    }
+
+    function applyPageFragment(fragment, { url, navigation = 'push' } = {}) {
+      const pageContainer = document.querySelector('#page-container');
+      if (!pageContainer || !fragment) return false;
+
+      const previousPageStyles = Array.from(document.querySelectorAll(`link[${PAGE_STYLE_ATTR}], style[${PAGE_STYLE_ATTR}]`));
+
+      const newPageStyles = fragment.styles.map(descriptor => injectStyleDescriptor(descriptor));
+      const stylesheetPromises = newPageStyles.map(element => {
+        if (element.tagName && element.tagName.toLowerCase() === 'link') {
+          return new Promise((resolve, reject) => {
+            const cleanup = () => {
+              element.removeEventListener('load', onLoad);
+              element.removeEventListener('error', onError);
+            };
+            const onLoad = () => {
+              cleanup();
+              resolve();
+            };
+            const onError = (error) => {
+              cleanup();
+              reject(error || new Error(`Failed to load stylesheet: ${element.href || element.getAttribute('href') || ''}`));
+            };
+            element.addEventListener('load', onLoad, { once: true });
+            element.addEventListener('error', onError, { once: true });
+
+            if (element.sheet) {
+              try {
+                element.sheet.cssRules;
+                cleanup();
+                resolve();
+              } catch (err) {
+                if (err && err.name === 'SecurityError') {
+                  cleanup();
+                  resolve();
+                }
+              }
+            }
+          });
+        }
+        return Promise.resolve();
+      });
+      const whenStylesReady = Promise.all(stylesheetPromises);
+
+      const finalizeFragmentSwap = () => {
+        previousPageStyles.forEach(style => style.remove());
+
+        pageContainer.innerHTML = fragment.html;
+
+        if (fragment.page) {
+          pageContainer.dataset.page = fragment.page;
+        }
+
+        if (fragment.title) {
+          document.title = fragment.title;
+        }
+
+        removeInjectedPageScripts();
+        fragment.scripts.forEach(descriptor => injectScriptDescriptor(descriptor));
+
+        highlightActivePage();
+        enableDropdowns();
+        window.initializeProfileDropdown?.();
+
+        setTimeout(reinitializePageScripts, 50);
+        window.initializeNotificationsPanel?.();
+      };
+
+      const hasPendingStyles = stylesheetPromises.length > 0;
+
+      if (hasPendingStyles) {
+        pageContainer.setAttribute('aria-busy', 'true');
+        whenStylesReady
+          .then(() => {
+            finalizeFragmentSwap();
+          })
+          .catch(error => {
+            console.error('Failed to load page styles', error);
+            finalizeFragmentSwap();
+          })
+          .finally(() => {
+            pageContainer.removeAttribute('aria-busy');
+          });
+      } else {
+        finalizeFragmentSwap();
+      }
+
+      if (url) {
+        if (navigation === 'replace') {
+          history.replaceState(null, '', url);
+        } else if (navigation === 'push') {
+          history.pushState(null, '', url);
+        }
+      }
+
+      return true;
+    }
+
+    const SIDEBAR_DATA_PREFETCH_KEYS = [
+      window.PAGE_PREFETCH_KEYS && window.PAGE_PREFETCH_KEYS.summary,
+      'Add-Account',
+      'copy-trading',
+      'demat-strategies',
+      'create-alerts',
+      'groups',
+      'strategy-marketplace',
+      'change-plan'
+    ].filter((key, index, list) => key && list.indexOf(key) === index);
+
+    function refreshExpiredPrefetchers(keys) {
+      if (!Array.isArray(keys) || keys.length === 0) {
+        return;
+      }
+
+      hydratePagePrefetchCache();
+
+      keys.forEach(key => {
+        if (!key) return;
+
+        const entry = pagePrefetchCache.get(key);
+        const expired = isPrefetchEntryExpired(entry);
+
+        if (expired) {
+          clearPagePrefetchData(key);
+        }
+
+        if (!entry || expired) {
+          try {
+            const runner = window.pagePrefetchers && window.pagePrefetchers[key];
+            const promise = typeof runner === 'function'
+              ? runner({ force: true })
+              : runPagePrefetch(key, { force: true });
+
+            if (promise && typeof promise.catch === 'function') {
+              promise.catch(() => { });
+            }
+          } catch (error) {
+            console.warn('Failed to refresh prefetch for', key, error);
+          }
+        }
+      });
+    }
+
+    function refreshExpiredSpaCacheEntries({ refetch = true } = {}) {
+      hydrateSpaCache();
+
+      const now = Date.now();
+      const refetchPromises = [];
+      let refreshed = false;
+
+      spaCache.forEach((fragment, key) => {
+        if (!isSpaCacheEntryStale(fragment, now)) {
+          return;
+        }
+
+        const fragmentUrl = fragment?.url || key;
+
+        if (!refetch || !fragmentUrl) {
+          return;
+        }
+
+        const cacheKey = getCacheKey(fragmentUrl);
+        const refetchPromise = fetchPageFragment(fragmentUrl)
+          .then(freshFragment => {
+            if (freshFragment) {
+              cacheFragment(cacheKey, freshFragment);
+              refreshed = true;
+            }
+          })
+          .catch(() => { });
+
+        refetchPromises.push(refetchPromise);
+      });
+
+
+      if (refetchPromises.length) {
+        Promise.allSettled(refetchPromises)
+          .then(() => {
+            if (refreshed) {
+              pruneSpaCache(SPA_CACHE_MAX_ENTRIES, { evictExpired: true });
+            }
+          })
+          .catch(() => { });
+      } else {
+        pruneSpaCache(SPA_CACHE_MAX_ENTRIES, { evictExpired: true });
+      }
+    }
+
+    function refreshSoonToExpireSpaEntries() {
+      hydrateSpaCache();
+      pruneSpaCache(SPA_CACHE_MAX_ENTRIES);
+
+      const now = Date.now();
+      const refreshCutoff = Math.max(0, SPA_CACHE_TTL - SPA_CACHE_REFRESH_LEAD_TIME);
+      const urls = getSidebarPrefetchUrls();
+      const refreshPromises = [];
+      let cacheMutated = false;
+
+      urls.forEach(url => {
+        if (!url) return;
+
+        const cacheKey = getCacheKey(url);
+        const fragment = spaCache.get(cacheKey);
+        const cachedAt = getFragmentTimestamp(fragment) || 0;
+        const age = now - cachedAt;
+        const needsRefresh = !fragment || age >= refreshCutoff;
+
+        if (!needsRefresh) return;
+
+        const promise = fetchPageFragment(url)
+          .then(freshFragment => {
+            if (freshFragment) {
+              cacheFragment(cacheKey, freshFragment);
+              cacheMutated = true;
+            }
+          })
+          .catch(() => { });
+
+        refreshPromises.push(promise);
+      });
+
+      if (refreshPromises.length) {
+        Promise.allSettled(refreshPromises)
+          .then(() => {
+            if (cacheMutated) {
+              persistSpaCache();
+            }
+          })
+          .catch(() => { });
+      }
+    }
+
+    function startSpaCacheRefreshTimer() {
+      const runRefresh = () => {
+        const task = () => {
+          refreshExpiredSpaCacheEntries({ refetch: true });
+          refreshSoonToExpireSpaEntries();
+        };
+
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(task, { timeout: 2000 });
+          return;
+        }
+
+        task();
+      };
+
+      runRefresh();
+      return setInterval(runRefresh, SPA_CACHE_REFRESH_INTERVAL);
+    }
+
+    function setupPrefetchRefreshHandlers() {
+      let refreshTimeout = null;
+      let spaCacheRefreshTimerId = null;
+
+      const scheduleRefresh = () => {
+        if (refreshTimeout) {
+          clearTimeout(refreshTimeout);
+        }
+        refreshTimeout = setTimeout(() => {
+          refreshExpiredPrefetchers(SIDEBAR_DATA_PREFETCH_KEYS);
+          refreshExpiredSpaCacheEntries({ refetch: true });
+        }, 120);
+      };
+
+      if (!spaCacheRefreshTimerId) {
+        spaCacheRefreshTimerId = startSpaCacheRefreshTimer();
+      }
+
+      window.addEventListener('focus', scheduleRefresh);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          scheduleRefresh();
+        }
+      });
+
+      scheduleRefresh();
+    }
+
+    function primeSidebarPrefetchers() {
+      if (typeof window.runPagePrefetch !== 'function') {
+        return;
+      }
+      SIDEBAR_DATA_PREFETCH_KEYS.forEach((key, index) => {
+        setTimeout(() => {
+          try {
+            const result = window.runPagePrefetch(key);
+            if (result && typeof result.catch === 'function') {
+              result.catch(() => { });
+            }
+          } catch (error) {
+            console.warn('Sidebar prefetch failed for', key, error);
+          }
+        }, index * 120);
+      });
+    }
+
+    function cacheFragment(cacheKey, fragment) {
+      hydrateSpaCache();
+      pruneSpaCache(SPA_CACHE_MAX_ENTRIES);
+      if (fragment) {
+        const storedAt = Date.now();
+        fragment.cachedAt = storedAt;
+        fragment.storedAt = storedAt;
+        const normalized = normalizeFragmentForCache(fragment, storedAt);
+        if (normalized) {
+          spaCache.set(cacheKey, normalized);
+          pruneSpaCache(SPA_CACHE_MAX_ENTRIES);
+          persistSpaCache();
+        }
+        if (fragment.page) {
+          const maybePrefetch = runPagePrefetch(fragment.page);
+          if (maybePrefetch && typeof maybePrefetch.then === 'function') {
+            maybePrefetch.catch(() => { });
+          }
+        }
+      }
+      return fragment;
+    }
+
+    function fetchPageFragment(url, { signal } = {}) {
+      return fetch(url, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        signal
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Failed to load ${url}: ${res.status}`);
+          }
+          return res.text();
+        })
+        .then(html => parsePageFragment(html, url));
+    }
+
+    function schedulePrefetch(url, { immediate = false } = {}) {
+      const cacheKey = getCacheKey(url);
+      hydrateSpaCache();
+      if (!url || spaCache.has(cacheKey)) {
+        return Promise.resolve();
+      }
+
+      const runTask = () => {
+        return fetchPageFragment(url)
+          .then(fragment => cacheFragment(cacheKey, fragment))
+          .catch(() => { });
+      };
+
+      if (immediate) {
+        return runTask();
+      }
+
+      if ('requestIdleCallback' in window) {
+        return new Promise(resolve => {
+          requestIdleCallback(() => {
+            runTask().finally(resolve);
+          }, { timeout: 3000 });
+        });
+      }
+
+      return new Promise(resolve => {
+        setTimeout(() => {
+          runTask().finally(resolve);
+        }, 300);
+      });
+    }
+
+    function getSidebarPrefetchUrls() {
+      const links = Array.from(document.querySelectorAll('.sidebar .sidebar-item[href^="/"]'));
+      return Array.from(new Set(links.map(link => link.getAttribute('href')).filter(Boolean)));
+    }
+
+    function prefetchSidebarRoutes() {
+      const urls = getSidebarPrefetchUrls();
+      const priorityOrder = ['/Add-Account', '/Summary'];
+      const prioritized = [];
+
+      priorityOrder.forEach(route => {
+        const match = urls.find(url => url.toLowerCase() === route.toLowerCase());
+        if (match && !prioritized.includes(match)) {
+          prioritized.push(match);
+        }
+      });
+
+      const orderedUrls = [...prioritized, ...urls.filter(url => !prioritized.includes(url))];
+      const firstWaveCount = prioritized.length > 0 ? prioritized.length : Math.min(2, orderedUrls.length);
+      const immediateUrls = orderedUrls.slice(0, firstWaveCount);
+      const remainingUrls = orderedUrls.slice(firstWaveCount);
+
+      const queuePrefetch = urlsToPrefetch => {
+        if (urlsToPrefetch.length === 0) {
+          return Promise.resolve();
+        }
+
+        const maxConcurrency = Math.min(4, urlsToPrefetch.length);
+        let nextIndex = 0;
+
+        const runNext = () => {
+          if (nextIndex >= urlsToPrefetch.length) {
+            return Promise.resolve();
+          }
+
+          const url = urlsToPrefetch[nextIndex++];
+          return schedulePrefetch(url).then(runNext);
+        };
+
+        const workers = Array.from({ length: maxConcurrency }, () => runNext());
+        return Promise.all(workers);
+      };
+
+      const immediatePrefetch = Promise.all(immediateUrls.map(url => schedulePrefetch(url, { immediate: true })));
+
+      const deferredQueue = () => {
+        if (remainingUrls.length === 0) {
+          return Promise.resolve();
+        }
+
+        if ('requestIdleCallback' in window) {
+          return new Promise(resolve => {
+            requestIdleCallback(() => {
+              queuePrefetch(remainingUrls).finally(resolve);
+            }, { timeout: 3000 });
+          });
+        }
+
+        return queuePrefetch(remainingUrls);
+      };
+
+      const sequence = immediatePrefetch.then(() => deferredQueue());
+
+      window.__sidebarPrefetchReady = sequence;
+      return sequence;
+    }
+
+    function tagInitialPageAssets() {
+      document.querySelectorAll('link[rel="stylesheet"], style').forEach(styleEl => {
+        if (styleEl.hasAttribute('data-global-style')) return;
+        styleEl.setAttribute(PAGE_STYLE_ATTR, 'true');
+        const key = computeStyleKey(styleEl);
+        if (key) {
+          styleEl.setAttribute(PAGE_STYLE_KEY_ATTR, key);
+        }
+      });
+
+      document.querySelectorAll('script').forEach(scriptEl => {
+        if (scriptEl.id === SPA_SCRIPT_ID) return;
+        if (scriptEl.hasAttribute('data-global-script')) return;
+        scriptEl.setAttribute(PAGE_SCRIPT_ATTR, 'true');
+        const key = computeScriptKey(scriptEl);
+        if (key) {
+          scriptEl.setAttribute(PAGE_SCRIPT_KEY_ATTR, key);
+        }
+      });
+    }
+
+    function navigateDashboard(url, { replace = false } = {}) {
+      const fallbackToLocation = () => {
+        if (typeof url === 'string' && url) {
+          window.location.href = url;
+        }
+      };
+
+      if (!url) {
+        return Promise.resolve(false);
+      }
+
+      if (typeof url !== 'string' || !url.startsWith('/')) {
+        fallbackToLocation();
+        return Promise.resolve(false);
+      }
+
+      try {
+        hydrateSpaCache();
+        pruneSpaCache(SPA_CACHE_MAX_ENTRIES);
+
+        if (currentSPAFetchController) {
+          currentSPAFetchController.abort();
+        }
+
+        currentSPARequestId += 1;
+        const requestId = currentSPARequestId;
+        const abortController = new AbortController();
+        currentSPAFetchController = abortController;
+
+        const cacheKey = getCacheKey(url);
+        const targetPage = getPageNameFromUrl(url);
+        let rawCachedFragment = spaCache.get(cacheKey);
+
+        // Track access for LRU cache pruning
+        if (rawCachedFragment) {
+          rawCachedFragment.lastAccessedAt = Date.now();
+          rawCachedFragment.accessCount = (rawCachedFragment.accessCount || 0) + 1;
+          spaCache.set(cacheKey, rawCachedFragment); // Update with new access stats
+        }
+
+        const cachedFragmentIsStale = rawCachedFragment ? isSpaCacheEntryStale(rawCachedFragment) : false;
+        const cachedFragmentIsExpired = rawCachedFragment ? isSpaCacheEntryExpired(rawCachedFragment) : false;
+
+        // Always use cache if available, even if expired (better UX than empty page)
+        // Background refresh will update with fresh data
+        const cachedFragment = rawCachedFragment;
+        const initialNavigation = replace ? 'replace' : 'push';
+
+        if (cachedFragment) {
+          try {
+            applyPageFragment(cachedFragment, { url, navigation: initialNavigation });
+          } catch (error) {
+            console.error('Failed to apply cached fragment:', error);
+          }
+        }
+
+        return fetchPageFragment(url, { signal: abortController.signal })
+          .then(fragment => {
+            if (requestId !== currentSPARequestId) {
+              return false;
+            }
+
+            if (!fragment) {
+              if (!cachedFragment) {
+                fallbackToLocation();
+              }
+              return false;
+            }
+
+            cacheFragment(cacheKey, fragment);
+            const navigation = replace ? 'replace' : (cachedFragment ? 'replace' : 'push');
+            const applied = applyPageFragment(fragment, { url, navigation });
+
+            if (!applied && !cachedFragment) {
+              fallbackToLocation();
+            }
+
+            if (currentSPAFetchController === abortController) {
+              currentSPAFetchController = null;
+            }
+
+            return Boolean(applied);
+          })
+          .catch(error => {
+            if (abortController.signal.aborted) {
+              return false;
+            }
+
+            if (currentSPAFetchController === abortController) {
+              currentSPAFetchController = null;
+            }
+
+            console.error('Failed to load:', error);
+            if (!cachedFragment) {
+              fallbackToLocation();
+            }
+
+            return false;
+          });
+      } catch (error) {
+        console.error('Failed to navigate via SPA:', error);
+        fallbackToLocation();
+        return Promise.resolve(false);
+      }
+    }
+
+    window.navigateDashboard = navigateDashboard;
+
+    function setupSidebarSPALinks() {
+      hydrateSpaCache();
+      document.querySelectorAll('.sidebar .sidebar-item').forEach(link => {
+        if (link.tagName !== 'A') return;
+        if (link.dataset.spaBound === 'true') return;
+        link.dataset.spaBound = 'true';
+
+        link.addEventListener('click', function (e) {
+          const url = this.getAttribute('href');
+          if (!url || !url.startsWith('/')) return;
+          if (this.getAttribute('target') === '_blank') return;
+
+          e.preventDefault();
+
+          setActiveSidebarLink(this);
+
+          // Close sidebar on mobile
+          if (window.innerWidth < 768) {
+            toggleSidebar(false);
+            document.body.classList.remove('sidebar-open');
+          }
+
+          const navigation = navigateDashboard(url);
+          if (navigation && typeof navigation.catch === 'function') {
+            navigation.catch(() => {
+              window.location.href = url;
+            });
+          }
+        });
+      });
+    }
+
+    // Handle browser navigation
+    window.addEventListener('popstate', () => location.reload());
+
+    // Initial setup
+    window.addEventListener('DOMContentLoaded', () => {
+      hydrateSpaCache();
+      enableDropdowns();
+      window.initializeProfileDropdown?.();
+      highlightActivePage();
+      tagInitialPageAssets();
+
+      // Session heartbeat to keep Flask session alive
+      let sessionHeartbeat = setInterval(() => {
+        fetch('/api/ping', {
+          method: 'GET',
+          credentials: 'same-origin'
+        }).catch(err => {
+          console.warn('Session heartbeat failed:', err);
+        });
+      }, 10 * 60 * 1000); // Ping every 10 minutes
+
+      // Clean up heartbeat on page unload
+      window.addEventListener('beforeunload', () => {
+        if (sessionHeartbeat) clearInterval(sessionHeartbeat);
+      });
+      setupSidebarSPALinks();
+      const prefetchSequence = prefetchSidebarRoutes();
+      if (prefetchSequence && typeof prefetchSequence.finally === 'function') {
+        prefetchSequence.finally(() => persistSpaCache());
+      } else {
+        persistSpaCache();
+      }
+      window.initializeNotificationsPanel?.();
+      setTimeout(reinitializePageScripts, 50);
+      primeSidebarPrefetchers();
+      setupPrefetchRefreshHandlers();
+    });
+  </script>
+  <script data-global-script="true">
+    (function () {
+      if (window.__csrfInitialized) return;
+      window.__csrfInitialized = true;
+      const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      window.csrfToken = token;
+      const _fetch = window.fetch;
+      window.fetch = function (url, options = {}) {
+        options = options || {};
+        const headers = options.headers instanceof Headers ? options.headers : new Headers(options.headers || {});
+        if (!headers.has('X-CSRFToken')) {
+          headers.set('X-CSRFToken', token);
+        }
+        options.headers = headers;
+        if (!options.credentials) {
+          options.credentials = 'same-origin';
+        }
+        return _fetch(url, options);
+      };
+
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form').forEach(function (form) {
+          if (!form.querySelector('input[name="csrf_token"]')) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'csrf_token';
+            input.value = token;
+            form.appendChild(input);
+          }
+        });
+      });
+    })();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+
+</html>
+{% endif %}

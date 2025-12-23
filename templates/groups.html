@@ -1,0 +1,718 @@
+{% extends "layout.html" %}
+
+{% block title %}Groups Management - DhanBot{% endblock %}
+
+{% block styles %}
+<!-- Your layout.html should already be loading Bootstrap CSS. -->
+<!-- These links are here as a fallback, but can be removed if your layout handles them. -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Page Header -->
+    <div class="mb-4">
+        <h2 class="fw-bold">Groups Management</h2>
+        <p class="text-muted">Organize and manage your account groups for efficient trading operations.</p>
+    </div>
+
+    <!-- Alert Container -->
+    <div id="alertContainer" class="mb-4"></div>
+
+    <!-- Create Group -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0"><i class="bi bi-plus-circle-fill me-2"></i>Create New Group</h5>
+        </div>
+        <div class="card-body">
+            <form id="createGroupForm">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="groupName"
+                        placeholder="Enter a unique name for the new group" required>
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-plus-lg"></i> Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Groups Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0"><i class="bi bi-list-ul me-2"></i>Current Account Groups</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="groupsTable">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Group Name</th>
+                            <th>Members</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="3" class="text-center p-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Management Actions Row -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="bi bi-person-plus-fill me-2"></i>Add Account to Group</h5>
+                </div>
+                <div class="card-body">
+                    <form id="addMemberForm">
+                        <div class="mb-3">
+                            <label for="addGroupSelect" class="form-label">Select Group</label>
+                            <select class="form-select" id="addGroupSelect" required></select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="accountSelect" class="form-label">Select Account</label>
+                            <select class="form-select" id="accountSelect" required></select>
+                        </div>
+                        <button type="submit" class="btn btn-info w-100"><i class="bi bi-person-plus"></i> Add to
+                            Group</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="bi bi-person-dash-fill me-2"></i>Remove Account from Group
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="removeMemberForm">
+                        <div class="mb-3">
+                            <label for="removeGroupSelect" class="form-label">Select Group</label>
+                            <select class="form-select" id="removeGroupSelect" required></select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="removeAccountSelect" class="form-label">Select Member to Remove</label>
+                            <select class="form-select" id="removeAccountSelect" required></select>
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100"><i class="bi bi-person-dash"></i> Remove
+                            from Group</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Other Actions -->
+    <div class="row g-4 mt-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="bi bi-pencil-square me-2"></i>Rename Group</h5>
+                </div>
+                <div class="card-body">
+                    <form id="renameGroupForm">
+                        <div class="mb-3">
+                            <label for="renameGroupSelect" class="form-label">Select Group</label>
+                            <select class="form-select" id="renameGroupSelect" required></select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newGroupName" class="form-label">New Name</label>
+                            <input type="text" class="form-control" id="newGroupName" placeholder="Enter the new name"
+                                required>
+                        </div>
+                        <button type="submit" class="btn btn-secondary w-100"><i class="bi bi-pencil"></i>
+                            Rename</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="bi bi-trash-fill me-2"></i>Delete Group</h5>
+                </div>
+                <div class="card-body">
+                    <form id="deleteGroupForm">
+                        <div class="mb-3">
+                            <label for="deleteGroupSelect" class="form-label">Select Group</label>
+                            <select class="form-select" id="deleteGroupSelect" required></select>
+                        </div>
+                        <p class="text-muted small">This action is permanent and cannot be undone.</p>
+                        <button type="submit" class="btn btn-danger w-100"><i class="bi bi-trash"></i> Delete
+                            Group</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Place Order Card -->
+    <div class="row g-4 mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="bi bi-send-fill me-2"></i>Place Group Order</h5>
+                </div>
+                <div class="card-body">
+                    <form id="groupOrderForm" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label for="orderGroupSelect" class="form-label">Group</label>
+                            <select class="form-select" id="orderGroupSelect" required></select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="orderSymbol" class="form-label">Symbol</label>
+                            <input type="text" class="form-control" id="orderSymbol" list="symbolList"
+                                placeholder="e.g., NIFTY" required>
+                            <datalist id="symbolList"></datalist>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="orderAction" class="form-label">Action</label>
+                            <select class="form-select" id="orderAction">
+                                <option value="BUY">BUY</option>
+                                <option value="SELL">SELL</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <label for="orderQty" class="form-label">Quantity</label>
+                            <input type="number" class="form-control" id="orderQty" placeholder="Qty" min="1" required>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-success w-100" type="submit">Send Order</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Your layout.html should already be loading Bootstrap JS. -->
+<!-- This link is here as a fallback, but can be removed if your layout handles it. -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    if (!window.pageScripts) window.pageScripts = {};
+    window.pageScripts['groups'] = function () {
+        const TEARDOWN_KEY = '__groupsTeardown';
+        if (typeof window[TEARDOWN_KEY] === 'function') {
+            window[TEARDOWN_KEY]();
+        }
+
+        const pageContainer = document.querySelector('#page-container[data-page="groups"]');
+        if (!pageContainer) {
+            return;
+        }
+
+        const listeners = [];
+        const registerListener = (target, type, handler, options) => {
+            if (!target || typeof target.addEventListener !== 'function') return;
+            target.addEventListener(type, handler, options);
+            listeners.push(() => {
+                if (target && typeof target.removeEventListener === 'function') {
+                    target.removeEventListener(type, handler, options);
+                }
+            });
+        };
+
+        const teardown = () => {
+            listeners.forEach(unbind => unbind());
+            listeners.length = 0;
+            window[TEARDOWN_KEY] = null;
+        };
+
+        window[TEARDOWN_KEY] = teardown;
+
+        let groupsCache = [];
+        const GROUPS_PREFETCH_KEY = 'groups';
+        const GROUPS_PREFETCH_TTL = Math.max(
+            Number.isFinite(window.PAGE_PREFETCH_DEFAULT_TTL) ? window.PAGE_PREFETCH_DEFAULT_TTL * 1.5 : 3 * 60 * 1000,
+            90 * 1000
+        );
+        let cachedPrefetchedGroups = null;
+
+        function readGroupsPrefetch() {
+            if (cachedPrefetchedGroups) {
+                return cachedPrefetchedGroups;
+            }
+            if (typeof window.getPagePrefetchData !== 'function') {
+                return null;
+            }
+            const payload = window.getPagePrefetchData(GROUPS_PREFETCH_KEY);
+            cachedPrefetchedGroups = payload && typeof payload === 'object' ? payload : null;
+            return cachedPrefetchedGroups;
+        }
+
+        function updateGroupsPrefetch(partial) {
+            if (typeof window.setPagePrefetchData !== 'function') {
+                return;
+            }
+            const previous = cachedPrefetchedGroups || readGroupsPrefetch() || {};
+            cachedPrefetchedGroups = { ...previous, ...(partial || {}), fetchedAt: Date.now() };
+            window.setPagePrefetchData(GROUPS_PREFETCH_KEY, cachedPrefetchedGroups, { ttl: GROUPS_PREFETCH_TTL });
+        }
+
+        const initialPrefetchedGroupsData = readGroupsPrefetch();
+
+        // --- Utility Functions ---
+        async function fetchJson(url, options = {}) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'An unknown error occurred.');
+                }
+                return response.json();
+            } catch (error) {
+                showAlert(`API Error: ${error.message}`, 'danger');
+                throw error;
+            }
+        }
+
+        function showAlert(message, type = 'success') {
+            const alertContainer = document.getElementById('alertContainer');
+            const icons = { success: 'check-circle-fill', danger: 'x-circle-fill', warning: 'exclamation-triangle-fill', info: 'info-circle-fill' };
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show`;
+            alert.role = 'alert';
+            alert.innerHTML = `
+            <i class="bi bi-${icons[type]} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alert);
+        }
+
+        // --- UI Update Functions ---
+        function renderGroupsTable() {
+            const tbody = document.querySelector('#groupsTable tbody');
+            tbody.innerHTML = '';
+            if (groupsCache.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center p-5"><div><h3>No Groups Yet</h3><p class="text-muted">Use the form above to create your first group.</p></div></td></tr>`;
+                return;
+            }
+
+            groupsCache.forEach(g => {
+                const tr = document.createElement('tr');
+                const membersHtml = (g.members && g.members.length > 0)
+                    ? g.members.map(m => `<span class="badge bg-secondary me-1">${m}</span>`).join('')
+                    : '<span class="text-muted">No members</span>';
+
+                tr.innerHTML = `
+                <td class="ps-4"><strong>${g.name}</strong></td>
+                <td>${membersHtml}</td>
+                <td class="text-end pe-4">
+                    <button class="btn btn-sm btn-outline-primary" onclick="window.pageFuncs.editGroup('${g.name}')">Edit</button>
+                </td>
+            `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function populateSelects(selectIds, options, placeholder) {
+            selectIds.forEach(id => {
+                const select = document.getElementById(id);
+                if (!select) return;
+
+                const currentVal = select.value;
+                select.innerHTML = `<option value="" disabled selected>${placeholder}</option>`;
+                select.innerHTML += options;
+
+                if (select.querySelector(`option[value="${currentVal}"]`)) {
+                    select.value = currentVal;
+                }
+            });
+        }
+
+        // --- Data Loading ---
+        async function loadGroups(retryCount = 0) {
+            const MAX_RETRIES = 3;
+
+            // Add timeout check
+            const loadingTimeout = setTimeout(() => {
+                const tbody = document.querySelector('#groupsTable tbody');
+                if (tbody && tbody.querySelector('.spinner-border')) {
+                    showAlert('Loading is taking longer than expected...', 'warning');
+                }
+            }, 30000); // 30 second timeout (increased from 10s)
+
+            try {
+                const groups = await fetchJson('/api/groups');
+                clearTimeout(loadingTimeout);
+                applyGroupsData(groups);
+                updateGroupsPrefetch({ groups });
+            } catch (error) {
+                clearTimeout(loadingTimeout);
+                console.error("Failed to load groups:", error);
+
+                if (retryCount < MAX_RETRIES) {
+                    // Exponential backoff
+                    const delay = Math.pow(2, retryCount) * 1000;
+                    setTimeout(() => loadGroups(retryCount + 1), delay);
+                    showAlert(`Retrying... (${retryCount + 1}/${MAX_RETRIES})`, 'info');
+                } else {
+                    showAlert('Failed to load groups after multiple attempts. Please refresh the page.', 'danger');
+                    renderErrorState();
+                }
+            }
+        }
+
+        function renderErrorState() {
+            const tbody = document.querySelector('#groupsTable tbody');
+            if (tbody) {
+                tbody.innerHTML = `
+            <tr>
+              <td colspan="3" class="text-center p-5">
+                <div class="alert alert-danger">
+                  <h5>Failed to Load Groups</h5>
+                  <p>Unable to fetch data from the server.</p>
+                  <button onclick="location.reload()" class="btn btn-primary">Reload Page</button>
+                </div>
+              </td>
+            </tr>
+          `;
+            }
+        }
+
+        async function loadAccounts() {
+            try {
+                const data = await fetchJson('/api/accounts');
+                const accounts = data.accounts || [];
+                applyAccountOptions(accounts);
+                updateGroupsPrefetch({ accounts });
+            } catch (error) {
+                console.error("Failed to load accounts:", error);
+            }
+        }
+
+        const BROKER_DISPLAY_KEYS = ['dhan', 'aliceblue', 'angelone', 'iifl', 'kotak', 'upstox'];
+
+        function applyGroupsData(groups) {
+            groupsCache = Array.isArray(groups) ? groups : [];
+            renderGroupsTable();
+            const groupOpts = groupsCache.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
+            populateSelects(['addGroupSelect', 'removeGroupSelect', 'renameGroupSelect', 'deleteGroupSelect', 'orderGroupSelect'], groupOpts, 'Select a group...');
+            updateRemoveAccountOptions();
+        }
+
+        function renderGroupsTable() {
+            const tbody = document.querySelector('#groupsTable tbody');
+            if (!tbody) return;
+
+            if (!groupsCache || groupsCache.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="text-center p-5">
+                            <div class="text-muted">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <p class="mt-2">No groups found. Create a new group to get started.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = groupsCache.map(group => {
+                const members = Array.isArray(group.members) ? group.members : [];
+                const memberCount = members.length;
+                const memberList = members.length > 0
+                    ? members.slice(0, 3).join(', ') + (members.length > 3 ? '...' : '')
+                    : 'No members';
+
+                return `
+                    <tr>
+                        <td><strong>${escapeHtml(group.name)}</strong></td>
+                        <td>
+                            <span class="badge bg-primary">${memberCount}</span>
+                            <span class="text-muted ms-2">${escapeHtml(memberList)}</span>
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteGroup('${escapeHtml(group.name)}')">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function applyAccountOptions(accounts) {
+            const list = Array.isArray(accounts) ? accounts : [];
+            const accOpts = list.map(a => `<option value="${a.client_id}">${a.client_id}</option>`).join('');
+            populateSelects(['accountSelect'], accOpts, 'Select an account...');
+        }
+
+        function renderSymbolOptions(symbols) {
+            const symbolList = document.getElementById('symbolList');
+            if (!symbolList) {
+                return;
+            }
+            symbolList.innerHTML = '';
+            (Array.isArray(symbols) ? symbols : []).forEach(symbolEntry => {
+                const option = document.createElement('option');
+                option.value = symbolEntry?.symbol || '';
+
+                const preferredId = symbolEntry?.dhan || symbolEntry?.symbol || '';
+                const brokerTokens = BROKER_DISPLAY_KEYS
+                    .filter(key => symbolEntry && symbolEntry[key])
+                    .map(key => `${key}: ${symbolEntry[key]}`);
+
+                const label = brokerTokens.length
+                    ? `${preferredId} — ${brokerTokens.join(', ')}`
+                    : preferredId;
+
+                option.label = label;
+                option.textContent = preferredId;
+                option.title = brokerTokens.length ? brokerTokens.join(' | ') : label;
+
+                symbolList.appendChild(option);
+            });
+        }
+
+        async function loadSymbols() {
+            try {
+                const symbols = await fetchJson('/api/symbols');
+                renderSymbolOptions(symbols);
+                updateGroupsPrefetch({ symbols });
+            } catch (error) {
+                console.error("Failed to load symbols:", error);
+            }
+        }
+
+        function updateRemoveAccountOptions() {
+            const groupName = document.getElementById('removeGroupSelect').value;
+            const group = groupsCache.find(g => g.name === groupName);
+            const members = group ? group.members : [];
+            const memberOpts = members.map(m => `<option value="${m}">${m}</option>`).join('');
+            populateSelects(['removeAccountSelect'], memberOpts, 'Select a member...');
+        }
+
+        function applyPrefetchedGroupsData(payload) {
+            if (!payload || typeof payload !== 'object') {
+                return;
+            }
+            if (Array.isArray(payload.groups) && payload.groups.length) {
+                applyGroupsData(payload.groups);
+            }
+            if (Array.isArray(payload.accounts) && payload.accounts.length) {
+                applyAccountOptions(payload.accounts);
+            }
+            if (Array.isArray(payload.symbols) && payload.symbols.length) {
+                renderSymbolOptions(payload.symbols);
+            }
+        }
+
+        if (initialPrefetchedGroupsData) {
+            applyPrefetchedGroupsData(initialPrefetchedGroupsData);
+        }
+
+        // --- Event Handlers ---
+        registerListener(document.getElementById('createGroupForm'), 'submit', async e => {
+            e.preventDefault();
+            const name = document.getElementById('groupName').value.trim();
+            if (!name) { showAlert('Group name cannot be empty.', 'warning'); return; }
+
+            // Optimistic Update
+            const previousGroups = JSON.parse(JSON.stringify(groupsCache));
+            const newGroup = { name, members: [] };
+            groupsCache.push(newGroup);
+            applyGroupsData(groupsCache);
+            document.getElementById('createGroupForm').reset();
+
+            try {
+                await fetchJson('/api/create-group', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                showAlert(`Group "${name}" created successfully!`, 'success');
+                loadGroups(); // Sync with server
+            } catch (error) {
+                // Revert
+                groupsCache = previousGroups;
+                applyGroupsData(groupsCache);
+                showAlert(`Failed to create group: ${error.message}`, 'danger');
+            }
+        });
+
+        registerListener(document.getElementById('addMemberForm'), 'submit', async e => {
+            e.preventDefault();
+            const groupName = document.getElementById('addGroupSelect').value;
+            const client_id = document.getElementById('accountSelect').value;
+            if (!groupName || !client_id) { showAlert('Please select both a group and an account.', 'warning'); return; }
+
+            // Optimistic Update
+            const previousGroups = JSON.parse(JSON.stringify(groupsCache));
+            const group = groupsCache.find(g => g.name === groupName);
+            if (group) {
+                if (!group.members) group.members = [];
+                if (!group.members.includes(client_id)) {
+                    group.members.push(client_id);
+                    renderGroupsTable();
+                    updateRemoveAccountOptions();
+                }
+            }
+
+            try {
+                const resp = await fetchJson(`/api/groups/${encodeURIComponent(groupName)}/add`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client_id })
+                });
+                showAlert(resp.message || 'Account added successfully!', 'success');
+                loadGroups();
+            } catch (error) {
+                // Revert
+                groupsCache = previousGroups;
+                applyGroupsData(groupsCache);
+                showAlert(`Failed to add member: ${error.message}`, 'danger');
+            }
+        });
+
+        registerListener(document.getElementById('removeGroupSelect'), 'change', updateRemoveAccountOptions);
+
+        registerListener(document.getElementById('removeMemberForm'), 'submit', async e => {
+            e.preventDefault();
+            const groupName = document.getElementById('removeGroupSelect').value;
+            const client_id = document.getElementById('removeAccountSelect').value;
+            if (!groupName || !client_id) { showAlert('Please select a group and a member to remove.', 'warning'); return; }
+
+            // Optimistic Update
+            const previousGroups = JSON.parse(JSON.stringify(groupsCache));
+            const group = groupsCache.find(g => g.name === groupName);
+            if (group && group.members) {
+                const idx = group.members.indexOf(client_id);
+                if (idx !== -1) {
+                    group.members.splice(idx, 1);
+                    renderGroupsTable();
+                    updateRemoveAccountOptions();
+                }
+            }
+
+            try {
+                const resp = await fetchJson(`/api/groups/${encodeURIComponent(groupName)}/remove`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client_id })
+                });
+                showAlert(resp.message || 'Account removed successfully!', 'success');
+                loadGroups();
+            } catch (error) {
+                // Revert
+                groupsCache = previousGroups;
+                applyGroupsData(groupsCache);
+                showAlert(`Failed to remove member: ${error.message}`, 'danger');
+            }
+        });
+
+        document.getElementById('renameGroupForm').addEventListener('submit', async e => {
+            e.preventDefault();
+            const oldName = document.getElementById('renameGroupSelect').value;
+            const newName = document.getElementById('newGroupName').value.trim();
+            if (!oldName || !newName) { showAlert('Please select a group and provide a new name.', 'warning'); return; }
+
+            try {
+                const resp = await fetchJson(`/api/groups/${encodeURIComponent(oldName)}/rename`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ new_name: newName })
+                });
+                showAlert(resp.message || 'Group renamed successfully!', 'success');
+                document.getElementById('renameGroupForm').reset();
+                loadGroups();
+            } catch (error) { /* showAlert is called in fetchJson */ }
+        });
+
+        registerListener(document.getElementById('deleteGroupForm'), 'submit', async e => {
+            e.preventDefault();
+            const name = document.getElementById('deleteGroupSelect').value;
+            if (!name) { showAlert('Please select a group to delete.', 'warning'); return; }
+            if (!confirm(`Are you sure you want to delete the group "${name}"? This action cannot be undone.`)) return;
+
+            // Optimistic Update
+            const previousGroups = JSON.parse(JSON.stringify(groupsCache));
+            const idx = groupsCache.findIndex(g => g.name === name);
+            if (idx !== -1) {
+                groupsCache.splice(idx, 1);
+                applyGroupsData(groupsCache);
+            }
+
+            try {
+                const resp = await fetchJson(`/api/groups/${encodeURIComponent(name)}`, { method: 'DELETE' });
+                showAlert(resp.message || 'Group deleted successfully!', 'success');
+                loadGroups();
+            } catch (error) {
+                // Revert
+                groupsCache = previousGroups;
+                applyGroupsData(groupsCache);
+                showAlert(`Failed to delete group: ${error.message}`, 'danger');
+            }
+        });
+
+        registerListener(document.getElementById('groupOrderForm'), 'submit', async e => {
+            e.preventDefault();
+            const group_name = document.getElementById('orderGroupSelect').value;
+            const symbol = document.getElementById('orderSymbol').value.trim();
+            const action = document.getElementById('orderAction').value;
+            const quantity = document.getElementById('orderQty').value;
+
+            if (!group_name || !symbol || !quantity) { showAlert('Please fill all order details.', 'warning'); return; }
+            if (isNaN(quantity) || parseInt(quantity) <= 0) { showAlert('Quantity must be a positive number.', 'warning'); return; }
+
+            try {
+                const data = await fetchJson('/api/group-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ group_name, symbol, action, quantity: parseInt(quantity) })
+                });
+                showAlert('Order placed successfully: ' + JSON.stringify(data, null, 2), 'success');
+                document.getElementById('groupOrderForm').reset();
+            } catch (error) { /* showAlert is called in fetchJson */ }
+        });
+
+        // --- Initial Load ---
+        loadGroups();
+        loadAccounts();
+        loadSymbols();
+
+        // Make functions globally accessible for inline onclick
+        window.pageFuncs = {
+            editGroup: (groupName) => {
+                document.getElementById('renameGroupSelect').value = groupName;
+                document.getElementById('newGroupName').value = groupName;
+                document.getElementById('newGroupName').focus();
+            }
+        };
+    };
+
+    function initGroupsPage() {
+        if (window.pageScripts && typeof window.pageScripts['groups'] === 'function') {
+            window.pageScripts['groups']();
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initGroupsPage);
+    } else {
+        initGroupsPage();
+    }
+</script>
+{% endblock %}

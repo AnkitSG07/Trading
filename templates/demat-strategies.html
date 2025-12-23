@@ -1,0 +1,3445 @@
+{% extends "layout.html" %}
+
+{% block title %}Alert to Trade - DhanBot{% endblock %}
+
+{% block styles %}
+<style>
+  .strategies-page-root {
+    background: #f5f5f5;
+    margin: -1.2rem -1.1rem 0;
+    padding: 40px 0;
+  }
+
+  .strategies-page {
+    max-width: 1400px;
+    margin: 12px;
+    padding: 0 40px 40px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .strategies-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+  }
+
+  .strategies-header h1 {
+    font-size: 36px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+  }
+
+  .strategies-header p {
+    color: #6b7280;
+    font-size: 16px;
+  }
+
+  .strategy-btn-new {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .strategy-filters {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .strategy-search-box {
+    position: relative;
+    flex: 1;
+  }
+
+  .strategy-search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+  }
+
+  .strategy-search-box input,
+  .strategy-filters select {
+    width: 100%;
+    padding: 12px 12px 12px 44px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 15px;
+    background: #fff;
+  }
+
+  .strategy-filters select {
+    padding: 12px 36px 12px 16px;
+    background: #fff url('data:image/svg+xml;charset=UTF-8,%3csvg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg"%3e%3cpath d="M1 1l6 6 6-6" stroke="%239CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/%3e%3c/svg%3e') no-repeat right 12px center;
+    cursor: pointer;
+    appearance: none;
+  }
+
+  .strategy-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .strategy-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .strategy-card-header {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .strategy-avatar {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #6b7280;
+  }
+
+  .strategy-card-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .strategy-card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+
+  .strategy-card-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #1a1a1a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  .strategy-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: #fff;
+  }
+
+  .strategy-badge.is-active {
+    background: #10b981;
+  }
+
+  .strategy-badge.is-inactive {
+    background: #6b7280;
+  }
+
+  .strategy-card-type {
+    color: #6b7280;
+    font-size: 14px;
+  }
+
+  .strategy-card-desc {
+    color: #6b7280;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+
+  .strategy-card-section {
+    margin-bottom: 12px;
+  }
+
+  .strategy-card-label {
+    color: #9ca3af;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  .strategy-card-value {
+    color: #1a1a1a;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .strategy-webhook-section {
+    margin-bottom: 20px;
+  }
+
+  .strategy-webhook-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f9fafb;
+    padding: 8px 11px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .strategy-webhook-url {
+    flex: 1;
+    font-size: 12px;
+    color: #6b7280;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: monospace;
+  }
+
+  .strategy-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+  }
+
+  .strategy-btn-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .strategy-btn {
+    border: none;
+    padding: 10px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .strategy-btn-status[data-status="active"] {
+    background: #f97316;
+    color: #fff;
+  }
+
+  .strategy-btn-status[data-status="inactive"] {
+    background: #10b981;
+    color: #fff;
+  }
+
+  .strategy-btn-clone {
+    background: #f3f4f6;
+    color: #1a1a1a;
+  }
+
+  .strategy-btn-payload {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+  }
+
+  .strategy-btn-logs,
+  .strategy-btn-edit {
+    background: #fff;
+    color: #1a1a1a;
+    border: 1px solid #e5e7eb;
+  }
+
+  .strategy-btn-delete {
+    background: #ef4444;
+    color: #fff;
+    border: none;
+  }
+
+  .strategy-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1050;
+    padding: 40px;
+    overflow-y: auto;
+  }
+
+  .strategy-modal {
+    max-width: 600px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    padding: 32px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .strategy-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .strategy-modal-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  .strategy-close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 28px;
+    color: #6b7280;
+    line-height: 1;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .strategy-form-group {
+    margin-bottom: 20px;
+  }
+
+  .strategy-form-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .strategy-form-input,
+  .strategy-form-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+
+  .strategy-form-select {
+    cursor: pointer;
+  }
+
+  .strategy-form-actions {
+    display: flex;
+    gap: 10px;
+    padding-top: 12px;
+  }
+
+  .strategy-btn-save {
+    flex: 1;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border: none;
+    padding: 11px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .strategy-btn-cancel {
+    flex: 1;
+    background: #fff;
+    color: #1a1a1a;
+    border: 1px solid #e5e7eb;
+    padding: 11px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .strategy-payload-section {
+    margin-bottom: 32px;
+  }
+
+  .strategy-payload-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .strategy-payload-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 12px;
+  }
+
+  .strategy-payload-box {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    position: relative;
+  }
+
+  .strategy-payload-code {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: #1a1a1a;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.6;
+  }
+
+  .strategy-copy-icon-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .strategy-copy-icon-btn:hover {
+    background: #f3f4f6;
+  }
+
+  @media (max-width: 1024px) {
+    .strategy-cards-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .strategies-page-root {
+      margin: -1.5rem -1rem 0;
+      padding: 24px 0;
+    }
+
+    .strategies-page {
+      padding: 0 20px 20px;
+    }
+
+    .strategies-header {
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .strategies-header h1 {
+      font-size: 28px;
+    }
+
+    .strategy-btn-new {
+      width: 100%;
+    }
+
+    .strategy-filters {
+      flex-direction: column;
+    }
+
+    .strategy-filters select {
+      width: 100%;
+    }
+
+    .strategy-search-box input,
+    .strategy-filters select {
+      padding-left: 44px;
+    }
+
+    .strategy-cards-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .strategy-btn-row {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .strategy-btn-row:last-of-type {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  /* ===== FINAL MOBILE FIX for strategy cards ===== */
+  @media (max-width: 768px) {
+
+    /* page side padding less so card doesn't look cut */
+    .strategies-page-root {
+      margin: -1.5rem -0.5rem 0 !important;
+      padding: 20px 0 20px !important;
+    }
+
+    .strategies-page {
+      padding: 0 14px 18px !important;
+    }
+
+    /* card should never be wider than screen */
+    .strategy-card {
+      max-width: 100% !important;
+      width: 100% !important;
+      padding: 16px 14px 14px !important;
+      box-sizing: border-box !important;
+    }
+
+    /* webhook box must wrap */
+    .strategy-webhook-box {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      align-items: flex-start !important;
+      gap: 6px !important;
+    }
+
+    /* URL goes on its own line */
+    .strategy-webhook-url {
+      width: 100% !important;
+      white-space: normal !important;
+      /* allow wrap */
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+
+    /* icon buttons stay right but on next line */
+    .strategy-webhook-box .strategy-icon-btn {
+      margin-left: 0 !important;
+    }
+
+    /* buttons grid -> 2 per row */
+    .strategy-btn-row {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 8px !important;
+    }
+
+    /* make purple Payload full width like in screenshot */
+    .strategy-btn-payload {
+      grid-column: 1 / -1 !important;
+    }
+
+    /* logs & edit stay tidy */
+    .strategy-btn-logs,
+    .strategy-btn-edit {
+      width: 100% !important;
+    }
+  }
+
+  /* super small phones */
+  @media (max-width: 420px) {
+    .strategy-btn-row {
+      grid-template-columns: 1fr !important;
+    }
+
+  }
+
+  /* ===== HARD OVERRIDE: make strategy cards smaller on desktop ===== */
+
+  /* container narrower */
+  .strategies-page-root {
+    padding: 28px 0 28px !important;
+  }
+
+  .strategies-page {
+    max-width: 1180px !important;
+    padding: 0 20px 28px !important;
+  }
+
+  /* grid tighter */
+  .strategy-cards-grid {
+    gap: 16px !important;
+  }
+
+  /* card itself */
+  .strategy-cards-grid .strategy-card,
+  .strategy-card {
+    padding: 14px 14px 12px !important;
+    /* was 24 */
+    border-radius: 14px !important;
+  }
+
+  /* header */
+  .strategy-card .strategy-card-header {
+    gap: 10px !important;
+    margin-bottom: 10px !important;
+  }
+
+  /* avatar small */
+  .strategy-card .strategy-avatar {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 14px !important;
+    font-size: 16px !important;
+  }
+
+  /* title smaller */
+  .strategy-card .strategy-card-title {
+    font-size: 15px !important;
+    white-space: normal !important;
+    line-height: 1.25 !important;
+  }
+
+  /* desc + webhook tighter */
+  .strategy-card .strategy-card-desc {
+    margin-bottom: 10px !important;
+  }
+
+  .strategy-card .strategy-webhook-section {
+    margin-bottom: 10px !important;
+  }
+
+  .strategy-card .strategy-webhook-box {
+    padding: 5px 8px !important;
+  }
+
+  .strategy-card .strategy-webhook-url {
+    font-size: 11.5px !important;
+  }
+
+  /* buttons shorter */
+  .strategy-card .strategy-btn-row {
+    gap: 6px !important;
+  }
+
+  .strategy-card .strategy-btn {
+    padding: 7px 6px !important;
+    font-size: 12.5px !important;
+    border-radius: 8px !important;
+  }
+
+  .strategies-page-root {
+    padding: 28px 0 28px !important;
+  }
+
+  .strategies-page {
+    max-width: 1180px !important;
+    padding: 0 20px 28px !important;
+  }
+
+  .strategy-cards-grid {
+    gap: 16px !important;
+  }
+
+  .strategy-card {
+    padding: 14px 14px 12px !important;
+    border-radius: 14px !important;
+  }
+
+  .strategy-card-header {
+    gap: 10px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .strategy-avatar {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 14px !important;
+    font-size: 16px !important;
+  }
+
+  .strategy-card-title {
+    font-size: 15px !important;
+    white-space: normal !important;
+    line-height: 1.25 !important;
+  }
+
+  .strategy-webhook-section {
+    margin-bottom: 10px !important;
+  }
+
+  .strategy-webhook-box {
+    padding: 5px 8px !important;
+  }
+
+  .strategy-webhook-url {
+    font-size: 11.5px !important;
+  }
+
+  .strategy-btn-row {
+    gap: 6px !important;
+  }
+
+  .strategy-btn {
+    padding: 7px 6px !important;
+    font-size: 12.5px !important;
+    border-radius: 8px !important;
+  }
+
+  .strategy-logs-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 140;
+  }
+
+  .strategy-logs-overlay.is-visible {
+    display: flex;
+    animation: strategyLogsFadeIn 0.2s ease-out;
+  }
+
+  .strategy-logs-dialog {
+    position: relative;
+    width: 90%;
+    max-width: 768px;
+    max-height: 85vh;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    animation: strategyLogsSlideIn 0.2s ease-out;
+  }
+
+  body.dark .strategy-logs-dialog,
+  body.dark-mode .strategy-logs-dialog {
+    background: #0f172a;
+    border-color: #1e293b;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.6);
+  }
+
+  .strategy-logs-header {
+    padding: 24px 24px 20px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  body.dark .strategy-logs-header,
+  body.dark-mode .strategy-logs-header {
+    border-bottom-color: #1e293b;
+  }
+
+  .strategy-logs-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #0f172a;
+  }
+
+  body.dark .strategy-logs-title,
+  body.dark-mode .strategy-logs-title {
+    color: #e2e8f0;
+  }
+
+  .strategy-logs-subtitle {
+    font-size: 0.875rem;
+    color: #64748b;
+  }
+
+  body.dark .strategy-logs-subtitle,
+  body.dark-mode .strategy-logs-subtitle {
+    color: #cbd5f5;
+  }
+
+  .strategy-logs-body {
+    padding: 24px;
+    overflow-y: auto;
+    max-height: 100%;
+  }
+
+  .strategy-logs-tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 4px;
+    background: #f8fafc;
+    margin-bottom: 16px;
+  }
+
+  .strategy-logs-tab {
+    border: none;
+    background: transparent;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .strategy-logs-tab.is-active {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .strategy-logs-tabpanel {
+    display: none;
+  }
+
+  .strategy-logs-tabpanel.is-active {
+    display: block;
+  }
+
+  .strategy-logs-body::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .strategy-logs-body::-webkit-scrollbar-track {
+    background: #e2e8f0;
+    border-radius: 4px;
+  }
+
+  body.dark .strategy-logs-body::-webkit-scrollbar-track,
+  body.dark-mode .strategy-logs-body::-webkit-scrollbar-track {
+    background: #1e293b;
+  }
+
+  .strategy-logs-body::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 4px;
+  }
+
+  body.dark .strategy-logs-body::-webkit-scrollbar-thumb,
+  body.dark-mode .strategy-logs-body::-webkit-scrollbar-thumb {
+    background: #475569;
+  }
+
+  .strategy-logs-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .strategy-log-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    transition: background-color 0.2s ease;
+  }
+
+  .strategy-log-item:hover {
+    background: rgba(226, 232, 240, 0.5);
+  }
+
+  body.dark .strategy-log-item,
+  body.dark-mode .strategy-log-item {
+    border-color: #1e293b;
+  }
+
+  body.dark .strategy-log-item:hover,
+  body.dark-mode .strategy-log-item:hover {
+    background: rgba(30, 41, 59, 0.5);
+  }
+
+  .strategy-log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .strategy-log-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .strategy-log-badge-success {
+    background: rgba(34, 197, 94, 0.15);
+    color: #16a34a;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+
+  .strategy-log-badge-error {
+    background: rgba(248, 113, 113, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(248, 113, 113, 0.3);
+  }
+
+  .strategy-log-badge-warning {
+    background: rgba(251, 191, 36, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+  }
+
+  .strategy-log-badge-info {
+    background: rgba(226, 232, 240, 1);
+    color: #0f172a;
+    border: 1px solid rgba(226, 232, 240, 1);
+  }
+
+  body.dark .strategy-log-badge-info,
+  body.dark-mode .strategy-log-badge-info {
+    background: rgba(30, 41, 59, 1);
+    color: #e2e8f0;
+    border-color: rgba(30, 41, 59, 1);
+  }
+
+  .strategy-log-timestamp {
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+
+  body.dark .strategy-log-timestamp,
+  body.dark-mode .strategy-log-timestamp {
+    color: #cbd5f5;
+  }
+
+  .strategy-log-message {
+    margin-top: 8px;
+    font-size: 0.875rem;
+    color: #0f172a;
+    line-height: 1.5;
+  }
+
+  body.dark .strategy-log-message,
+  body.dark-mode .strategy-log-message {
+    color: #e2e8f0;
+  }
+
+  .strategy-logs-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .strategy-logs-close:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+
+  body.dark .strategy-logs-close,
+  body.dark-mode .strategy-logs-close {
+    color: #cbd5f5;
+  }
+
+  body.dark .strategy-logs-close:hover,
+  body.dark-mode .strategy-logs-close:hover {
+    background: #1e293b;
+    color: #f8fafc;
+  }
+
+  .strategy-logs-loading,
+  .strategy-logs-empty {
+    font-size: 0.875rem;
+    color: #64748b;
+    text-align: center;
+    padding: 16px 0;
+  }
+
+  .strategy-order-group {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .strategy-order-group-header {
+    background: #f8fafc;
+    padding: 12px 16px;
+    font-weight: 700;
+    color: #0f172a;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .strategy-order-items {
+    padding: 12px 16px;
+  }
+
+  .strategy-order-item {
+    border-bottom: 1px solid #e2e8f0;
+    padding: 10px 0;
+  }
+
+  .strategy-order-item:last-child {
+    border-bottom: none;
+  }
+
+  .strategy-order-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .strategy-order-symbol {
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .strategy-order-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    color: #475569;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+  }
+
+  .strategy-order-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #0f172a;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .strategy-order-side {
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .strategy-order-side.is-buy {
+    color: #16a34a;
+  }
+
+  .strategy-order-side.is-sell {
+    color: #dc2626;
+  }
+
+  .strategy-order-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    color: #475569;
+    font-size: 0.9rem;
+  }
+
+  body.dark .strategy-logs-loading,
+  body.dark-mode .strategy-logs-loading,
+  body.dark .strategy-logs-empty,
+  body.dark-mode .strategy-logs-empty {
+    color: #cbd5f5;
+  }
+
+  @keyframes strategyLogsFadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes strategyLogsSlideIn {
+    from {
+      transform: translateY(-8px);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .strategy-logs-dialog {
+      width: 95%;
+      max-height: 90vh;
+    }
+
+    .strategy-logs-title {
+      font-size: 1.25rem;
+    }
+
+    .strategy-logs-body {
+      padding: 20px;
+    }
+
+    .strategy-log-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  /* Compact + properly sized cards grid fix */
+  .strategy-cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(310px, 5fr)) !important;
+    gap: 14px !important;
+    justify-content: center !important;
+    align-items: start !important;
+  }
+
+  /* Restrict card width to prevent full stretch */
+  .strategy-card {
+    max-width: 360px !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 10px 12px 10px !important;
+    border-radius: 14px !important;
+  }
+
+  /* Make overall layout tighter */
+  .strategies-page {
+    max-width: 1180px !important;
+    padding: 0 20px 28px !important;
+    margin-left: 10px;
+  }
+
+  /* Reduce header and button spacing */
+  .strategy-card-header {
+    gap: 10px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .strategy-btn-row {
+    gap: 6px !important;
+  }
+
+  .strategy-btn {
+    padding: 7px 6px !important;
+    font-size: 12.5px !important;
+    border-radius: 8px !important;
+  }
+
+  /* Avatar and title adjustments */
+  .strategy-avatar {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 16px !important;
+  }
+
+  .strategy-card-title {
+    font-size: 15px !important;
+    white-space: normal !important;
+    line-height: 1.25 !important;
+  }
+
+  /* Webhook and label spacing */
+  .strategy-webhook-section {
+    margin-bottom: 10px !important;
+  }
+
+  .strategy-webhook-box {
+    padding: 5px 8px !important;
+  }
+
+  .strategy-webhook-url {
+    font-size: 11.5px !important;
+  }
+
+  /* Fix button colors based on status - MUST BE LAST */
+  .strategy-btn-status[data-status="active"] {
+    background: #f97316 !important;
+    /* Orange for Deactivate */
+    color: #fff !important;
+  }
+
+  .strategy-btn-status[data-status="inactive"] {
+    background: #10b981 !important;
+    /* Green for Activate */
+    color: #fff !important;
+  }
+
+  /* Mobile button layout fix - 2x3 grid */
+  @media (max-width: 768px) {
+    .strategy-btn-row {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 8px !important;
+    }
+
+    .strategy-btn-payload {
+      grid-column: auto !important;
+    }
+
+    .strategy-btn {
+      padding: 10px 6px !important;
+      font-size: 12px !important;
+    }
+  }
+
+  /* --- SEARCH BAR OVERRIDE --- */
+  .strategy-filters {
+    display: grid !important;
+    grid-template-columns: 1fr 260px 260px !important;
+    /* search grows, filters fixed */
+    gap: 16px !important;
+    align-items: center !important;
+  }
+
+  .strategy-search-box {
+    flex: 1 1 auto !important;
+    min-width: 380px !important;
+  }
+
+  .strategy-search-icon {
+    left: 16px !important;
+    width: 20px !important;
+    height: 20px !important;
+    opacity: .55 !important;
+  }
+
+  .strategy-search-box input {
+    height: 44px !important;
+    /* taller */
+    padding: 14px 16px 14px 48px !important;
+    /* room for icon */
+    border-radius: 14px !important;
+    /* pill-ish */
+    border: 1px solid #e7e9f2 !important;
+    background: #fff !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .06) !important;
+    transition: box-shadow .15s ease, border-color .15s ease !important;
+  }
+
+  .strategy-search-box input::placeholder {
+    color: #9aa0ab !important;
+  }
+
+  /* match filter height/shape to search box */
+  .strategy-filters select {
+    height: 44px !important;
+    border-radius: 14px !important;
+    font-size: 14px !important;
+    padding: 14px 40px px 16px !important;
+    border: 1px solid #e7e9f2 !important;
+    background-color: #fff !important;
+    background-position: right 14px center !important;
+  }
+
+  /* focus state like the mock */
+  .strategy-search-box input:focus,
+  .strategy-filters select:focus {
+    outline: none !important;
+    border-color: #cfd5e3 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, .15) !important;
+  }
+
+  /* --- RESPONSIVE --- */
+  @media (max-width: 960px) {
+    .strategy-filters {
+      grid-template-columns: 1fr !important;
+    }
+
+    .strategy-search-box {
+      min-width: 0 !important;
+    }
+  }
+
+  .strategy-toast {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    width: calc(100% - 32px);
+    max-width: 360px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    color: #ffffff;
+    background: #111827;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.16);
+    opacity: 0;
+    transform: translate(-50%, -10px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 1500;
+    text-align: center;
+  }
+
+  .strategy-toast.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    pointer-events: auto;
+  }
+
+  .strategy-toast-success {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+  }
+
+  .strategy-toast-error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+  }
+
+  .strategy-toast-info {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+  }
+  
+  /* ===== DESKTOP STRATEGY CARD COMPACT OVERRIDE ===== */
+  @media (min-width: 1025px) {
+    .strategy-cards-grid {
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+      gap: 18px !important;
+      justify-content: center !important;
+      align-items: start !important;
+    }
+
+    .strategy-card {
+      max-width: 320px !important;
+      width: 100% !important;
+      margin: 0 auto !important;
+      padding: 16px 18px 14px !important;
+      border-radius: 12px !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+      border: 1px solid #e5e7eb !important;
+    }
+
+    .strategy-avatar {
+      width: 42px !important;
+      height: 42px !important;
+      font-size: 15px !important;
+      border-radius: 10px !important;
+    }
+
+    .strategy-card-header {
+      gap: 10px !important;
+      margin-bottom: 8px !important;
+    }
+
+    .strategy-card-title {
+      font-size: 15px !important;
+      line-height: 1.2 !important;
+    }
+
+    .strategy-card-type,
+    .strategy-card-desc,
+    .strategy-card-value {
+      font-size: 13px !important;
+      line-height: 1.4 !important;
+    }
+
+    .strategy-card-desc {
+      margin-bottom: 10px !important;
+    }
+
+    .strategy-webhook-box {
+      padding: 6px 8px !important;
+    }
+
+    .strategy-webhook-url {
+      font-size: 11.5px !important;
+    }
+
+    .strategy-btn-row {
+      gap: 6px !important;
+    }
+
+    .strategy-btn {
+      padding: 7px 8px !important;
+      font-size: 12px !important;
+      border-radius: 8px !important;
+    }
+
+    .strategy-toast {
+      top: 20px;
+      min-width: 260px;
+      max-width: 420px;
+      padding: 12px 14px;
+      transform: translate(-50%, -10px);
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="strategies-page-root" data-webhook-base="{{ webhook_base }}"
+  data-webhook-token="{{ logged_in_user.webhook_token or '' }}">
+  <div class="strategies-page">
+    <div class="strategies-header">
+      <div>
+        <h1>Alert to Trade</h1>
+        <p>Manage your trading strategies and alerts</p>
+      </div>
+      <button type="button" class="strategy-btn-new" id="createStrategyBtn">Create New Alert</button>
+    </div>
+
+    <div class="strategy-filters">
+      <div class="strategy-search-box">
+        <svg class="strategy-search-icon" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"
+          aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <input type="text" placeholder="Search strategies by name..." aria-label="Search strategies"
+          data-strategy-search>
+      </div>
+      <select aria-label="Filter strategies by status" data-strategy-filter="status">
+        <option value="all">All Statuses</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+      <select aria-label="Filter strategies by account" style="min-width: 200px;" data-strategy-filter="account">
+        <option value="">All Accounts</option>
+      </select>
+    </div>
+
+    <div class="strategy-messages">
+      <div class="strategy-message strategy-loading" data-strategy-loading>Loading strategies...</div>
+      <div class="strategy-message strategy-error" data-strategy-error hidden></div>
+      <div class="strategy-message strategy-empty" data-strategy-empty hidden>No strategies match your filters.</div>
+    </div>
+
+    <div class="strategy-cards-grid" id="strategiesContainer" aria-live="polite"></div>
+  </div>
+</div>
+
+<div id="editForm" class="strategy-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+  <div class="strategy-modal">
+    <div class="strategy-modal-header">
+      <h2 id="editTitle" class="strategy-modal-title">Edit Strategy</h2>
+      <button type="button" class="strategy-close-btn" aria-label="Close edit form" data-close="edit">&times;</button>
+    </div>
+    <div class="strategy-form-group">
+      <label class="strategy-form-label" for="editStrategyName">Strategy Name</label>
+      <input type="text" id="editStrategyName" class="strategy-form-input" placeholder="Enter strategy name">
+    </div>
+    <div class="strategy-form-group">
+      <label class="strategy-form-label" for="strategyTypeSelect">Type</label>
+      <select id="strategyTypeSelect" class="strategy-form-select">
+        <option value="Stocks|Systematic">Stocks - Systematic</option>
+        <option value="Stocks|Discretionary">Stocks - Discretionary</option>
+        <option value="Options|Systematic">Options - Systematic</option>
+        <option value="Options|Discretionary">Options - Discretionary</option>
+        <option value="Futures|Systematic">Futures - Systematic</option>
+      </select>
+    </div>
+    <div class="strategy-form-group">
+      <label class="strategy-form-label" for="strategyDescription">Description</label>
+      <input type="text" id="strategyDescription" class="strategy-form-input" placeholder="Enter description">
+    </div>
+    <div class="strategy-form-group">
+      <label class="strategy-form-label" for="strategyAccountSelect">Accounts</label>
+      <select id="strategyAccountSelect" class="strategy-form-select">
+        <option value="">Select account</option>
+      </select>
+    </div>
+    <div class="strategy-form-actions">
+      <button type="button" class="strategy-btn-save" id="saveStrategyChanges">Save Changes</button>
+      <button type="button" class="strategy-btn-cancel" data-close="edit">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="payloadModal" class="strategy-modal-overlay" role="dialog" aria-modal="true"
+  aria-labelledby="payloadModalTitle">
+  <div class="strategy-modal">
+    <div class="strategy-modal-header">
+      <h2 class="strategy-modal-title" id="payloadModalTitle">Strategy Webhook Details</h2>
+      <button type="button" class="strategy-close-btn" aria-label="Close payload details"
+        data-close="payload">&times;</button>
+    </div>
+    <p class="strategy-payload-subtitle" id="payloadStrategyName"></p>
+
+    <div class="strategy-payload-section">
+      <div class="strategy-payload-label">Webhook URL</div>
+      <div class="strategy-payload-box">
+        <div class="strategy-payload-code" id="webhookUrl">--</div>
+        <button type="button" class="strategy-copy-icon-btn" data-copy-target="webhook" aria-label="Copy webhook URL">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"
+            aria-hidden="true">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="strategy-payload-section">
+      <div class="strategy-payload-label">JSON Payload</div>
+      <div class="strategy-payload-box">
+        <div class="strategy-payload-code" id="payloadCode">--</div>
+        <button type="button" class="strategy-copy-icon-btn" data-copy-target="payload" aria-label="Copy JSON payload">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"
+            aria-hidden="true">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="logsModal" class="strategy-logs-overlay" role="dialog" aria-modal="true" aria-labelledby="logsTitle"
+  style="display: none;">
+  <div class="strategy-logs-dialog">
+    <button type="button" class="strategy-logs-close" aria-label="Close strategy logs" data-close="logs">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    <div class="strategy-logs-header">
+      <h2 class="strategy-logs-title" id="logsTitle">Strategy Logs</h2>
+      <p class="strategy-logs-subtitle" id="logsSubtitle"></p>
+    </div>
+    <div class="strategy-logs-body">
+      <div class="strategy-logs-tabs" role="tablist" aria-label="Strategy log categories">
+        <button type="button" id="logsTabButton" class="strategy-logs-tab is-active" data-logs-tab="logs" role="tab"
+          aria-selected="true">Strategy Logs</button>
+        <button type="button" id="ordersTabButton" class="strategy-logs-tab" data-logs-tab="orders" role="tab"
+          aria-selected="false">Strategy Order Logs</button>
+      </div>
+      <div id="logsTab" class="strategy-logs-tabpanel is-active" role="tabpanel" aria-labelledby="logsTabButton">
+        <div id="logsLoading" class="strategy-logs-loading">Loading logs...</div>
+        <div id="logsEmpty" class="strategy-logs-empty" style="display: none;">No logs available yet.</div>
+        <div id="logsContainer" class="strategy-logs-container"></div>
+      </div>
+      <div id="ordersTab" class="strategy-logs-tabpanel" role="tabpanel" aria-labelledby="ordersTabButton" hidden>
+        <div id="ordersLoading" class="strategy-logs-loading">Loading order logs...</div>
+        <div id="ordersEmpty" class="strategy-logs-empty" style="display: none;">No order logs available yet.</div>
+        <div id="ordersContainer" class="strategy-logs-container"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="strategyToast" class="strategy-toast strategy-toast-info" role="status" aria-live="polite" aria-atomic="true"
+  hidden></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    function escapeHtml(value) {
+      if (value === null || value === undefined) {
+        return '';
+      }
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function truncate(text, limit) {
+      if (!text) return '';
+      const value = String(text);
+      if (value.length <= limit) return value;
+      return value.slice(0, limit - 1) + '…';
+    }
+
+    function normalizeListField(value) {
+      if (value === null || value === undefined) {
+        return [];
+      }
+      if (Array.isArray(value)) {
+        return value;
+      }
+      if (typeof value === 'number') {
+        return [value];
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) {
+          return [];
+        }
+        if ((trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            if (Array.isArray(parsed)) {
+              return parsed;
+            }
+          } catch (error) {
+            // ignore
+          }
+        }
+        return trimmed
+          .split(',')
+          .map(part => part.trim())
+          .filter(Boolean);
+      }
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      } catch (error) {
+        // ignore
+      }
+      return [];
+    }
+
+    function copyFallback(text) {
+      const tempInput = document.createElement('textarea');
+      tempInput.value = text;
+      tempInput.style.position = 'fixed';
+      tempInput.style.opacity = '0';
+      document.body.appendChild(tempInput);
+      tempInput.focus();
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        window.alert('Copied to clipboard');
+      } catch (error) {
+        window.alert('Unable to copy to clipboard');
+      }
+      document.body.removeChild(tempInput);
+    }
+
+    function copyToClipboard(text) {
+      if (!text) {
+        window.alert('Nothing to copy');
+        return;
+      }
+      if (!navigator.clipboard) {
+        copyFallback(text);
+        return;
+      }
+      navigator.clipboard.writeText(text).then(function () {
+        window.alert('Copied to clipboard');
+      }).catch(function () {
+        copyFallback(text);
+      });
+    }
+
+    function cloneSerializable(value) {
+      if (value === null || value === undefined) {
+        return value;
+      }
+      try {
+        return JSON.parse(JSON.stringify(value));
+      } catch (error) {
+        if (Array.isArray(value)) {
+          return value.slice();
+        }
+        if (typeof value === 'object') {
+          return { ...value };
+        }
+        return value;
+      }
+    }
+
+    const TOAST_DURATION = 4200;
+    let toastHideTimer = null;
+
+    function getToastElement() {
+      if (typeof document === 'undefined') {
+        return null;
+      }
+      return document.getElementById('strategyToast');
+    }
+
+    function hideToast() {
+      const toast = getToastElement();
+      if (!toast) {
+        return;
+      }
+      toast.classList.remove('is-visible');
+      toast.setAttribute('hidden', 'true');
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = getToastElement();
+      if (!toast || !message) {
+        return;
+      }
+      const variantClass = type === 'error'
+        ? 'strategy-toast-error'
+        : type === 'success'
+          ? 'strategy-toast-success'
+          : 'strategy-toast-info';
+      toast.textContent = message;
+      toast.className = `strategy-toast ${variantClass} is-visible`;
+      toast.removeAttribute('hidden');
+      if (toastHideTimer) {
+        clearTimeout(toastHideTimer);
+      }
+      toastHideTimer = setTimeout(hideToast, TOAST_DURATION);
+    }
+
+    const DEMAT_STRATEGIES_PREFETCH_KEY = 'demat-strategies';
+    const DEMAT_STRATEGIES_PREFETCH_TTL = Math.max(
+      Number.isFinite(window.PAGE_PREFETCH_DEFAULT_TTL) ? window.PAGE_PREFETCH_DEFAULT_TTL * 2 : 4 * 60 * 1000,
+      3 * 60 * 1000
+    );
+    const DEMAT_STRATEGIES_RELOAD_THRESHOLD = 12 * 60 * 1000;
+    let cachedDematStrategiesPrefetch = null;
+
+    const STRATEGY_PAYLOAD_STORAGE_PREFIX = 'strategyPayload_';
+    let cachedStrategiesUserId = null;
+
+    function getStrategiesUserId() {
+      if (cachedStrategiesUserId !== null) {
+        return cachedStrategiesUserId;
+      }
+      let resolved = '';
+      if (typeof window.getDashboardUserId === 'function') {
+        resolved = window.getDashboardUserId() || '';
+      } else if (document.body?.dataset?.userId) {
+        resolved = document.body.dataset.userId || '';
+      } else {
+        try {
+          resolved = window.localStorage ? window.localStorage.getItem('user_id') || '' : '';
+        } catch (error) {
+          resolved = '';
+        }
+      }
+      cachedStrategiesUserId = resolved || '';
+      return cachedStrategiesUserId;
+    }
+
+    function getStrategyPayloadStorageKey(strategyId) {
+      return `${STRATEGY_PAYLOAD_STORAGE_PREFIX}${strategyId}`;
+    }
+
+    function parseStoredStrategyPayload(raw, fallbackId) {
+      if (!raw) {
+        return null;
+      }
+      let parsed = null;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (error) {
+        return null;
+      }
+      if (!parsed || typeof parsed !== 'object') {
+        return null;
+      }
+      if (Object.prototype.hasOwnProperty.call(parsed, 'payload')) {
+        if (!parsed.payload || typeof parsed.payload !== 'object') {
+          return null;
+        }
+        return {
+          userId: parsed.userId || null,
+          strategyId: parsed.strategyId || fallbackId || null,
+          updatedAt: parsed.updatedAt || null,
+          payload: parsed.payload
+        };
+      }
+      return {
+        userId: null,
+        strategyId: fallbackId || null,
+        updatedAt: null,
+        payload: parsed
+      };
+    }
+
+    function parseStrategyTimestamp(value) {
+      if (value === null || value === undefined) {
+        return null;
+      }
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+      }
+      const parsed = Date.parse(value);
+      return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    function normalizeDematStrategiesPrefetch(payload) {
+      if (!payload || typeof payload !== 'object') {
+        return null;
+      }
+      return {
+        accountsPayload: payload.accountsPayload ? cloneSerializable(payload.accountsPayload) : null,
+        strategies: Array.isArray(payload.strategies) ? cloneSerializable(payload.strategies) : [],
+        fetchedAt: typeof payload.fetchedAt === 'number' ? payload.fetchedAt : Date.now()
+      };
+    }
+
+    function readDematStrategiesPrefetch() {
+      if (cachedDematStrategiesPrefetch) {
+        return normalizeDematStrategiesPrefetch(cachedDematStrategiesPrefetch);
+      }
+      if (typeof window.getPagePrefetchData !== 'function') {
+        return null;
+      }
+      const payload = window.getPagePrefetchData(DEMAT_STRATEGIES_PREFETCH_KEY);
+      const normalized = normalizeDematStrategiesPrefetch(payload);
+      if (!normalized) {
+        cachedDematStrategiesPrefetch = null;
+        return null;
+      }
+      cachedDematStrategiesPrefetch = normalized;
+      return normalizeDematStrategiesPrefetch(normalized);
+    }
+
+    function updateDematStrategiesPrefetch(partial = {}) {
+      if (typeof window.setPagePrefetchData !== 'function') {
+        return;
+      }
+      const previous = cachedDematStrategiesPrefetch || readDematStrategiesPrefetch() || {};
+      const mergedPayload = {
+        accountsPayload: Object.prototype.hasOwnProperty.call(partial, 'accountsPayload')
+          ? partial.accountsPayload
+          : previous.accountsPayload || null,
+        strategies: Object.prototype.hasOwnProperty.call(partial, 'strategies')
+          ? partial.strategies
+          : previous.strategies || [],
+        fetchedAt: Object.prototype.hasOwnProperty.call(partial, 'fetchedAt')
+          ? partial.fetchedAt
+          : Date.now()
+      };
+      const normalized = normalizeDematStrategiesPrefetch(mergedPayload);
+      if (!normalized) {
+        return;
+      }
+      cachedDematStrategiesPrefetch = normalized;
+      window.setPagePrefetchData(DEMAT_STRATEGIES_PREFETCH_KEY, normalized, { ttl: DEMAT_STRATEGIES_PREFETCH_TTL });
+    }
+
+    function invalidateDematStrategiesPrefetchCache() {
+      cachedDematStrategiesPrefetch = null;
+      if (typeof window.invalidatePagePrefetchData === 'function') {
+        window.invalidatePagePrefetchData(DEMAT_STRATEGIES_PREFETCH_KEY);
+      }
+    }
+
+    function expandBoth(value, bothValues) {
+      if (Array.isArray(value)) {
+        return value;
+      }
+      if (value === null || value === undefined) {
+        return bothValues[0];
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) {
+          return bothValues[0];
+        }
+        if ((trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            if (Array.isArray(parsed)) {
+              return parsed;
+            }
+          } catch (error) {
+            // ignore malformed arrays
+          }
+        }
+        if (trimmed.toUpperCase() === 'BOTH') {
+          return bothValues.slice();
+        }
+        return trimmed;
+      }
+      return value;
+    }
+
+    async function fetchJson(url, options = {}) {
+      const response = await fetch(url, options);
+      const contentType = response.headers.get('Content-Type') || '';
+      let data = null;
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        if (text) {
+          try {
+            data = JSON.parse(text);
+          } catch (error) {
+            data = { message: text };
+          }
+        }
+      }
+      if (!response.ok) {
+        const message = data && (data.error || data.message);
+        throw new Error(message || 'Request failed');
+      }
+      return data;
+    }
+
+
+    class DematStrategiesPage {
+      constructor(root, prefetchedPayload) {
+        this.root = null;
+        this.container = null;
+        this.searchInput = null;
+        this.statusFilter = null;
+        this.accountFilter = null;
+        this.createButton = null;
+        this.loadingMessage = null;
+        this.errorMessage = null;
+        this.emptyMessage = null;
+        this.editModal = null;
+        this.payloadModal = null;
+        this.editTitle = null;
+        this.nameInput = null;
+        this.typeSelect = null;
+        this.descriptionInput = null;
+        this.accountSelect = null;
+        this.saveButton = null;
+        this.payloadWebhook = null;
+        this.payloadCode = null;
+        this.payloadName = null;
+        this.logsModal = null;
+        this.logsTitle = null;
+        this.logsSubtitle = null;
+        this.logsContainer = null;
+        this.logsLoading = null;
+        this.logsEmpty = null;
+        this.ordersContainer = null;
+        this.ordersLoading = null;
+        this.ordersEmpty = null;
+        this.logsTabs = null;
+        this.logsTabButtons = [];
+        this.logsTabPanels = new Map();
+        this.state = {
+          strategies: [],
+          accounts: [],
+          filters: {
+            search: '',
+            searchRaw: '',
+            status: 'all',
+            account: ''
+          },
+          editing: null
+        };
+        this.accountIdMap = new Map();
+        this.accountClientMap = new Map();
+        this.accountVersion = 0;
+        this.isSaving = false;
+        this.webhookBase = '';
+        this.webhookToken = '';
+        this.currentUserId = getStrategiesUserId();
+        this.logsRequestId = 0;
+        this.orderLogsRequestId = 0;
+        this.currentLogsStrategy = null;
+        this.activeLogsTab = 'logs';
+        this.logsTabState = {
+          logs: { loaded: false },
+          orders: { loaded: false }
+        };
+        this.hasLoaded = false;
+        this.isReloading = false;
+        this.lastSuccessfulFetchAt = null;
+        this.lastReloadErrorMessage = '';
+        this.boundEvents = [];
+        this.handleSearchInput = () => {
+          const value = this.searchInput?.value || '';
+          this.state.filters.searchRaw = value;
+          this.state.filters.search = value.trim().toLowerCase();
+          this.renderStrategies();
+        };
+        this.handleStatusFilterChange = () => {
+          this.state.filters.status = this.statusFilter?.value || 'all';
+          this.renderStrategies();
+        };
+        this.handleAccountFilterChange = () => {
+          this.state.filters.account = this.accountFilter?.value || '';
+          this.renderStrategies();
+        };
+        this.handleCreateButtonClick = () => {
+          window.location.href = '/create-alerts';
+        };
+        this.boundContainerClick = (event) => this.handleContainerClick(event);
+        this.handleCloseEditButton = () => this.closeEditModal();
+        this.handleClosePayloadButton = () => this.closePayloadModal();
+        this.handleCloseLogsButton = () => this.closeLogsModal();
+        this.handleEditModalClick = (event) => {
+          if (event.target === this.editModal) {
+            this.closeEditModal();
+          }
+        };
+        this.handlePayloadModalClick = (event) => {
+          if (event.target === this.payloadModal) {
+            this.closePayloadModal();
+            return;
+          }
+          const copyBtn = event.target.closest('.strategy-copy-icon-btn');
+          if (!copyBtn) {
+            return;
+          }
+          const target = copyBtn.dataset.copyTarget;
+          if (target === 'webhook') {
+            copyToClipboard(this.payloadWebhook?.textContent?.trim() || '');
+          } else if (target === 'payload') {
+            copyToClipboard(this.payloadCode?.textContent?.trim() || '');
+          }
+        };
+        this.handleLogsModalClick = (event) => {
+          if (event.target === this.logsModal) {
+            this.closeLogsModal();
+          }
+        };
+        this.handleLogsTabClick = (event) => {
+          const button = event.currentTarget || event.target;
+          const tab = button?.dataset?.logsTab || 'logs';
+          this.switchLogsTab(tab);
+        };
+        this.handleGlobalKeydown = (event) => {
+          if (event.key === 'Escape') {
+            this.closeLogsModal();
+          }
+        };
+        this.attach(root);
+        const appliedPrefetch = this.applyPrefetchedData(prefetchedPayload);
+        const reloadPromise = appliedPrefetch
+          ? this.reload({ silent: true })
+          : this.reload();
+        if (reloadPromise && typeof reloadPromise.catch === 'function') {
+          reloadPromise.catch(() => { });
+        }
+      }
+
+      captureDomReferences(root) {
+        this.root = root;
+        if (!root) {
+          return;
+        }
+        this.container = root.querySelector('#strategiesContainer');
+        this.searchInput = root.querySelector('[data-strategy-search]');
+        this.statusFilter = root.querySelector('[data-strategy-filter="status"]');
+        this.accountFilter = root.querySelector('[data-strategy-filter="account"]');
+        this.createButton = root.querySelector('#createStrategyBtn');
+        this.loadingMessage = root.querySelector('[data-strategy-loading]');
+        this.errorMessage = root.querySelector('[data-strategy-error]');
+        this.emptyMessage = root.querySelector('[data-strategy-empty]');
+        this.editModal = document.getElementById('editForm');
+        this.payloadModal = document.getElementById('payloadModal');
+        this.editTitle = document.getElementById('editTitle');
+        this.nameInput = document.getElementById('editStrategyName');
+        this.typeSelect = document.getElementById('strategyTypeSelect');
+        this.descriptionInput = document.getElementById('strategyDescription');
+        this.accountSelect = document.getElementById('strategyAccountSelect');
+        this.saveButton = document.getElementById('saveStrategyChanges');
+        this.payloadWebhook = document.getElementById('webhookUrl');
+        this.payloadCode = document.getElementById('payloadCode');
+        this.payloadName = document.getElementById('payloadStrategyName');
+        this.logsModal = document.getElementById('logsModal');
+        this.logsTitle = document.getElementById('logsTitle');
+        this.logsSubtitle = document.getElementById('logsSubtitle');
+        this.logsContainer = document.getElementById('logsContainer');
+        this.logsLoading = document.getElementById('logsLoading');
+        this.logsEmpty = document.getElementById('logsEmpty');
+        this.ordersContainer = document.getElementById('ordersContainer');
+        this.ordersLoading = document.getElementById('ordersLoading');
+        this.ordersEmpty = document.getElementById('ordersEmpty');
+        this.logsTabs = document.querySelector('.strategy-logs-tabs');
+        this.logsTabButtons = Array.from(document.querySelectorAll('[data-logs-tab]'));
+        this.logsTabPanels = new Map([
+          ['logs', document.getElementById('logsTab')],
+          ['orders', document.getElementById('ordersTab')]
+        ]);
+        const dataset = root.dataset || {};
+        if (dataset.webhookBase !== undefined) {
+          this.webhookBase = dataset.webhookBase || '';
+        }
+        if (dataset.webhookToken !== undefined) {
+          this.webhookToken = dataset.webhookToken || '';
+        }
+        if (!this.webhookBase && this.webhookToken) {
+          const origin = window.location.origin.replace(/\/$/, '');
+          this.webhookBase = origin + '/webhook/' + this.webhookToken;
+        }
+      }
+
+      registerEvent(target, eventName, handler) {
+        if (!target || !eventName || !handler) {
+          return;
+        }
+        target.addEventListener(eventName, handler);
+        this.boundEvents.push({ target, eventName, handler });
+      }
+
+      detachEvents() {
+        if (!Array.isArray(this.boundEvents) || !this.boundEvents.length) {
+          this.boundEvents = [];
+          return;
+        }
+        this.boundEvents.forEach(({ target, eventName, handler }) => {
+          try {
+            target.removeEventListener(eventName, handler);
+          } catch (error) {
+            // ignore cleanup errors
+          }
+        });
+        this.boundEvents = [];
+      }
+
+      attach(root) {
+        if (!root) {
+          return;
+        }
+        this.detachEvents();
+        this.captureDomReferences(root);
+        this.bindEvents();
+      }
+
+      bindEvents() {
+        if (!Array.isArray(this.boundEvents)) {
+          this.boundEvents = [];
+        }
+        if (this.searchInput) {
+          this.searchInput.value = this.state.filters.searchRaw;
+          this.registerEvent(this.searchInput, 'input', this.handleSearchInput);
+        }
+
+        if (this.statusFilter) {
+          this.statusFilter.value = this.state.filters.status;
+          this.registerEvent(this.statusFilter, 'change', this.handleStatusFilterChange);
+        }
+
+        if (this.accountFilter) {
+          this.accountFilter.value = this.state.filters.account;
+          this.registerEvent(this.accountFilter, 'change', this.handleAccountFilterChange);
+        }
+
+        if (this.createButton) {
+          this.registerEvent(this.createButton, 'click', this.handleCreateButtonClick);
+        }
+
+        if (this.container) {
+          this.registerEvent(this.container, 'click', this.boundContainerClick);
+        }
+
+        document.querySelectorAll('[data-close="edit"]').forEach(btn => {
+          this.registerEvent(btn, 'click', this.handleCloseEditButton);
+        });
+
+        document.querySelectorAll('[data-close="payload"]').forEach(btn => {
+          this.registerEvent(btn, 'click', this.handleClosePayloadButton);
+        });
+
+        if (this.editModal) {
+          this.registerEvent(this.editModal, 'click', this.handleEditModalClick);
+        }
+
+        if (this.payloadModal) {
+          this.registerEvent(this.payloadModal, 'click', this.handlePayloadModalClick);
+        }
+
+        document.querySelectorAll('[data-close="logs"]').forEach(btn => {
+          this.registerEvent(btn, 'click', this.handleCloseLogsButton);
+        });
+
+        if (this.logsModal) {
+          this.registerEvent(this.logsModal, 'click', this.handleLogsModalClick);
+        }
+
+        if (Array.isArray(this.logsTabButtons) && this.logsTabButtons.length) {
+          this.logsTabButtons.forEach(button => {
+            this.registerEvent(button, 'click', this.handleLogsTabClick);
+          });
+        }
+
+        this.registerEvent(document, 'keydown', this.handleGlobalKeydown);
+      }
+
+      hydrateAccountsFromPayload(payload) {
+        const masters = Array.isArray(payload?.masters) ? payload.masters : [];
+        const accounts = Array.isArray(payload?.accounts) ? payload.accounts : [];
+        const combined = [];
+        const seenIds = new Set();
+        [...masters, ...accounts].forEach(acc => {
+          if (!acc) {
+            return;
+          }
+          const id = acc.id !== undefined && acc.id !== null ? String(acc.id) : null;
+          if (id && seenIds.has(id)) {
+            return;
+          }
+          if (id) {
+            seenIds.add(id);
+          }
+          combined.push(acc);
+        });
+        this.state.accounts = combined.slice();
+        this.accountIdMap = new Map(
+          combined
+            .filter(acc => acc && acc.id !== undefined && acc.id !== null)
+            .map(acc => [String(acc.id), acc])
+        );
+        this.accountClientMap = new Map(
+          combined
+            .filter(acc => acc && acc.client_id)
+            .map(acc => [String(acc.client_id), acc])
+        );
+        this.accountVersion += 1;
+        this.populateAccountFilters();
+      }
+
+      applyPrefetchedData(payload) {
+        if (!payload || typeof payload !== 'object') {
+          return false;
+        }
+        let applied = false;
+        const fetchedAt = parseStrategyTimestamp(payload.fetchedAt) || null;
+        if (payload.accountsPayload) {
+          this.hydrateAccountsFromPayload(payload.accountsPayload);
+          applied = true;
+        }
+        if (Array.isArray(payload.strategies)) {
+          this.state.strategies = cloneSerializable(payload.strategies) || [];
+          applied = true;
+        }
+        if (applied) {
+          this.hasLoaded = true;
+          this.lastSuccessfulFetchAt = fetchedAt || Date.now();
+          this.lastReloadErrorMessage = '';
+          this.setLoading(false);
+          this.showError();
+          this.renderStrategies();
+        }
+        return applied;
+      }
+
+      async reload(options = {}) {
+        let silent = options && options.silent === true;
+
+        // Prevent clearing UI if we already have data
+        if (!silent && this.hasLoaded && Array.isArray(this.state.strategies) && this.state.strategies.length > 0) {
+          if (!options || options.forceLoading !== true) {
+            silent = true;
+          }
+        }
+
+        this.isReloading = true;
+        this.lastReloadErrorMessage = '';
+        if (!silent) {
+          this.showLoading();
+        }
+        this.showError(); // Clear previous errors
+
+        // Add timeout for loading state
+        const loadingTimeout = setTimeout(() => {
+          if (this.loadingMessage && !this.loadingMessage.hidden) { // Check if loading is still active
+            this.showError('Loading is taking longer than expected. Please refresh the page.');
+          }
+        }, 30000); // 30 second timeout (increased from 15s)
+
+        try {
+          const [accountsResult, strategiesResult] = await Promise.allSettled([
+            fetchJson('/api/accounts?cache_only=1'),
+            fetchJson('/api/strategies')
+          ]);
+
+          clearTimeout(loadingTimeout);
+
+          const accountsPayload = accountsResult.status === 'fulfilled' ? accountsResult.value : null;
+          const strategies = strategiesResult.status === 'fulfilled' ? strategiesResult.value : [];
+
+          if (strategiesResult.status === 'rejected') {
+            throw new Error('Failed to load strategies');
+          }
+
+          // Update state with fetched data
+          if (accountsPayload) {
+            this.hydrateAccountsFromPayload(accountsPayload);
+          }
+          this.state.strategies = strategies;
+
+          this.hasLoaded = true; // Mark as loaded after successful fetch
+          const fetchedAt = Date.now();
+          this.lastSuccessfulFetchAt = fetchedAt;
+          this.lastReloadErrorMessage = '';
+          this.renderStrategies(); // Assuming renderStrategies is the intended render method
+
+          updateDematStrategiesPrefetch({
+            accountsPayload,
+            strategies,
+            fetchedAt
+          });
+
+        } catch (error) {
+          clearTimeout(loadingTimeout);
+          console.error('Failed to load data:', error);
+          this.lastReloadErrorMessage = error?.message || 'Failed to load data. Please try again.';
+          this.showError(this.lastReloadErrorMessage);
+          if (this.container) {
+            this.container.innerHTML = ''; // Clear container on error
+          }
+        } finally {
+          this.isReloading = false;
+          if (!silent) {
+            this.hideLoading();
+          }
+        }
+      }
+
+      resume() {
+        const hasPendingError = !this.hasLoaded && this.lastReloadErrorMessage;
+        if (hasPendingError) {
+          this.setLoading(false);
+          this.showError(this.lastReloadErrorMessage);
+        } else {
+          this.showError();
+        }
+        if (!this.hasLoaded) {
+          if (!hasPendingError) {
+            this.setLoading(true);
+          }
+          if (!this.isReloading) {
+            this.reload();
+          }
+          return;
+        }
+        this.populateAccountFilters();
+        this.renderStrategies();
+      }
+
+      isFetchStale(thresholdMs = DEMAT_STRATEGIES_RELOAD_THRESHOLD) {
+        if (!this.lastSuccessfulFetchAt) {
+          return true;
+        }
+        return (Date.now() - this.lastSuccessfulFetchAt) > thresholdMs;
+      }
+
+      populateAccountFilters() {
+        if (this.accountFilter) {
+          const current = this.state.filters.account;
+          this.accountFilter.innerHTML = '<option value="">All Accounts</option>';
+          this.state.accounts.forEach(acc => {
+            const option = document.createElement('option');
+            option.value = String(acc.id);
+            option.textContent = this.formatAccountLabel(acc);
+            this.accountFilter.appendChild(option);
+          });
+          if (current && this.accountFilter.querySelector(`option[value="${current}"]`)) {
+            this.accountFilter.value = current;
+          }
+        }
+
+        if (this.accountSelect) {
+          const current = this.accountSelect.value;
+          this.accountSelect.innerHTML = '<option value="">Select account</option>';
+          this.state.accounts.forEach(acc => {
+            const option = document.createElement('option');
+            option.value = String(acc.id);
+            option.textContent = this.formatAccountLabel(acc);
+            this.accountSelect.appendChild(option);
+          });
+          if (current && this.accountSelect.querySelector(`option[value="${current}"]`)) {
+            this.accountSelect.value = current;
+          }
+        }
+      }
+
+      formatAccountLabel(account) {
+        if (!account) {
+          return 'Account';
+        }
+        const username = account.username || '';
+        const clientId = account.client_id || '';
+        const broker = account.broker || '';
+        const primary = username || clientId || 'Account';
+        const extras = [];
+        if (clientId && primary !== clientId) {
+          extras.push(clientId);
+        }
+        if (broker) {
+          extras.push(broker);
+        }
+        return extras.length ? `${primary} (${extras.join(') (')})` : primary;
+      }
+
+      showLoading() {
+        this.setLoading(true);
+      }
+
+      hideLoading() {
+        this.setLoading(false);
+      }
+
+      setLoading(isLoading) {
+        if (this.loadingMessage) {
+          this.loadingMessage.hidden = !isLoading;
+        }
+        if (isLoading) {
+          this.setEmptyVisible(false);
+        }
+      }
+
+      showError(message) {
+        const hasMessage = Boolean(message);
+        if (this.errorMessage) {
+          if (hasMessage) {
+            this.errorMessage.textContent = message;
+            this.errorMessage.hidden = false;
+          } else {
+            this.errorMessage.textContent = '';
+            this.errorMessage.hidden = true;
+          }
+        }
+        if (hasMessage) {
+          showToast(message, 'error');
+        }
+      }
+
+      setEmptyVisible(show) {
+        if (this.emptyMessage) {
+          this.emptyMessage.hidden = !show;
+        }
+      }
+
+      getFilteredStrategies() {
+        const filters = this.state.filters;
+        return this.state.strategies.filter(strategy => {
+          if (filters.search && !(String(strategy.name || '').toLowerCase().includes(filters.search))) {
+            return false;
+          }
+          if (filters.status === 'active' && !strategy.is_active) {
+            return false;
+          }
+          if (filters.status === 'inactive' && strategy.is_active) {
+            return false;
+          }
+          if (filters.account) {
+            const linked = this.getResolvedAccounts(strategy);
+            if (!linked.some(item => item.account && String(item.account.id) === filters.account)) {
+              return false;
+            }
+          }
+          return true;
+        });
+      }
+
+      renderStrategies() {
+        if (!this.container) {
+          return;
+        }
+        const strategies = this.getFilteredStrategies();
+        this.setLoading(false);
+        if (!strategies.length) {
+          this.container.innerHTML = '';
+          this.setEmptyVisible(true);
+          return;
+        }
+        this.setEmptyVisible(false);
+        const html = strategies.map(strategy => this.renderStrategyCard(strategy)).join('');
+        this.container.innerHTML = html;
+      }
+
+      renderStrategyCard(strategy) {
+        const name = strategy.name || 'Untitled Strategy';
+        const isActive = Boolean(strategy.is_active);
+        const badgeClass = isActive ? 'is-active' : 'is-inactive';
+        const badgeLabel = isActive ? 'Active' : 'Inactive';
+        const toggleLabel = isActive ? 'Deactivate' : 'Activate';
+        const accounts = this.getResolvedAccounts(strategy);
+        const accountsText = accounts.length ? accounts.map(item => escapeHtml(item.label)).join(', ') : 'No linked accounts';
+        const typeLabel = escapeHtml(this.formatStrategyType(strategy));
+        const description = strategy.description ? escapeHtml(strategy.description) : 'No description provided for this strategy.';
+        const webhookUrl = this.buildWebhookUrl(strategy);
+        const webhookDisplay = webhookUrl ? escapeHtml(truncate(webhookUrl, 72)) : 'Webhook URL unavailable';
+        const webhookTitle = webhookUrl ? escapeHtml(webhookUrl) : 'Webhook URL unavailable';
+        const avatar = escapeHtml((name.trim() || '?').charAt(0).toUpperCase());
+        const testStatus = strategy.lastTestStatus;
+        const testFill = testStatus === 'success' ? '#10b981' : '#ef4444';
+        return `
+      <article class="strategy-card" data-strategy-id="${strategy.id}">
+        <header class="strategy-card-header">
+          <div class="strategy-avatar" aria-hidden="true">${avatar || '?'}</div>
+          <div class="strategy-card-info">
+            <div class="strategy-card-title-row">
+              <h3 class="strategy-card-title" title="${escapeHtml(name)}">${escapeHtml(name)}</h3>
+              <span class="strategy-badge ${badgeClass}">${badgeLabel}</span>
+            </div>
+            <p class="strategy-card-type">${typeLabel}</p>
+          </div>
+        </header>
+        <p class="strategy-card-desc">${description}</p>
+        <div class="strategy-card-section">
+          <p class="strategy-card-label">Accounts</p>
+          <p class="strategy-card-value">${accountsText}</p>
+        </div>
+        <section class="strategy-webhook-section">
+          <p class="strategy-card-label">Webhook URL</p>
+          <div class="strategy-webhook-box">
+            <code class="strategy-webhook-url" title="${webhookTitle}">${webhookDisplay}</code>
+            <button type="button" class="strategy-icon-btn" data-action="copy-webhook" data-id="${strategy.id}" aria-label="Copy webhook URL">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
+            <button type="button" class="strategy-icon-btn" data-action="refresh-webhook" data-id="${strategy.id}" aria-label="Refresh webhook secret">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" aria-hidden="true">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+            </button>
+            <button type="button" class="strategy-icon-btn" data-action="test-webhook" data-id="${strategy.id}" aria-label="Test webhook">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="${testFill}" aria-hidden="true">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+            </button>
+          </div>
+        </section>
+        <div class="strategy-btn-row">
+          <button type="button" class="strategy-btn strategy-btn-status" data-action="toggle-status" data-id="${strategy.id}" data-status="${isActive ? 'active' : 'inactive'}">${toggleLabel}</button>
+          <button type="button" class="strategy-btn strategy-btn-clone" data-action="clone" data-id="${strategy.id}">Clone</button>
+          <button type="button" class="strategy-btn strategy-btn-payload" data-action="show-payload" data-id="${strategy.id}">Payload</button>
+        </div>
+        <div class="strategy-btn-row">
+          <button type="button" class="strategy-btn strategy-btn-logs" data-action="view-logs" data-id="${strategy.id}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            Logs
+          </button>
+          <button type="button" class="strategy-btn strategy-btn-edit" data-action="edit" data-id="${strategy.id}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Edit
+          </button>
+          <button type="button" class="strategy-btn strategy-btn-delete" data-action="delete" data-id="${strategy.id}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Delete
+          </button>
+        </div>
+      </article>`;
+      }
+
+      formatStrategyType(strategy) {
+        const asset = strategy.asset_class || 'Unknown';
+        const style = strategy.style || '';
+        return style ? `${asset} - ${style}` : asset;
+      }
+
+      getResolvedAccounts(strategy) {
+        const cacheKey = '__resolvedAccounts';
+        const versionKey = '__accountsVersion';
+        if (strategy[versionKey] === this.accountVersion && Array.isArray(strategy[cacheKey])) {
+          return strategy[cacheKey];
+        }
+        const results = [];
+        const seen = new Set();
+        const addAccount = (label, account) => {
+          const key = account ? `acc-${account.id}` : `label-${label}`;
+          if (seen.has(key)) {
+            return;
+          }
+          seen.add(key);
+          results.push({ label, account });
+        };
+        if (strategy.account_id) {
+          const account = this.accountIdMap.get(String(strategy.account_id));
+          const label = account ? this.formatAccountLabel(account) : `Account #${strategy.account_id}`;
+          addAccount(label, account);
+        }
+        normalizeListField(strategy.master_accounts).forEach(raw => {
+          const key = String(raw);
+          const account = this.accountIdMap.get(key) || this.accountClientMap.get(key);
+          if (account) {
+            addAccount(this.formatAccountLabel(account), account);
+          } else if (key) {
+            addAccount(key, null);
+          }
+        });
+        strategy[cacheKey] = results;
+        strategy[versionKey] = this.accountVersion;
+        return results;
+      }
+
+      buildWebhookUrl(strategy) {
+        const base = this.webhookBase;
+        if (!base) {
+          return '';
+        }
+        const origin = window.location.origin.replace(/\/$/, '');
+        const trimmedBase = base.startsWith('http') ? base : `${origin}/${base.replace(/^\//, '')}`;
+        if (!strategy?.webhook_secret) {
+          return trimmedBase;
+        }
+        const separator = trimmedBase.includes('?') ? '&' : '?';
+        return `${trimmedBase}${separator}secret=${encodeURIComponent(strategy.webhook_secret)}`;
+      }
+
+      getPayloadStorageKey(id) {
+        return `${STRATEGY_PAYLOAD_STORAGE_PREFIX}${id}`;
+      }
+
+      getStoredPayload(strategy) {
+        const id = typeof strategy === 'object' ? strategy?.id : strategy;
+        if ((!id && id !== 0) || !window.localStorage) {
+          return null;
+        }
+        try {
+          const raw = window.localStorage.getItem(this.getPayloadStorageKey(id));
+          if (!raw) {
+            return null;
+          }
+          const record = parseStoredStrategyPayload(raw, id);
+          if (!record || !record.payload) {
+            window.localStorage.removeItem(this.getPayloadStorageKey(id));
+            return null;
+          }
+          if (record.userId && this.currentUserId && record.userId !== this.currentUserId) {
+            return null;
+          }
+          const updatedAt = strategy && typeof strategy === 'object'
+            ? (strategy.updated_at || strategy.updatedAt || null)
+            : null;
+          if (!updatedAt) {
+            return record.payload;
+          }
+          const entryTimestamp = parseStrategyTimestamp(record.updatedAt);
+          const strategyTimestamp = parseStrategyTimestamp(updatedAt);
+          if (!strategyTimestamp) {
+            return record.payload;
+          }
+          if (!entryTimestamp || entryTimestamp < strategyTimestamp) {
+            return null;
+          }
+          return record.payload;
+        } catch (error) {
+          console.warn('Failed to parse stored payload', error);
+        }
+        return null;
+      }
+
+      savePayload(strategyOrId, payload) {
+        if (!window.localStorage || !payload || typeof payload !== 'object') {
+          return;
+        }
+        const strategy = typeof strategyOrId === 'object' ? strategyOrId : null;
+        const id = strategy ? strategy.id : strategyOrId;
+        if (!id && id !== 0) {
+          return;
+        }
+        const record = {
+          userId: this.currentUserId || null,
+          strategyId: id,
+          updatedAt: strategy?.updated_at || strategy?.updatedAt || null,
+          payload
+        };
+        try {
+          window.localStorage.setItem(this.getPayloadStorageKey(id), JSON.stringify(record));
+        } catch (error) {
+          console.warn('Failed to persist payload preview', error);
+        }
+      }
+
+      buildPayloadFromStrategy(strategy) {
+        if (!strategy) {
+          return {};
+        }
+        const payload = {
+          exchange: expandBoth(strategy.exchange || 'NSE', ['NSE', 'BSE']),
+          transactionType: expandBoth(strategy.transaction_type || 'BUY', ['BUY', 'SELL']),
+          orderType: strategy.order_type || 'limit',
+          orderValidity: strategy.order_validity || 'day',
+          productType: strategy.product_type || 'intraday',
+          masterAccounts: normalizeListField(strategy.master_accounts).map(value => String(value))
+        };
+        if (strategy.order_qty) {
+          const qty = Number(strategy.order_qty);
+          if (!Number.isNaN(qty)) {
+            payload.orderQty = qty;
+          }
+        }
+        if (strategy.order_value) {
+          const orderValue = Number(strategy.order_value);
+          if (!Number.isNaN(orderValue)) {
+            payload.orderValue = orderValue;
+          }
+        }
+        if (strategy.allowed_tickers === '__WATCHLIST_DYNAMIC__') {
+          payload.tradingSymbols = ["{{ticker}}"];
+        } else if (strategy.allowed_tickers) {
+          payload.tradingSymbols = normalizeListField(strategy.allowed_tickers);
+        } else {
+          payload.tradingSymbols = [];
+        }
+        return payload;
+      }
+
+      buildPayload(strategy) {
+        const stored = this.getStoredPayload(strategy);
+        if (stored) {
+          return stored;
+        }
+        return this.buildPayloadFromStrategy(strategy);
+      }
+
+      openPayloadModal(strategy) {
+        if (!this.payloadModal) {
+          return;
+        }
+        if (this.payloadName) {
+          this.payloadName.textContent = strategy.name || `Strategy #${strategy.id}`;
+        }
+        if (this.payloadWebhook) {
+          const webhook = this.buildWebhookUrl(strategy);
+          this.payloadWebhook.textContent = webhook || 'Webhook URL unavailable';
+        }
+        if (this.payloadCode) {
+          const payload = this.buildPayload(strategy);
+          this.payloadCode.textContent = JSON.stringify(payload, null, 2);
+          this.savePayload(strategy, payload);
+        }
+        this.payloadModal.style.display = 'block';
+      }
+
+      closePayloadModal() {
+        if (this.payloadModal) {
+          this.payloadModal.style.display = 'none';
+        }
+      }
+
+      formatLogTimestamp(value) {
+        if (!value) {
+          return '';
+        }
+        try {
+          const date = new Date(value);
+          if (!Number.isNaN(date.getTime())) {
+            return date.toLocaleString();
+          }
+        } catch (error) {
+          // ignore
+        }
+        return String(value);
+      }
+
+      formatLogLevel(level) {
+        const normalized = String(level || 'INFO').trim();
+        return normalized ? normalized.toUpperCase() : 'INFO';
+      }
+
+      getLogBadgeClass(level) {
+        const normalized = String(level || '').toLowerCase();
+        if (normalized === 'success' || normalized === 'ok') {
+          return 'strategy-log-badge-success';
+        }
+        if (normalized === 'error' || normalized === 'fail' || normalized === 'failure' || normalized === 'critical') {
+          return 'strategy-log-badge-error';
+        }
+        if (normalized === 'warning' || normalized === 'warn') {
+          return 'strategy-log-badge-warning';
+        }
+        return 'strategy-log-badge-info';
+      }
+
+      normalizeLogsResponse(logs) {
+        if (Array.isArray(logs)) {
+          return logs;
+        }
+        if (logs && typeof logs === 'object') {
+          if (Array.isArray(logs.logs)) {
+            return logs.logs;
+          }
+          if (Array.isArray(logs.items)) {
+            return logs.items;
+          }
+          if (Array.isArray(logs.data)) {
+            return logs.data;
+          }
+        }
+        return [];
+      }
+
+      getTabElements(tab) {
+        if (tab === 'orders') {
+          return {
+            container: this.ordersContainer,
+            loading: this.ordersLoading,
+            empty: this.ordersEmpty
+          };
+        }
+        return {
+          container: this.logsContainer,
+          loading: this.logsLoading,
+          empty: this.logsEmpty
+        };
+      }
+
+      setActiveTabClasses(tab) {
+        this.activeLogsTab = tab === 'orders' ? 'orders' : 'logs';
+        if (Array.isArray(this.logsTabButtons)) {
+          this.logsTabButtons.forEach(button => {
+            const isActive = (button?.dataset?.logsTab || 'logs') === this.activeLogsTab;
+            if (typeof button.classList?.toggle === 'function') {
+              button.classList.toggle('is-active', isActive);
+            }
+            button?.setAttribute?.('aria-selected', isActive ? 'true' : 'false');
+          });
+        }
+        if (this.logsTabPanels && typeof this.logsTabPanels.forEach === 'function') {
+          this.logsTabPanels.forEach((panel, key) => {
+            if (!panel) {
+              return;
+            }
+            const isActive = key === this.activeLogsTab;
+            panel.classList.toggle('is-active', isActive);
+            panel.hidden = !isActive;
+          });
+        }
+      }
+
+      resetTabUi(tab, { showLoading = false } = {}) {
+        const { container, loading, empty } = this.getTabElements(tab);
+        if (container) {
+          container.innerHTML = '';
+        }
+        if (loading) {
+          loading.style.display = showLoading ? 'block' : 'none';
+        }
+        if (empty) {
+          empty.style.display = 'none';
+          empty.textContent = tab === 'orders' ? 'No order logs available yet.' : 'No logs available yet.';
+        }
+      }
+
+      normalizeOrderItem(order) {
+        if (!order || typeof order !== 'object') {
+          return {};
+        }
+        return {
+          broker: order.broker || order.broker_name || order.brokerName || '',
+          timestamp: order.timestamp || order.time || order.created_at || order.createdAt || order.order_time,
+          symbol: order.symbol || order.ticker || order.tradingsymbol || order.instrument || order.name,
+          side: order.side || order.transaction_type || order.transactionType || order.order_side,
+          quantity: order.quantity ?? order.qty ?? order.filled_quantity ?? order.filled_qty,
+          price: order.price ?? order.avg_price ?? order.average_price ?? order.fill_price,
+          status: order.status || order.state,
+          orderId: order.order_id || order.orderId || order.id
+        };
+      }
+
+      normalizeOrderList(orders) {
+        if (!Array.isArray(orders)) {
+          return [];
+        }
+        return orders.map(order => this.normalizeOrderItem(order)).filter(item => Object.keys(item).length > 0);
+      }
+
+      groupOrdersByBroker(orders) {
+        const normalizedOrders = this.normalizeOrderList(orders);
+        const grouped = new Map();
+        normalizedOrders.forEach(order => {
+          const broker = order.broker || 'Unknown Broker';
+          const existing = grouped.get(broker) || [];
+          existing.push(order);
+          grouped.set(broker, existing);
+        });
+        return Array.from(grouped.entries()).map(([broker, brokerOrders]) => ({
+          broker,
+          orders: brokerOrders
+        }));
+      }
+
+      normalizeOrderLogsResponse(payload) {
+        if (Array.isArray(payload)) {
+          return this.groupOrdersByBroker(payload);
+        }
+        if (payload && typeof payload === 'object') {
+          if (Array.isArray(payload.orders)) {
+            return this.groupOrdersByBroker(payload.orders);
+          }
+          if (Array.isArray(payload.items)) {
+            return this.groupOrdersByBroker(payload.items);
+          }
+          if (Array.isArray(payload.data)) {
+            return this.groupOrdersByBroker(payload.data);
+          }
+          const brokerKeys = Object.keys(payload).filter(key => Array.isArray(payload[key]));
+          if (brokerKeys.length) {
+            return brokerKeys.map(broker => ({
+              broker: broker || 'Unknown Broker',
+              orders: this.normalizeOrderList(payload[broker])
+            })).filter(group => group.orders.length);
+          }
+        }
+        return [];
+      }
+
+      renderLogs(logs) {
+        if (!this.logsContainer) {
+          return;
+        }
+        const normalizedLogs = this.normalizeLogsResponse(logs);
+        if (!normalizedLogs.length) {
+          this.logsContainer.innerHTML = '';
+          return;
+        }
+        const items = normalizedLogs.map(log => {
+          const badgeClass = this.getLogBadgeClass(log?.level);
+          const levelLabel = escapeHtml(this.formatLogLevel(log?.level));
+          const timestamp = escapeHtml(this.formatLogTimestamp(log?.timestamp));
+          const message = escapeHtml(log?.message || '');
+          const displayedMessage = message || '—';
+          return `
+            <div class="strategy-log-item">
+              <div class="strategy-log-header">
+                <span class="strategy-log-badge ${badgeClass}">${levelLabel}</span>
+                <span class="strategy-log-timestamp">${timestamp}</span>
+              </div>
+              <p class="strategy-log-message">${displayedMessage}</p>
+            </div>
+          `;
+        }).join('');
+        this.logsContainer.innerHTML = items;
+        this.logsContainer.scrollTop = 0;
+      }
+
+      renderOrderLogs(groups) {
+        if (!this.ordersContainer) {
+          return;
+        }
+        if (!Array.isArray(groups) || !groups.length) {
+          this.ordersContainer.innerHTML = '';
+          return;
+        }
+        const items = groups.map(group => {
+          const brokerLabel = escapeHtml(group?.broker || 'Unknown Broker');
+          const orders = Array.isArray(group?.orders) ? group.orders : [];
+          const orderItems = orders.map(order => {
+            const timestamp = escapeHtml(this.formatLogTimestamp(order?.timestamp));
+            const symbol = escapeHtml(order?.symbol || '—');
+            const sideNormalized = String(order?.side || '').toLowerCase();
+            const sideLabel = escapeHtml(sideNormalized ? sideNormalized.toUpperCase() : '—');
+            const sideClass = sideNormalized === 'buy' ? 'is-buy' : (sideNormalized === 'sell' ? 'is-sell' : '');
+            const quantity = escapeHtml(order?.quantity !== undefined && order?.quantity !== null ? String(order.quantity) : '—');
+            const price = escapeHtml(order?.price !== undefined && order?.price !== null ? String(order.price) : '—');
+            const status = escapeHtml(order?.status || '—');
+            const orderId = escapeHtml(order?.orderId || '—');
+            return `
+              <div class="strategy-order-item">
+                <div class="strategy-order-row">
+                  <span class="strategy-order-symbol">${symbol}</span>
+                  <span class="strategy-order-side ${sideClass}">${sideLabel}</span>
+                </div>
+                <div class="strategy-order-meta">
+                  <span class="strategy-log-timestamp">${timestamp || '—'}</span>
+                  <span class="strategy-order-status">${status}</span>
+                </div>
+                <div class="strategy-order-details">
+                  <span>Qty: ${quantity}</span>
+                  <span>Price: ${price}</span>
+                  <span>Order ID: ${orderId}</span>
+                </div>
+              </div>
+            `;
+          }).join('');
+          return `
+            <div class="strategy-order-group">
+              <div class="strategy-order-group-header">${brokerLabel}</div>
+              <div class="strategy-order-items">${orderItems || ''}</div>
+            </div>
+          `;
+        }).join('');
+        this.ordersContainer.innerHTML = items;
+        this.ordersContainer.scrollTop = 0;
+      }
+
+      loadStrategyLogs(strategy) {
+        if (!strategy) {
+          return;
+        }
+        const requestId = ++this.logsRequestId;
+        this.resetTabUi('logs', { showLoading: true });
+        fetchJson(`/api/strategies/${strategy.id}/logs`).then(logs => {
+          if (requestId !== this.logsRequestId) {
+            return;
+          }
+          const normalizedLogs = this.normalizeLogsResponse(logs);
+          this.logsTabState.logs.loaded = true;
+          if (normalizedLogs.length) {
+            this.renderLogs(normalizedLogs);
+            if (this.logsEmpty) {
+              this.logsEmpty.style.display = 'none';
+            }
+          } else {
+            if (this.logsContainer) {
+              this.logsContainer.innerHTML = '';
+            }
+            if (this.logsEmpty) {
+              this.logsEmpty.textContent = 'No logs available yet.';
+              this.logsEmpty.style.display = 'block';
+            }
+          }
+        }).catch(error => {
+          if (requestId !== this.logsRequestId) {
+            return;
+          }
+          console.error('Failed to load strategy logs', error);
+          if (this.logsContainer) {
+            this.logsContainer.innerHTML = '';
+          }
+          if (this.logsEmpty) {
+            this.logsEmpty.textContent = error.message || 'Failed to load strategy logs.';
+            this.logsEmpty.style.display = 'block';
+          }
+        }).finally(() => {
+          if (requestId !== this.logsRequestId) {
+            return;
+          }
+          if (this.logsLoading) {
+            this.logsLoading.style.display = 'none';
+          }
+        });
+      }
+
+      loadOrderLogs(strategy) {
+        if (!strategy) {
+          return;
+        }
+        const requestId = ++this.orderLogsRequestId;
+        this.resetTabUi('orders', { showLoading: true });
+        fetchJson(`/api/strategies/${strategy.id}/orders`).then(orders => {
+          if (requestId !== this.orderLogsRequestId) {
+            return;
+          }
+          const normalizedOrders = this.normalizeOrderLogsResponse(orders);
+          this.logsTabState.orders.loaded = true;
+          if (normalizedOrders.length) {
+            this.renderOrderLogs(normalizedOrders);
+            if (this.ordersEmpty) {
+              this.ordersEmpty.style.display = 'none';
+            }
+          } else {
+            if (this.ordersContainer) {
+              this.ordersContainer.innerHTML = '';
+            }
+            if (this.ordersEmpty) {
+              this.ordersEmpty.textContent = 'No order logs available yet.';
+              this.ordersEmpty.style.display = 'block';
+            }
+          }
+        }).catch(error => {
+          if (requestId !== this.orderLogsRequestId) {
+            return;
+          }
+          console.error('Failed to load strategy order logs', error);
+          if (this.ordersContainer) {
+            this.ordersContainer.innerHTML = '';
+          }
+          if (this.ordersEmpty) {
+            this.ordersEmpty.textContent = error.message || 'Failed to load strategy order logs.';
+            this.ordersEmpty.style.display = 'block';
+          }
+        }).finally(() => {
+          if (requestId !== this.orderLogsRequestId) {
+            return;
+          }
+          if (this.ordersLoading) {
+            this.ordersLoading.style.display = 'none';
+          }
+        });
+      }
+
+      switchLogsTab(tab) {
+        const normalizedTab = tab === 'orders' ? 'orders' : 'logs';
+        this.setActiveTabClasses(normalizedTab);
+        if (!this.currentLogsStrategy) {
+          return;
+        }
+        const tabState = this.logsTabState[normalizedTab];
+        if (tabState && tabState.loaded) {
+          return;
+        }
+        if (normalizedTab === 'orders') {
+          this.loadOrderLogs(this.currentLogsStrategy);
+        } else {
+          this.loadStrategyLogs(this.currentLogsStrategy);
+        }
+      }
+
+      openLogsModal(strategy) {
+        if (!strategy) {
+          return;
+        }
+
+        this.currentLogsStrategy = strategy;
+        this.logsRequestId += 1;
+        this.orderLogsRequestId += 1;
+        this.logsTabState = {
+          logs: { loaded: false },
+          orders: { loaded: false }
+        };
+        this.setActiveTabClasses('logs');
+        this.logsModal.style.display = 'flex';
+        this.logsModal.classList.add('is-visible');
+        if (this.logsTitle) {
+          this.logsTitle.textContent = 'Strategy Logs';
+        }
+        if (this.logsSubtitle) {
+          this.logsSubtitle.textContent = strategy.name || `Strategy #${strategy.id}`;
+        }
+        this.resetTabUi('logs', { showLoading: true });
+        this.resetTabUi('orders');
+        this.loadStrategyLogs(strategy);
+      }
+
+      closeLogsModal() {
+        this.logsRequestId += 1;
+        this.orderLogsRequestId += 1;
+        if (this.logsModal) {
+          this.logsModal.classList.remove('is-visible');
+          this.logsModal.style.display = 'none';
+        }
+        if (this.logsLoading) {
+          this.logsLoading.style.display = 'none';
+        }
+        if (this.logsEmpty) {
+          this.logsEmpty.style.display = 'none';
+        }
+        if (this.ordersLoading) {
+          this.ordersLoading.style.display = 'none';
+        }
+        if (this.ordersEmpty) {
+          this.ordersEmpty.style.display = 'none';
+        }
+        if (this.logsContainer) {
+          this.logsContainer.innerHTML = '';
+        }
+        if (this.ordersContainer) {
+          this.ordersContainer.innerHTML = '';
+        }
+        this.setActiveTabClasses('logs');
+        this.currentLogsStrategy = null;
+      }
+
+      openEditModal(strategy) {
+        const url = strategy && strategy.id ? `/create-alerts?strategy_id=${encodeURIComponent(strategy.id)}` : '/create-alerts';
+        const navigate = window.navigateDashboard;
+        if (typeof navigate === 'function') {
+          try {
+            const result = navigate(url);
+            if (result && typeof result.catch === 'function') {
+              result.catch(() => {
+                window.location.href = url;
+              });
+            }
+          } catch (error) {
+            console.error('Failed to open edit modal via SPA navigation:', error);
+            window.location.href = url;
+          }
+        } else {
+          window.location.href = url;
+        }
+      }
+
+      ensureTypeOption(value) {
+        if (!this.typeSelect || !value) {
+          return;
+        }
+        if (this.typeSelect.querySelector(`option[value="${value}"]`)) {
+          return;
+        }
+        const [asset, style] = value.split('|');
+        const label = [asset, style].filter(Boolean).join(' - ');
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label || value;
+        option.dataset.dynamic = 'true';
+        this.typeSelect.appendChild(option);
+      }
+
+      closeEditModal() {
+        if (this.editModal) {
+          this.editModal.style.display = 'none';
+        }
+        this.state.editing = null;
+      }
+
+      async toggleStatus(strategy, button) {
+        if (button) {
+          button.disabled = true;
+        }
+        this.showError();
+        try {
+          const action = strategy.is_active ? 'deactivate' : 'activate';
+          await fetchJson(`/api/strategies/${strategy.id}/${action}`, { method: 'POST' });
+          strategy.is_active = !strategy.is_active;
+          if (typeof window.invalidateAllCaches === 'function') {
+            window.invalidateAllCaches('/demat-strategies');
+          }
+          this.renderStrategies();
+          showToast(`Strategy ${strategy.is_active ? 'activated' : 'deactivated'}.`, 'success');
+        } catch (error) {
+          this.showError(error.message || 'Failed to update strategy status.');
+        } finally {
+          if (button) {
+            button.disabled = false;
+          }
+        }
+      }
+
+      async cloneStrategy(strategy, button) {
+        if (button) {
+          button.disabled = true;
+        }
+        this.showError();
+        try {
+          await fetchJson(`/api/strategies/${strategy.id}/clone`, { method: 'POST' });
+          showToast('Strategy cloned successfully.', 'success');
+          if (typeof window.invalidateAllCaches === 'function') {
+            window.invalidateAllCaches('/demat-strategies');
+          }
+          await this.reload();
+        } catch (error) {
+          this.showError(error.message || 'Failed to clone strategy.');
+        } finally {
+          if (button) {
+            button.disabled = false;
+          }
+        }
+      }
+
+      async deleteStrategy(strategy, button) {
+        const title = strategy.name || 'this strategy';
+        if (!window.confirm(`Are you sure you want to delete ${title}?`)) {
+          return;
+        }
+        if (button) {
+          button.disabled = true;
+        }
+        this.showError();
+        try {
+          await fetchJson(`/api/strategies/${strategy.id}`, { method: 'DELETE' });
+          this.state.strategies = this.state.strategies.filter(item => item.id !== strategy.id);
+          try {
+            window.localStorage.removeItem(this.getPayloadStorageKey(strategy.id));
+          } catch (error) {
+            console.warn('Failed to remove stored payload', error);
+          }
+          if (typeof window.invalidateAllCaches === 'function') {
+            window.invalidateAllCaches('/demat-strategies');
+          }
+          this.renderStrategies();
+          showToast('Strategy deleted.', 'success');
+        } catch (error) {
+          this.showError(error.message || 'Failed to delete strategy.');
+        } finally {
+          if (button) {
+            button.disabled = false;
+          }
+        }
+      }
+
+      async refreshWebhookSecret(strategy, button) {
+        if (button) {
+          button.disabled = true;
+        }
+        this.showError();
+        try {
+          const data = await fetchJson(`/api/strategies/${strategy.id}/regenerate-secret`, { method: 'POST' });
+          if (data?.webhook_secret) {
+            strategy.webhook_secret = data.webhook_secret;
+            try {
+              window.localStorage.removeItem(this.getPayloadStorageKey(strategy.id));
+            } catch (error) {
+              console.warn('Failed to reset stored payload after secret regen', error);
+            }
+            this.renderStrategies();
+            showToast('Generated a new webhook secret.', 'success');
+          }
+        } catch (error) {
+          this.showError(error.message || 'Failed to regenerate webhook secret.');
+        } finally {
+          if (button) {
+            button.disabled = false;
+          }
+        }
+      }
+
+      async testWebhook(strategy, button) {
+        if (button) {
+          button.disabled = true;
+        }
+        this.showError();
+
+        if (!strategy.is_active) {
+          showToast('Strategy is inactive', 'error');
+          strategy.lastTestStatus = 'failure';
+          this.renderStrategies();
+          if (button) {
+            button.disabled = false;
+          }
+          return;
+        }
+
+        try {
+          const result = await fetchJson(`/api/strategies/${strategy.id}/test-webhook`, { method: 'POST' });
+          const responseText = result?.response || 'Strategy working fine';
+          strategy.lastTestStatus = 'success';
+          this.renderStrategies();
+          showToast(responseText, 'success');
+        } catch (error) {
+          this.showError(error.message || 'Failed to trigger test webhook.');
+          strategy.lastTestStatus = 'failure';
+          this.renderStrategies();
+        } finally {
+          if (button) {
+            button.disabled = false;
+          }
+        }
+      }
+
+      handleContainerClick(event) {
+        const button = event.target.closest('[data-action]');
+        if (!button || !this.container || !this.container.contains(button)) {
+          return;
+        }
+        const id = button.getAttribute('data-id');
+        const strategy = this.state.strategies.find(item => String(item.id) === String(id));
+        if (!strategy) {
+          return;
+        }
+        const action = button.dataset.action;
+        if (action === 'toggle-status') {
+          this.toggleStatus(strategy, button);
+        } else if (action === 'clone') {
+          this.cloneStrategy(strategy, button);
+        } else if (action === 'delete') {
+          this.deleteStrategy(strategy, button);
+        } else if (action === 'show-payload') {
+          this.openPayloadModal(strategy);
+        } else if (action === 'edit') {
+          this.openEditModal(strategy);
+        } else if (action === 'refresh-webhook') {
+          this.refreshWebhookSecret(strategy, button);
+        } else if (action === 'test-webhook') {
+          this.testWebhook(strategy, button);
+        } else if (action === 'copy-webhook') {
+          const url = this.buildWebhookUrl(strategy);
+          copyToClipboard(url || '');
+        } else if (action === 'view-logs') {
+          this.openLogsModal(strategy);
+        }
+      }
+    }
+
+    function initializeDematStrategiesPage() {
+      const root = document.querySelector('.strategies-page-root');
+      if (!root) {
+        return;
+      }
+      const existing = window.__dematStrategiesController;
+      if (existing) {
+        existing.attach(root);
+        if (existing.isFetchStale()) {
+          invalidateDematStrategiesPrefetchCache();
+          const reloadPromise = existing.reload({ silent: false });
+          if (reloadPromise && typeof reloadPromise.finally === 'function') {
+            reloadPromise.finally(() => existing.resume());
+          } else {
+            existing.resume();
+          }
+          return;
+        }
+        existing.resume();
+        return;
+      }
+      const prefetchedPayload = readDematStrategiesPrefetch();
+
+      // Check for stale cache
+      if (prefetchedPayload && prefetchedPayload.fetchedAt) {
+        const age = Date.now() - prefetchedPayload.fetchedAt;
+        if (age > 60 * 60 * 1000) { // 60 minutes
+          invalidateDematStrategiesPrefetchCache();
+          // Don't use stale data
+          window.__dematStrategiesController = new DematStrategiesPage(root, null);
+          return;
+        }
+      }
+
+      window.__dematStrategiesController = new DematStrategiesPage(root, prefetchedPayload);
+    }
+
+    window.pageScripts = window.pageScripts || {};
+    window.pageScripts['demat-strategies'] = initializeDematStrategiesPage;
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeDematStrategiesPage);
+    } else {
+      initializeDematStrategiesPage();
+    }
+  })();
+</script>
+<style>
+  .strategies-page-root {
+    padding: 28px 0 28px !important;
+  }
+
+  .strategies-page {
+    max-width: 1180px !important;
+    padding: 0 20px 28px !important;
+  }
+
+  .strategy-cards-grid {
+    gap: 16px !important;
+  }
+
+  .strategy-card {
+    padding: 14px 14px 12px !important;
+    border-radius: 14px !important;
+  }
+
+  .strategy-card-header {
+    gap: 10px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .strategy-avatar {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 14px !important;
+    font-size: 16px !important;
+  }
+
+  .strategy-card-title {
+    font-size: 15px !important;
+    white-space: normal !important;
+    line-height: 1.25 !important;
+  }
+
+  .strategy-webhook-section {
+    margin-bottom: 10px !important;
+  }
+
+  .strategy-webhook-box {
+    padding: 5px 8px !important;
+  }
+
+  .strategy-webhook-url {
+    font-size: 11.5px !important;
+  }
+
+  .strategy-btn-row {
+    gap: 6px !important;
+  }
+
+  .strategy-btn {
+    padding: 7px 6px !important;
+    font-size: 12.5px !important;
+    border-radius: 8px !important;
+  }
+</style>
+
+{% endblock %}

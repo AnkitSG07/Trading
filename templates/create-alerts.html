@@ -1,0 +1,1758 @@
+{% extends "layout.html" %}
+
+{% block title %}Create New Strategy - Alert to Trade{% endblock %}
+
+{% block styles %}
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: hsl(0, 0%, 100%);
+    color: hsl(240, 10%, 3.9%);
+    line-height: 1.5;
+  }
+
+  .strategy-container {
+    max-width: 1024px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .strategy-card {
+    background-color: hsl(0, 0%, 100%);
+    border: 1px solid hsl(240, 5.9%, 90%);
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 40px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+  }
+
+  .strategy-card-header {
+    background-color: hsl(240, 5.9%, 10%);
+    color: hsl(0, 0%, 98%);
+    padding: 1.75rem 2rem;
+  }
+
+  .strategy-card-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+  }
+
+  .strategy-card-body {
+    padding: 2.25rem 2rem;
+  }
+
+  .strategy-form-group {
+    margin-bottom: 1.75rem;
+  }
+
+  .strategy-form-label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.65rem;
+    color: hsl(240, 10%, 3.9%);
+  }
+
+  .strategy-required {
+    color: hsl(0, 84.2%, 60.2%);
+  }
+
+  .strategy-input,
+  .strategy-textarea,
+  .strategy-select {
+    width: 100%;
+    padding: 0.75rem 0.85rem;
+    font-size: 1rem;
+    border: 1px solid hsl(240, 5.9%, 90%);
+    border-radius: 0.45rem;
+    background-color: hsl(0, 0%, 100%);
+    transition: all 0.2s ease;
+  }
+
+  .strategy-input:focus,
+  .strategy-textarea:focus,
+  .strategy-select:focus {
+    outline: none;
+    border-color: hsl(240, 5.9%, 10%);
+    box-shadow: 0 0 0 3px hsla(240, 5.9%, 10%, 0.12);
+  }
+
+  .strategy-input:disabled,
+  .strategy-textarea:disabled,
+  .strategy-select:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    background-color: hsl(240, 4.8%, 95.9%);
+  }
+
+  .strategy-textarea {
+    resize: vertical;
+    min-height: 90px;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    line-height: 1.6;
+  }
+
+  .strategy-textarea.readonly {
+    background-color: hsl(240, 4.8%, 95.9%);
+  }
+
+  .strategy-form-hint {
+    font-size: 0.875rem;
+    color: hsl(240, 3.8%, 46.1%);
+    margin-top: 0.45rem;
+  }
+
+  .strategy-accounts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 0.75rem;
+    border: 1px solid hsl(240, 5.9%, 90%);
+    border-radius: 0.6rem;
+    background: hsl(240, 4.8%, 95.9%);
+  }
+
+  .strategy-account-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .strategy-checkbox {
+    width: 1.2rem;
+    height: 1.2rem;
+    cursor: pointer;
+    accent-color: hsl(240, 5.9%, 10%);
+  }
+
+  .strategy-checkbox-label {
+    font-size: 0.925rem;
+    font-weight: 500;
+    color: hsl(240, 5%, 35%);
+    cursor: pointer;
+  }
+
+  .strategy-radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .strategy-radio-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .strategy-radio {
+    width: 1.1rem;
+    height: 1.1rem;
+    cursor: pointer;
+    accent-color: hsl(240, 5.9%, 10%);
+  }
+
+  .strategy-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .strategy-grid-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .strategy-payload-container {
+    position: relative;
+  }
+
+  .strategy-copy-button {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    padding: 0.45rem;
+    background: transparent;
+    border: 1px solid hsl(240, 5.9%, 90%);
+    border-radius: 0.4rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .strategy-copy-button:hover {
+    background-color: hsl(240, 4.8%, 95.9%);
+  }
+
+  .tokens-list {
+    font-size: 0.875rem;
+    color: hsl(240, 3.8%, 46.1%);
+    margin-top: 0.35rem;
+    min-height: 1.2rem;
+  }
+
+  .strategy-button-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin-top: 2rem;
+  }
+
+  @media (min-width: 640px) {
+    .strategy-button-row {
+      flex-direction: row;
+      justify-content: flex-end;
+    }
+  }
+
+  .strategy-button {
+    padding: 0.75rem 2.25rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 0.55rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+  }
+
+  .strategy-button-primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    box-shadow: 0 12px 30px rgba(99, 102, 241, 0.25);
+  }
+
+  .strategy-button-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 36px rgba(99, 102, 241, 0.3);
+  }
+
+  .strategy-button-outline {
+    background-color: transparent;
+    color: hsl(240, 10%, 3.9%);
+    border: 1px solid hsl(240, 5.9%, 85%);
+  }
+
+  .strategy-button-outline:hover {
+    background-color: hsl(240, 4.8%, 95.9%);
+  }
+
+  .toast {
+    --toast-offset-x: -50%;
+    position: fixed;
+    top: 1rem;
+    left: 50%;
+    right: auto;
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    display: none;
+    animation: slideIn 0.3s ease-out;
+    max-width: min(24rem, calc(100% - 2rem));
+    word-break: break-word;
+    transform: translate(var(--toast-offset-x), -8px);
+    text-align: center;
+  }
+
+  .toast.success {
+    background: hsl(142, 76%, 36%);
+  }
+
+  .toast.error {
+    background: hsl(0, 72%, 51%);
+  }
+
+  .toast.show {
+    display: block;
+    transform: translate(var(--toast-offset-x), 0);
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translate(var(--toast-offset-x), -18px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translate(var(--toast-offset-x), 0);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .toast {
+      --toast-offset-x: -50%;
+      width: calc(100% - 2rem);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .strategy-card-header {
+      padding: 1.5rem;
+    }
+
+    .strategy-card-body {
+      padding: 1.5rem 1.25rem;
+    }
+
+    .strategy-card-header h1 {
+      font-size: 1.45rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="strategy-container">
+  <div class="strategy-card">
+    <div class="strategy-card-header">
+      <h1 id="pageTitle">Create New Strategy</h1>
+    </div>
+    <div class="strategy-card-body">
+      <form id="createStrategyForm">
+        <div class="strategy-form-group">
+          <label for="strategyName" class="strategy-form-label">
+            Strategy Name <span class="strategy-required">*</span>
+          </label>
+          <input type="text" id="strategyName" name="strategyName" class="strategy-input"
+            placeholder="e.g., Daily Momentum Scalper" required>
+          <p class="strategy-form-hint">Choose a descriptive name so you can identify this strategy later.</p>
+        </div>
+
+        <div class="strategy-form-group">
+          <label class="strategy-form-label">Master Accounts</label>
+          <div id="masterAccountsContainer" class="strategy-accounts-list" aria-live="polite"></div>
+          <p class="strategy-form-hint">Select the connected master accounts that should execute this strategy.</p>
+        </div>
+
+        <div class="strategy-grid-2">
+          <div class="strategy-form-group">
+            <label for="exchange" class="strategy-form-label">
+              Exchange <span class="strategy-required">*</span>
+            </label>
+            <select id="exchange" name="exchange" class="strategy-select">
+              <option value="NSE">NSE</option>
+              <option value="BSE">BSE</option>
+              <option value="BOTH">Both (NSE &amp; BSE)</option>
+            </select>
+          </div>
+
+          <div class="strategy-form-group">
+            <label for="symbolToken" class="strategy-form-label">Symbol Token</label>
+            <input type="text" id="symbolToken" name="symbolToken" class="strategy-input" placeholder="Auto" readonly>
+            <p class="strategy-form-hint">Automatically populated for supported brokers when a single symbol is
+              selected.</p>
+          </div>
+        </div>
+
+        <div class="strategy-form-group">
+          <label class="strategy-form-label">
+            Trading Symbols <span class="strategy-required">*</span>
+          </label>
+          <div class="strategy-radio-group">
+            <label class="strategy-radio-item" for="singleSymbolMode">
+              <input type="radio" id="singleSymbolMode" name="symbolInputMode" value="single" class="strategy-radio"
+                checked>
+              <span class="strategy-radio-label">Single Symbol</span>
+            </label>
+            <label class="strategy-radio-item" for="watchlistMode">
+              <input type="radio" id="watchlistMode" name="symbolInputMode" value="watchlist" class="strategy-radio">
+              <span class="strategy-radio-label">Watchlist (TradingView Alert)</span>
+            </label>
+          </div>
+          <textarea id="tradingSymbols" name="tradingSymbols" class="strategy-textarea"
+            placeholder="Enter single symbol (e.g., RELIANCE)" required></textarea>
+          <p class="strategy-form-hint" id="symbolInputHelp">Enter the trading symbol.</p>
+          <div id="tokensList" class="tokens-list"></div>
+        </div>
+
+        <div class="strategy-form-group">
+          <label class="strategy-form-label">Alert Type</label>
+          <div class="strategy-radio-group">
+            <label class="strategy-radio-item" for="alertTypeStrategy">
+              <input type="radio" id="alertTypeStrategy" name="alertType" value="strategy" class="strategy-radio"
+                checked>
+              <span class="strategy-radio-label">Strategy alert</span>
+            </label>
+            <label class="strategy-radio-item" for="alertTypeManual">
+              <input type="radio" id="alertTypeManual" name="alertType" value="manual" class="strategy-radio">
+              <span class="strategy-radio-label">Manual alert</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="strategy-grid-2">
+          <div class="strategy-form-group" id="actionGroup">
+            <label for="actionPlaceholder" class="strategy-form-label">Action</label>
+            <input type="text" id="actionPlaceholder" class="strategy-input"
+              value="{% raw %}{{strategy.order.action}}{% endraw %}" readonly>
+            <p class="strategy-form-hint">TradingView will replace this placeholder with BUY or SELL.</p>
+          </div>
+          <div class="strategy-form-group" id="transactionGroup" style="display: none;">
+            <label for="transactionType" class="strategy-form-label">
+              Type of Transaction <span class="strategy-required">*</span>
+            </label>
+            <select id="transactionType" name="transactionType" class="strategy-select">
+              <option value="BUY">BUY</option>
+              <option value="SELL">SELL</option>
+              <option value="BOTH">Both (BUY &amp; SELL)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="strategy-grid-2">
+          <div class="strategy-form-group">
+            <label for="orderType" class="strategy-form-label">
+              Order Type <span class="strategy-required">*</span>
+            </label>
+            <select id="orderType" name="orderType" class="strategy-select">
+              <option value="limit">Limit</option>
+              <option value="market">Market</option>
+            </select>
+          </div>
+          <div class="strategy-form-group">
+            <label for="orderValidity" class="strategy-form-label">Order Validity</label>
+            <select id="orderValidity" name="orderValidity" class="strategy-select">
+              <option value="day">Day</option>
+              <option value="IOC">IOC (Immediate or Cancel)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="strategy-grid-2">
+          <div class="strategy-form-group">
+            <label for="productType" class="strategy-form-label">
+              Type of Product <span class="strategy-required">*</span>
+            </label>
+            <select id="productType" name="productType" class="strategy-select">
+              <option value="intraday">Intraday / MIS</option>
+              <option value="cnc">CNC / Longterm</option>
+              <option value="mtf">MTF</option>
+              <option value="mtf_or_cnc">MTF or Longterm</option>
+            </select>
+            <p class="strategy-form-hint">Intraday/MIS are equivalent, as are CNC/Longterm. "MTF or Longterm" attempts
+              MTF first and falls back to CNC if unavailable.</p>
+          </div>
+          <div class="strategy-form-group">
+            <label for="orderQuantity" class="strategy-form-label">Order Quantity</label>
+            <input type="number" id="orderQuantity" name="orderQty" class="strategy-input" min="1" step="1"
+              placeholder="e.g., 100">
+            <p class="strategy-form-hint">Leave empty if specifying Order Value.</p>
+          </div>
+        </div>
+
+        <div class="strategy-grid-2">
+          <div class="strategy-form-group">
+            <label for="orderValue" class="strategy-form-label">Order Value</label>
+            <input type="number" id="orderValue" name="orderValue" class="strategy-input" min="1" step="0.01"
+              placeholder="e.g., 10000.00">
+            <p class="strategy-form-hint">We will auto-calculate quantity from the latest price for single symbol mode.
+            </p>
+          </div>
+        </div>
+
+        <div class="strategy-form-group">
+          <label class="strategy-form-label">Webhook Payload Preview</label>
+          <div class="strategy-payload-container">
+            <textarea id="webhookPreview" class="strategy-textarea readonly" rows="8" readonly></textarea>
+            <button type="button" class="strategy-copy-button" id="copyPreviewBtn" title="Copy payload">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="strategy-button-row">
+          <button type="button" class="strategy-button strategy-button-outline" id="cancelButton">Cancel</button>
+          <button type="submit" id="submitButton" class="strategy-button strategy-button-primary">Save Strategy</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast" aria-live="polite"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  if (!window.pageScripts) window.pageScripts = {};
+  window.pageScripts['create-alerts'] = function () {
+    const form = document.getElementById('createStrategyForm');
+    if (!form) {
+      return;
+    }
+
+    const BROKER_KEYS = ['dhan', 'aliceblue', 'angelone', 'iifl', 'kotak', 'upstox'];
+
+    if (!Array.isArray(window.cachedMasterAccounts)) {
+      window.cachedMasterAccounts = null;
+    }
+    if (!Array.isArray(window.cachedSymbols)) {
+      window.cachedSymbols = null;
+    }
+
+    const ALERTS_PREFETCH_KEY = 'create-alerts';
+    const ALERTS_PREFETCH_TTL = Math.max(
+      Number.isFinite(window.PAGE_PREFETCH_DEFAULT_TTL) ? window.PAGE_PREFETCH_DEFAULT_TTL * 2 : 4 * 60 * 1000,
+      3 * 60 * 1000
+    );
+    const ALERTS_PREFETCH_STALE_AFTER = 60 * 60 * 1000;
+    let cachedPrefetchedAlerts = null;
+
+    function readAlertsPrefetch() {
+      if (cachedPrefetchedAlerts) {
+        return cachedPrefetchedAlerts;
+      }
+      if (typeof window.getPagePrefetchData !== 'function') {
+        return null;
+      }
+      const payload = window.getPagePrefetchData(ALERTS_PREFETCH_KEY);
+      cachedPrefetchedAlerts = payload && typeof payload === 'object' ? payload : null;
+      return cachedPrefetchedAlerts;
+    }
+
+    function updateAlertsPrefetch(partial) {
+      if (typeof window.setPagePrefetchData !== 'function') {
+        return;
+      }
+      const previous = cachedPrefetchedAlerts || readAlertsPrefetch() || {};
+      cachedPrefetchedAlerts = { ...previous, ...(partial || {}), fetchedAt: Date.now() };
+      window.setPagePrefetchData(ALERTS_PREFETCH_KEY, cachedPrefetchedAlerts, { ttl: ALERTS_PREFETCH_TTL });
+    }
+
+    function isPrefetchStale(payload) {
+      if (!payload || !payload.fetchedAt) {
+        return true;
+      }
+      return Date.now() - payload.fetchedAt > ALERTS_PREFETCH_STALE_AFTER;
+    }
+
+    function isPrefetchEmpty(payload) {
+      if (!payload || typeof payload !== 'object') {
+        return true;
+      }
+      const hasAccounts = Array.isArray(payload.accounts) && payload.accounts.length > 0;
+      const hasSymbols = Array.isArray(payload.symbols) && payload.symbols.length > 0;
+      const prefetchedAccountPayload = extractAccountsFromPayload(payload.accountPayload || {});
+      const hasAccountPayload = Array.isArray(prefetchedAccountPayload) && prefetchedAccountPayload.length > 0;
+      return !hasAccounts && !hasSymbols && !hasAccountPayload;
+    }
+
+    function invalidatePrefetchCache() {
+      cachedPrefetchedAlerts = null;
+      if (typeof window.setPagePrefetchData === 'function') {
+        window.setPagePrefetchData(ALERTS_PREFETCH_KEY, null, { ttl: 0 });
+      }
+    }
+
+    function fetchInitialAlertsData() {
+      return Promise.all([
+        fetch('/api/accounts').then(r => r.json()),
+        fetch('/api/symbols').then(r => r.json())
+      ]).then(([accountsData, symbols]) => {
+        const accounts = accountsData.accounts || accountsData || [];
+        window.cachedMasterAccounts = accounts;
+        window.cachedSymbols = Array.isArray(symbols) ? symbols : [];
+        updateAlertsPrefetch({ accounts, symbols: window.cachedSymbols });
+        // Trigger UI update if controller exists
+        if (window.__createAlertsController) {
+          window.__createAlertsController.renderMasterAccountsUI(accounts);
+          window.__createAlertsController.renderSymbolsUI(window.cachedSymbols);
+        }
+      }).catch(err => {
+        console.error('Failed to load initial data:', err);
+        showErrorState('Failed to load form data. Please refresh the page.');
+      });
+    }
+
+    const initialPrefetchedAlertsData = readAlertsPrefetch();
+
+    // Fallback if prefetch is stale, empty or missing
+    if (isPrefetchStale(initialPrefetchedAlertsData) || isPrefetchEmpty(initialPrefetchedAlertsData)) {
+      invalidatePrefetchCache();
+      fetchInitialAlertsData();
+    }
+
+    function showErrorState(message) {
+      const container = document.querySelector('.strategy-container');
+      if (container) {
+        container.innerHTML = `
+          <div class="alert alert-danger">
+            <h4>Error Loading Page</h4>
+            <p>${message}</p>
+            <button onclick="location.reload()" class="btn btn-primary">Reload Page</button>
+          </div>
+        `;
+      }
+    }
+
+    const STRATEGY_PAYLOAD_STORAGE_PREFIX = 'strategyPayload_';
+    let editingStrategyDetails = null;
+    let cachedStrategyUserId = null;
+
+    function getCurrentStrategyUserId() {
+      if (cachedStrategyUserId !== null) {
+        return cachedStrategyUserId;
+      }
+      let resolved = '';
+      if (typeof window.getDashboardUserId === 'function') {
+        resolved = window.getDashboardUserId() || '';
+      } else if (document.body?.dataset?.userId) {
+        resolved = document.body.dataset.userId || '';
+      } else {
+        try {
+          resolved = window.localStorage ? window.localStorage.getItem('user_id') || '' : '';
+        } catch (error) {
+          resolved = '';
+        }
+      }
+      cachedStrategyUserId = resolved || '';
+      return cachedStrategyUserId;
+    }
+
+    function getStrategyPayloadStorageKey(strategyId) {
+      return `${STRATEGY_PAYLOAD_STORAGE_PREFIX}${strategyId}`;
+    }
+
+    function parseStrategyPayloadRecord(raw, fallbackId) {
+      if (!raw) {
+        return null;
+      }
+      let parsed = null;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (error) {
+        return null;
+      }
+      if (!parsed || typeof parsed !== 'object') {
+        return null;
+      }
+      if (Object.prototype.hasOwnProperty.call(parsed, 'payload')) {
+        if (!parsed.payload || typeof parsed.payload !== 'object') {
+          return null;
+        }
+        return {
+          userId: parsed.userId || null,
+          strategyId: parsed.strategyId || fallbackId || null,
+          updatedAt: parsed.updatedAt || null,
+          payload: parsed.payload
+        };
+      }
+      return {
+        userId: null,
+        strategyId: fallbackId || null,
+        updatedAt: null,
+        payload: parsed
+      };
+    }
+
+    function removeStrategyPayloadFromCache(strategyId) {
+      if (!window.localStorage || (!strategyId && strategyId !== 0)) {
+        return;
+      }
+      try {
+        window.localStorage.removeItem(getStrategyPayloadStorageKey(strategyId));
+      } catch (error) {
+        console.warn('Failed to remove stored payload for strategy', error);
+      }
+    }
+
+    function parseTimestamp(value) {
+      if (value === null || value === undefined) {
+        return null;
+      }
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+      }
+      const parsed = Date.parse(value);
+      return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    function getStrategyUpdatedAt(strategy) {
+      if (!strategy || typeof strategy !== 'object') {
+        return null;
+      }
+      return strategy.updated_at || strategy.updatedAt || null;
+    }
+
+    function readStrategyPayloadFromCache(strategyId) {
+      if ((!strategyId && strategyId !== 0) || !window.localStorage) {
+        return null;
+      }
+      try {
+        const raw = window.localStorage.getItem(getStrategyPayloadStorageKey(strategyId));
+        if (!raw) {
+          return null;
+        }
+        const record = parseStrategyPayloadRecord(raw, strategyId);
+        if (!record) {
+          window.localStorage.removeItem(getStrategyPayloadStorageKey(strategyId));
+          return null;
+        }
+        const userId = getCurrentStrategyUserId();
+        if (record.userId && userId && record.userId !== userId) {
+          return null;
+        }
+        return record;
+      } catch (error) {
+        console.warn('Failed to parse stored payload for strategy', error);
+        return null;
+      }
+    }
+
+    function isStrategyPayloadEntryFresh(entry, strategy) {
+      if (!entry || typeof entry !== 'object' || !entry.payload) {
+        return false;
+      }
+      const userId = getCurrentStrategyUserId();
+      if (entry.userId && userId && entry.userId !== userId) {
+        return false;
+      }
+      const strategyUpdatedAt = getStrategyUpdatedAt(strategy);
+      if (!strategyUpdatedAt) {
+        return true;
+      }
+      const entryTimestamp = parseTimestamp(entry.updatedAt);
+      const strategyTimestamp = parseTimestamp(strategyUpdatedAt);
+      if (!strategyTimestamp) {
+        return true;
+      }
+      if (!entryTimestamp) {
+        return false;
+      }
+      return entryTimestamp >= strategyTimestamp;
+    }
+
+    function persistStrategyPayload(strategyId, payload, updatedAt) {
+      if (!window.localStorage || (!strategyId && strategyId !== 0) || !payload || typeof payload !== 'object') {
+        return null;
+      }
+      const record = {
+        userId: getCurrentStrategyUserId() || null,
+        strategyId,
+        updatedAt: updatedAt || null,
+        payload
+      };
+      try {
+        window.localStorage.setItem(getStrategyPayloadStorageKey(strategyId), JSON.stringify(record));
+      } catch (error) {
+        console.warn('Unable to persist payload preview', error);
+      }
+      return record;
+    }
+    const masterAccountsContainer = document.getElementById('masterAccountsContainer');
+    const exchangeSelect = document.getElementById('exchange');
+    const symbolTokenInput = document.getElementById('symbolToken');
+    const singleSymbolRadio = document.getElementById('singleSymbolMode');
+    const watchlistRadio = document.getElementById('watchlistMode');
+    const tradingSymbolsInput = document.getElementById('tradingSymbols');
+    const symbolHelp = document.getElementById('symbolInputHelp');
+    const tokensList = document.getElementById('tokensList');
+    const alertTypeStrategy = document.getElementById('alertTypeStrategy');
+    const alertTypeManual = document.getElementById('alertTypeManual');
+    const actionGroup = document.getElementById('actionGroup');
+    const transactionGroup = document.getElementById('transactionGroup');
+    const transactionTypeSelect = document.getElementById('transactionType');
+    const orderTypeSelect = document.getElementById('orderType');
+    const orderValiditySelect = document.getElementById('orderValidity');
+    const productTypeSelect = document.getElementById('productType');
+    const orderQuantityInput = document.getElementById('orderQuantity');
+    const orderValueInput = document.getElementById('orderValue');
+    const webhookPreview = document.getElementById('webhookPreview');
+    const copyPreviewBtn = document.getElementById('copyPreviewBtn');
+    const cancelButton = document.getElementById('cancelButton');
+
+    const bothTransactionOption = transactionTypeSelect?.querySelector('option[value="BOTH"]') || null;
+
+    let symbolMap = {};
+    const pageTitle = document.getElementById('pageTitle');
+    const submitButton = document.getElementById('submitButton');
+    const params = new URLSearchParams(window.location.search);
+    const editingStrategyId = params.get('strategy_id');
+    const isEditMode = Boolean(editingStrategyId);
+    const DYNAMIC_TICKER_TOKEN = '{% raw %}{{ticker}}{% endraw %}';
+    const ACTION_PLACEHOLDER = '{% raw %}{{strategy.order.action}}{% endraw %}';
+   
+    let initialMasterAccounts = [];
+    let suppressPreviewUpdates = false;
+
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      if (!toast) {
+        return;
+      }
+      toast.textContent = message;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => {
+        toast.className = 'toast';
+      }, 3000);
+    }
+
+    function copyToClipboard(text) {
+      if (!navigator.clipboard) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', 'true');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          showToast('Copied to clipboard', 'success');
+        } catch (error) {
+          console.error('Clipboard copy failed', error);
+        }
+        document.body.removeChild(textarea);
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied to clipboard', 'success');
+      }).catch(() => {
+        showToast('Unable to copy payload.', 'error');
+      });
+    }
+
+    function fetchJson(url, options = {}) {
+      return fetch(url, options).then(async response => {
+        const contentType = response.headers.get('Content-Type') || '';
+        let payload = null;
+        if (contentType.includes('application/json')) {
+          payload = await response.json();
+        } else {
+          const text = await response.text();
+          if (text) {
+            try {
+              payload = JSON.parse(text);
+            } catch (error) {
+              payload = { message: text };
+            }
+          }
+        }
+        if (!response.ok) {
+          const message = payload && (payload.error || payload.message);
+          throw new Error(message || 'Request failed');
+        }
+        return payload;
+      });
+    }
+
+    function expandBoth(value, bothValues) {
+      if (Array.isArray(value)) {
+        return value;
+      }
+      if (String(value).toUpperCase() === 'BOTH') {
+        return bothValues;
+      }
+      return value;
+    }
+
+    function parseMasterAccounts(value) {
+      if (!value) {
+        return [];
+      }
+      if (Array.isArray(value)) {
+        return value.map(item => String(item));
+      }
+      return String(value)
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean)
+        .map(item => String(item));
+    }
+
+
+    function extractAccountsFromPayload(payload) {
+      if (!payload || typeof payload !== 'object') {
+        return [];
+      }
+      if (Array.isArray(payload.masters)) {
+        return payload.masters;
+      }
+      if (Array.isArray(payload.accounts)) {
+        return payload.accounts;
+      }
+      return [];
+    }
+
+    function buildPayloadFromStrategy(strategy) {
+      if (!strategy || typeof strategy !== 'object') {
+        return {};
+      }
+
+      const payload = {
+        exchange: expandBoth(strategy.exchange || 'NSE', ['NSE', 'BSE']),
+        transactionType: expandBoth(strategy.transaction_type || 'BUY', ['BUY', 'SELL']),
+        orderType: strategy.order_type || 'limit',
+        orderValidity: strategy.order_validity || 'day',
+        productType: strategy.product_type || 'intraday',
+        masterAccounts: parseMasterAccounts(strategy.master_accounts)
+      };
+
+      const qty = Number(strategy.order_qty);
+      if (!Number.isNaN(qty)) {
+        payload.orderQty = qty;
+      }
+
+      const orderValue = Number(strategy.order_value);
+      if (!Number.isNaN(orderValue)) {
+        payload.orderValue = orderValue;
+      }
+
+      if (strategy.allowed_tickers === '__WATCHLIST_DYNAMIC__') {
+        payload.tradingSymbols = [DYNAMIC_TICKER_TOKEN];
+      } else if (strategy.allowed_tickers) {
+        payload.tradingSymbols = parseMasterAccounts(strategy.allowed_tickers);
+      } else {
+        payload.tradingSymbols = [];
+      }
+
+      return payload;
+    }
+
+    function escapeRegExp(value) {
+      return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function setSelectValue(select, value) {
+      if (!select || value === undefined || value === null) {
+        return;
+      }
+      const normalized = String(value);
+      const option = select.querySelector(`option[value="${normalized}"]`);
+      if (option) {
+        select.value = normalized;
+      }
+    }
+
+    function getSelectedAccounts() {
+      if (!masterAccountsContainer) {
+        return [];
+      }
+      return Array.from(masterAccountsContainer.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+    }
+
+    function getSymbols() {
+      if (singleSymbolRadio.checked) {
+        const value = tradingSymbolsInput.value.trim();
+        return value ? [value] : [];
+      }
+      return [DYNAMIC_TICKER_TOKEN];
+    }
+
+    function updateTokens() {
+      const symbols = getSymbols();
+      const parts = symbols.map(symbol => {
+        if (symbol === DYNAMIC_TICKER_TOKEN) {
+          return 'Dynamic (TradingView {% raw %}{{ticker}}{% endraw %})';
+        }
+        const info = symbolMap[symbol.toUpperCase()];
+        if (!info) {
+          return symbol;
+        }
+        const brokerTokens = BROKER_KEYS.map(key => info[key] ? `${key}:${info[key]}` : null).filter(Boolean);
+        return brokerTokens.length ? `${symbol} (${brokerTokens.join(', ')})` : symbol;
+      });
+      tokensList.textContent = parts.join(', ');
+
+      if (singleSymbolRadio.checked && symbols.length === 1) {
+        const info = symbolMap[symbols[0].toUpperCase()];
+        if (info) {
+          for (const key of BROKER_KEYS) {
+            if (info[key]) {
+              symbolTokenInput.value = info[key];
+              break;
+            }
+          }
+        } else {
+          symbolTokenInput.value = '';
+        }
+      } else {
+        symbolTokenInput.value = '';
+      }
+
+      updateQtyFromValue();
+    }
+
+    function updateWebhookPreview() {
+      if (suppressPreviewUpdates) {
+        return;
+      }
+      const selectedAccounts = getSelectedAccounts();
+      const exchangeValue = expandBoth(exchangeSelect.value, ['NSE', 'BSE']);
+      const preview = {
+        exchange: exchangeValue,
+        orderType: orderTypeSelect.value,
+        orderValidity: orderValiditySelect.value,
+        productType: productTypeSelect.value,
+        masterAccounts: selectedAccounts,
+      };
+
+      if (alertTypeStrategy.checked) {
+        preview.action = '{% raw %}{{strategy.order.action}}{% endraw %}';
+      } else {
+        preview.transactionType = transactionTypeSelect.value;
+      }
+
+      const qtyValue = orderQuantityInput.value.trim();
+      const orderValue = orderValueInput.value.trim();
+      if (qtyValue) {
+        preview.orderQty = parseFloat(qtyValue);
+      } else if (orderValue) {
+        preview.orderValue = parseFloat(orderValue);
+      }
+
+      if (singleSymbolRadio.checked) {
+        const value = tradingSymbolsInput.value.trim();
+        preview.tradingSymbols = value ? [value] : [];
+      } else {
+        preview.tradingSymbols = [DYNAMIC_TICKER_TOKEN];
+      }
+
+      webhookPreview.value = JSON.stringify(preview, null, 2);
+    }
+
+    function updateSymbolInputMode() {
+      if (singleSymbolRadio.checked) {
+        tradingSymbolsInput.disabled = false;
+        tradingSymbolsInput.placeholder = 'Enter single symbol (e.g., RELIANCE)';
+        tradingSymbolsInput.required = true;
+        tradingSymbolsInput.name = 'tradingSymbols';
+        if (tradingSymbolsInput.value === DYNAMIC_TICKER_TOKEN) {
+          tradingSymbolsInput.value = '';
+        }
+        symbolHelp.textContent = 'Enter the trading symbol.';
+      } else {
+        tradingSymbolsInput.value = '';
+        tradingSymbolsInput.disabled = true;
+        tradingSymbolsInput.required = false;
+        tradingSymbolsInput.name = 'disabledTradingSymbols';
+        symbolHelp.textContent = 'For TradingView Watchlist alerts, symbols will be provided dynamically via {% raw %}{{ticker}}{% endraw %}.';
+      }
+      updateTokens();
+      updateWebhookPreview();
+    }
+
+    function updateAlertMode() {
+      if (alertTypeStrategy.checked) {
+        actionGroup.style.display = '';
+        transactionGroup.style.display = 'none';
+        if (bothTransactionOption) {
+          bothTransactionOption.hidden = false;
+          transactionTypeSelect.value = 'BOTH';
+        }
+      } else {
+        actionGroup.style.display = 'none';
+        transactionGroup.style.display = '';
+        if (bothTransactionOption) {
+          bothTransactionOption.hidden = true;
+          if (transactionTypeSelect.value === 'BOTH') {
+            transactionTypeSelect.value = 'BUY';
+          }
+        }
+      }
+      updateWebhookPreview();
+    }
+
+    async function updateQtyFromValue() {
+      if (suppressPreviewUpdates) {
+        return;
+      }
+      const valueRaw = orderValueInput.value.trim();
+      if (!valueRaw) {
+        orderQuantityInput.value = '';
+        updateWebhookPreview();
+        return;
+      }
+      if (!singleSymbolRadio.checked) {
+        orderQuantityInput.value = '';
+        updateWebhookPreview();
+        return;
+      }
+      const symbols = getSymbols();
+      if (symbols.length !== 1) {
+        orderQuantityInput.value = '';
+        updateWebhookPreview();
+        return;
+      }
+      try {
+        const symbol = symbols[0];
+        const quote = await fetchJson(`/api/quote/${encodeURIComponent(symbol)}`);
+        const price = parseFloat(quote.price);
+        if (Number.isFinite(price) && price > 0) {
+          const qty = parseFloat(valueRaw) / price;
+          orderQuantityInput.value = qty.toFixed(2);
+        } else {
+          orderQuantityInput.value = '';
+        }
+      } catch (error) {
+        console.warn('Failed to fetch quote for quantity calculation', error);
+        orderQuantityInput.value = '';
+      } finally {
+        updateWebhookPreview();
+      }
+    }
+
+    function bindAccountCheckboxes() {
+      if (!masterAccountsContainer) {
+        return;
+      }
+      masterAccountsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', updateWebhookPreview);
+      });
+    }
+
+    function applyInitialAccountSelections() {
+      if (!masterAccountsContainer) {
+        return;
+      }
+      const selected = new Set(initialMasterAccounts.map(value => String(value)));
+      masterAccountsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.checked = selected.has(cb.value);
+      });
+    }
+
+    function renderAccounts(accounts) {
+      if (!masterAccountsContainer) {
+        return;
+      }
+      if (!accounts.length) {
+        masterAccountsContainer.innerHTML = '<p class="strategy-form-hint" style="margin: 0;">No master accounts connected yet.</p>';
+        return;
+      }
+      masterAccountsContainer.innerHTML = accounts.map(account => {
+        const id = `master-${account.id}`;
+        const labelParts = [];
+        if (account.broker) {
+          labelParts.push(account.broker);
+        }
+        if (account.username) {
+          labelParts.push(account.username);
+        }
+        if (account.client_id) {
+          labelParts.push(`(${account.client_id})`);
+        }
+        const label = labelParts.join(' ');
+        return `
+          <label class="strategy-account-item" for="${id}">
+            <input type="checkbox" class="strategy-checkbox" id="${id}" value="${account.id}">
+            <span class="strategy-checkbox-label">${label || 'Account'}</span>
+          </label>
+        `;
+      }).join('');
+      applyInitialAccountSelections();
+      bindAccountCheckboxes();
+    }
+
+    const MASTER_ACCOUNTS_MAX_RETRIES = 3;
+    const MASTER_ACCOUNTS_RETRY_DELAY = 3000;
+    let masterAccountsRequest = null;
+    let masterAccountsRetryCount = 0;
+    let masterAccountsRetryTimer = null;
+
+    function renderAccountsError(message = 'Failed to load accounts. Please try again.') {
+      if (!masterAccountsContainer) {
+        return;
+      }
+      masterAccountsContainer.innerHTML = `
+        <div class="strategy-form-hint" style="margin: 0; color: #ef4444; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <span>${message}</span>
+          <button type="button" data-retry-master-accounts style="background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 0.25rem 0.6rem; border-radius: 0.35rem; cursor: pointer;">Retry</button>
+        </div>
+      `;
+
+      const retryButton = masterAccountsContainer.querySelector('[data-retry-master-accounts]');
+      if (retryButton) {
+        retryButton.addEventListener('click', () => {
+          masterAccountsContainer.innerHTML = '<p class="strategy-form-hint" style="margin: 0;">Retrying accounts...</p>';
+          if (!masterAccountsRequest) {
+            masterAccountsRequest = fetchAndRenderMasterAccounts().finally(() => {
+              masterAccountsRequest = null;
+            });
+          }
+        });
+      }
+    }
+
+    function handleAccountsPayload(payload) {
+      const accounts = extractAccountsFromPayload(payload);
+      if (Array.isArray(accounts) && accounts.length) {
+        window.cachedMasterAccounts = accounts;
+        renderAccounts(accounts);
+        updateWebhookPreview();
+        updateAlertsPrefetch({ accountPayload: payload });
+        masterAccountsRetryCount = 0;
+        if (masterAccountsRetryTimer) {
+          clearTimeout(masterAccountsRetryTimer);
+          masterAccountsRetryTimer = null;
+        }
+        return accounts;
+      }
+      throw new Error('No master accounts found');
+    }
+
+    function scheduleMasterAccountsRetry() {
+      if (!masterAccountsContainer) {
+        return;
+      }
+      if (masterAccountsRetryCount >= MASTER_ACCOUNTS_MAX_RETRIES) {
+        return;
+      }
+      if (masterAccountsRetryTimer) {
+        return;
+      }
+      masterAccountsRetryCount += 1;
+      masterAccountsRetryTimer = window.setTimeout(() => {
+        masterAccountsRetryTimer = null;
+        masterAccountsContainer.innerHTML = '<p class="strategy-form-hint" style="margin: 0;">Retrying accounts...</p>';
+        masterAccountsRequest = fetchAndRenderMasterAccounts().finally(() => {
+          masterAccountsRequest = null;
+        });
+      }, MASTER_ACCOUNTS_RETRY_DELAY);
+    }
+
+    function fetchAndRenderMasterAccounts() {
+      const fetchFullAccounts = () => fetchJson('/api/accounts').then(handleAccountsPayload);
+
+      return fetchJson('/api/accounts?cache_only=1')
+        .then(payload => handleAccountsPayload(payload))
+        .catch(() => fetchFullAccounts())
+        .catch(error => {
+          console.error('Failed to load accounts', error);
+          renderAccountsError('Failed to load accounts. Please try again.');
+          scheduleMasterAccountsRetry();
+          throw error;
+        });
+    }
+
+    function loadMasterAccounts() {
+      if (!masterAccountsContainer) {
+        return Promise.resolve([]);
+      }
+
+      const cachedAccounts = Array.isArray(window.cachedMasterAccounts) ? window.cachedMasterAccounts : null;
+      if (cachedAccounts) {
+        renderAccounts(cachedAccounts);
+        updateWebhookPreview();
+      } else {
+        const hasContent = masterAccountsContainer.querySelectorAll('.strategy-account-item').length > 0;
+        if (!hasContent) {
+          masterAccountsContainer.innerHTML = '<p class="strategy-form-hint" style="margin: 0;">Loading accounts...</p>';
+        }
+      }
+
+      if (!masterAccountsRequest) {
+        masterAccountsRequest = fetchAndRenderMasterAccounts().finally(() => {
+          masterAccountsRequest = null;
+        });
+      }
+
+      return masterAccountsRequest || Promise.resolve(cachedAccounts || []);
+    }
+
+    function hydrateSymbolMap(list) {
+      symbolMap = {};
+      if (!Array.isArray(list)) {
+        updateTokens();
+        return;
+      }
+      list.forEach(item => {
+        if (item?.symbol) {
+          symbolMap[item.symbol.toUpperCase()] = item;
+        }
+      });
+      updateTokens();
+    }
+
+    function applyPrefetchedAlertsData(payload) {
+      if (!payload || typeof payload !== 'object') {
+        return;
+      }
+      if (payload.accountPayload) {
+        const accounts = extractAccountsFromPayload(payload.accountPayload);
+        if (Array.isArray(accounts) && accounts.length) {
+          window.cachedMasterAccounts = accounts;
+          renderAccounts(accounts);
+          updateWebhookPreview();
+        }
+      }
+      if (Array.isArray(payload.symbols) && payload.symbols.length) {
+        window.cachedSymbols = payload.symbols;
+        hydrateSymbolMap(payload.symbols);
+      }
+    }
+
+    if (initialPrefetchedAlertsData && !isPrefetchStale(initialPrefetchedAlertsData) && !isPrefetchEmpty(initialPrefetchedAlertsData)) {
+      applyPrefetchedAlertsData(initialPrefetchedAlertsData);
+    }
+
+    function loadSymbols() {
+      const cachedSymbols = Array.isArray(window.cachedSymbols) ? window.cachedSymbols : null;
+      if (cachedSymbols) {
+        hydrateSymbolMap(cachedSymbols);
+        return Promise.resolve(cachedSymbols);
+      }
+      return fetchJson('/api/symbols').then(list => {
+        if (Array.isArray(list)) {
+          window.cachedSymbols = list;
+          hydrateSymbolMap(list);
+          updateAlertsPrefetch({ symbols: list });
+        }
+        return list;
+      }).catch(error => {
+        console.warn('Unable to load symbol metadata', error);
+        return [];
+      });
+    }
+
+    function applyPayloadToForm(payload, strategy) {
+      suppressPreviewUpdates = true;
+
+      const payloadObject = payload && typeof payload === 'object' ? payload : null;
+      let useWatchlist = false;
+      let singleSymbol = '';
+
+      if (payloadObject && Array.isArray(payloadObject.tradingSymbols)) {
+        const symbols = payloadObject.tradingSymbols
+          .map(symbol => (typeof symbol === 'string' ? symbol : String(symbol)))
+          .filter(Boolean);
+        if (symbols.includes(DYNAMIC_TICKER_TOKEN)) {
+          useWatchlist = true;
+        } else if (symbols.length) {
+          singleSymbol = symbols[0];
+        }
+      }
+
+      if (!useWatchlist && !singleSymbol && strategy?.allowed_tickers && strategy.allowed_tickers !== '__WATCHLIST_DYNAMIC__') {
+        singleSymbol = String(strategy.allowed_tickers);
+      }
+
+      if (useWatchlist) {
+        watchlistRadio.checked = true;
+        singleSymbolRadio.checked = false;
+      } else {
+        singleSymbolRadio.checked = true;
+        watchlistRadio.checked = false;
+      }
+
+      if (!useWatchlist) {
+        tradingSymbolsInput.value = singleSymbol || '';
+      }
+
+      updateSymbolInputMode();
+
+      if (payloadObject && Array.isArray(payloadObject.masterAccounts)) {
+        initialMasterAccounts = payloadObject.masterAccounts.map(value => String(value));
+      }
+
+      applyInitialAccountSelections();
+
+      if (payloadObject) {
+        const exchangeValue = payloadObject.exchange;
+        if (Array.isArray(exchangeValue)) {
+          const normalized = exchangeValue.map(value => String(value).toUpperCase());
+          if (normalized.includes('NSE') && normalized.includes('BSE')) {
+            setSelectValue(exchangeSelect, 'BOTH');
+          } else if (normalized.includes('BSE')) {
+            setSelectValue(exchangeSelect, 'BSE');
+          } else if (normalized.includes('NSE')) {
+            setSelectValue(exchangeSelect, 'NSE');
+          }
+        } else if (typeof exchangeValue === 'string') {
+          const upper = exchangeValue.toUpperCase();
+          if (upper === 'BOTH') {
+            setSelectValue(exchangeSelect, 'BOTH');
+          } else if (upper === 'BSE') {
+            setSelectValue(exchangeSelect, 'BSE');
+          } else if (upper === 'NSE') {
+            setSelectValue(exchangeSelect, 'NSE');
+          }
+        }
+
+        if (payloadObject.orderType) {
+          setSelectValue(orderTypeSelect, payloadObject.orderType);
+        }
+        if (payloadObject.orderValidity) {
+          setSelectValue(orderValiditySelect, payloadObject.orderValidity);
+        }
+        if (payloadObject.productType) {
+          setSelectValue(productTypeSelect, payloadObject.productType);
+        }
+      }
+
+      let transactionTypeValue = null;
+      let inferredAlertType = 'strategy';
+
+      if (payloadObject) {
+        const txValue = payloadObject.transactionType;
+        const normalizedTxValues = Array.isArray(txValue)
+          ? txValue.map(value => String(value).toUpperCase())
+          : txValue
+            ? [String(txValue).toUpperCase()]
+            : [];
+
+        const hasBuy = normalizedTxValues.includes('BUY');
+        const hasSell = normalizedTxValues.includes('SELL');
+        const hasBoth = normalizedTxValues.includes('BOTH') || (hasBuy && hasSell);
+        const hasStrategyPlaceholder = payloadObject.action === ACTION_PLACEHOLDER;
+
+        if (hasBoth || hasStrategyPlaceholder) {
+          inferredAlertType = 'strategy';
+          if (hasBoth) {
+            transactionTypeValue = 'BOTH';
+          }
+        } else if (normalizedTxValues.length === 1) {
+          inferredAlertType = 'manual';
+          transactionTypeValue = normalizedTxValues[0];
+        }
+      }
+
+      alertTypeStrategy.checked = inferredAlertType === 'strategy';
+      alertTypeManual.checked = inferredAlertType === 'manual';
+      updateAlertMode();
+      if (transactionTypeValue) {
+        setSelectValue(transactionTypeSelect, transactionTypeValue);
+      }
+
+      if (payloadObject && payloadObject.orderQty !== undefined && payloadObject.orderQty !== null) {
+        orderQuantityInput.disabled = false;
+        orderQuantityInput.value = payloadObject.orderQty;
+        orderValueInput.value = '';
+        orderValueInput.disabled = true;
+      } else if (payloadObject && payloadObject.orderValue !== undefined && payloadObject.orderValue !== null) {
+        orderValueInput.disabled = false;
+        orderValueInput.value = payloadObject.orderValue;
+        orderQuantityInput.value = '';
+        orderQuantityInput.disabled = true;
+      } else {
+        orderQuantityInput.disabled = false;
+        orderValueInput.disabled = false;
+      }
+
+      suppressPreviewUpdates = false;
+      updateWebhookPreview();
+    }
+
+    async function loadStrategyForEdit() {
+      if (!isEditMode) {
+        return;
+      }
+      try {
+        if (pageTitle) {
+          pageTitle.textContent = 'Edit Strategy';
+        }
+        if (submitButton) {
+          submitButton.textContent = 'Update Strategy';
+        }
+        const strategy = await fetchJson(`/api/strategies/${encodeURIComponent(editingStrategyId)}`);
+        editingStrategyDetails = strategy;
+        const strategyPayload = buildPayloadFromStrategy(strategy);
+
+        if (Array.isArray(strategyPayload.masterAccounts)) {
+          initialMasterAccounts = strategyPayload.masterAccounts.map(value => String(value));
+        } else {
+          initialMasterAccounts = parseMasterAccounts(strategy?.master_accounts);
+        }
+
+        let cachedPayload = null;
+        const cachedEntry = readStrategyPayloadFromCache(editingStrategyId);
+        if (cachedEntry && isStrategyPayloadEntryFresh(cachedEntry, strategy)) {
+          cachedPayload = cachedEntry.payload;
+        } else if (cachedEntry) {
+          removeStrategyPayloadFromCache(editingStrategyId);
+        }
+
+        const payload = { ...strategyPayload };
+        if (cachedPayload && typeof cachedPayload === 'object') {
+          Object.entries(cachedPayload).forEach(([key, value]) => {
+            if (value !== undefined) {
+              payload[key] = value;
+            }
+          });
+        }
+
+        if (payload && Array.isArray(payload.masterAccounts)) {
+          initialMasterAccounts = payload.masterAccounts.map(value => String(value));
+        }
+
+        let inferredSymbol = '';
+        if (payload && Array.isArray(payload.tradingSymbols)) {
+          inferredSymbol = payload.tradingSymbols.find(symbol => symbol && symbol !== DYNAMIC_TICKER_TOKEN) || '';
+        }
+        if (!inferredSymbol && strategy?.allowed_tickers && strategy.allowed_tickers !== '__WATCHLIST_DYNAMIC__') {
+          inferredSymbol = String(strategy.allowed_tickers);
+        }
+
+        if (form.strategyName) {
+          let baseName = strategy?.name || '';
+          if (inferredSymbol) {
+            const suffixRegex = new RegExp(`\\s*\\(${escapeRegExp(inferredSymbol)}\\)\\s*$`);
+            baseName = baseName.replace(suffixRegex, '').trim();
+          }
+          form.strategyName.value = baseName;
+        }
+
+        applyPayloadToForm(payload, strategy);
+        applyInitialAccountSelections();
+        updateWebhookPreview();
+      } catch (error) {
+        console.error('Failed to load strategy for editing', error);
+        showToast('Unable to load strategy details. Returning to strategies list.', 'error');
+        setTimeout(() => {
+          window.location.href = '/demat-strategies';
+        }, 400);
+      }
+    }
+
+    singleSymbolRadio.addEventListener('change', updateSymbolInputMode);
+    watchlistRadio.addEventListener('change', updateSymbolInputMode);
+    tradingSymbolsInput.addEventListener('input', () => {
+      updateTokens();
+      updateWebhookPreview();
+    });
+
+    alertTypeStrategy.addEventListener('change', updateAlertMode);
+    alertTypeManual.addEventListener('change', updateAlertMode);
+
+    exchangeSelect.addEventListener('change', updateWebhookPreview);
+    orderTypeSelect.addEventListener('change', updateWebhookPreview);
+    orderValiditySelect.addEventListener('change', updateWebhookPreview);
+    productTypeSelect.addEventListener('change', updateWebhookPreview);
+    transactionTypeSelect.addEventListener('change', updateWebhookPreview);
+
+    orderQuantityInput.addEventListener('input', () => {
+      if (orderQuantityInput.value) {
+        orderValueInput.value = '';
+        orderValueInput.disabled = true;
+      } else {
+        orderValueInput.disabled = false;
+      }
+      updateWebhookPreview();
+    });
+
+    orderValueInput.addEventListener('input', () => {
+      if (orderValueInput.value) {
+        orderQuantityInput.value = '';
+        orderQuantityInput.disabled = true;
+      } else {
+        orderQuantityInput.disabled = false;
+      }
+      updateWebhookPreview();
+    });
+
+    orderValueInput.addEventListener('change', updateQtyFromValue);
+
+    copyPreviewBtn.addEventListener('click', () => copyToClipboard(webhookPreview.value || ''));
+
+    const navigateToStrategies = () => {
+      const navigate = window.navigateDashboard;
+      if (typeof navigate === 'function') {
+        try {
+          const navigation = navigate('/demat-strategies');
+          Promise.resolve(navigation).then(success => {
+            if (success === false) {
+              window.location.href = '/demat-strategies';
+            }
+          }).catch(() => {
+            window.location.href = '/demat-strategies';
+          });
+          return;
+        } catch (error) {
+          console.error('SPA navigation failed, falling back to full redirect', error);
+        }
+      }
+      window.location.href = '/demat-strategies';
+    };
+
+    cancelButton.addEventListener('click', () => {
+      if (window.confirm('Are you sure you want to cancel? All changes will be lost.')) {
+        navigateToStrategies();
+
+      }
+    });
+
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+
+      const name = form.strategyName.value.trim();
+      if (!name) {
+        showToast('Strategy Name is required.', 'error');
+        return;
+      }
+
+      const selectedAccounts = getSelectedAccounts();
+      const isSingleSymbol = singleSymbolRadio.checked;
+
+      let tradingSymbolsForDb = '';
+      let strategyNameForDb = name;
+
+      if (isSingleSymbol) {
+        const singleSymbol = tradingSymbolsInput.value.trim();
+        if (!singleSymbol) {
+          showToast('Enter a trading symbol for single symbol mode.', 'error');
+          return;
+        }
+        tradingSymbolsForDb = singleSymbol;
+        const suffixRegex = new RegExp(`\\s*\\(${escapeRegExp(singleSymbol)}\\)\\s*$`);
+        const baseName = name.replace(suffixRegex, '').trim();
+        strategyNameForDb = `${baseName} (${singleSymbol})`.trim();
+      } else {
+        tradingSymbolsForDb = '__WATCHLIST_DYNAMIC__';
+      }
+
+      const exchangeValue = expandBoth(exchangeSelect.value, ['NSE', 'BSE']);
+      const transactionValue = expandBoth(transactionTypeSelect.value, ['BUY', 'SELL']);
+
+      const payload = {
+        name: strategyNameForDb,
+        master_accounts: selectedAccounts.join(','),
+        allowed_tickers: tradingSymbolsForDb,
+        exchange: exchangeValue,
+        transaction_type: transactionValue,
+        order_type: orderTypeSelect.value,
+        order_validity: orderValiditySelect.value,
+        product_type: productTypeSelect.value,
+        order_qty: orderQuantityInput.value ? parseFloat(orderQuantityInput.value) : null,
+        order_value: orderValueInput.value ? parseFloat(orderValueInput.value) : null,
+        asset_class: 'Stocks',
+        style: 'Systematic'
+      };
+
+      const previewPayload = webhookPreview.value;
+
+      const requestUrl = isEditMode ? `/api/strategies/${encodeURIComponent(editingStrategyId)}` : '/api/strategies';
+      const requestMethod = isEditMode ? 'PUT' : 'POST';
+
+      fetchJson(requestUrl, {
+        method: requestMethod,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(result => {
+        if (isEditMode && result && typeof result === 'object') {
+          editingStrategyDetails = { ...(editingStrategyDetails || {}), ...result };
+        }
+        const strategyId = isEditMode ? editingStrategyId : result?.id;
+        let persistedEntry = null;
+        if (strategyId && previewPayload) {
+          try {
+            const parsedPreview = JSON.parse(previewPayload);
+            const latestUpdatedAt = result?.updated_at
+              || result?.updatedAt
+              || getStrategyUpdatedAt(editingStrategyDetails)
+              || new Date().toISOString();
+            persistedEntry = persistStrategyPayload(strategyId, parsedPreview, latestUpdatedAt);
+          } catch (error) {
+            console.warn('Unable to persist payload preview', error);
+          }
+        }
+        if (typeof window.purgeStrategyPayloadCache === 'function') {
+          try {
+            window.purgeStrategyPayloadCache({
+              userId: getCurrentStrategyUserId(),
+              preserveStrategyId: persistedEntry?.strategyId || null,
+              preserveUpdatedAt: persistedEntry?.updatedAt || null
+            });
+          } catch (error) {
+            console.warn('Failed to purge cached strategy payloads', error);
+          }
+        }
+        if (typeof window.invalidateAllCaches === 'function') {
+          try {
+            window.invalidateAllCaches('/create-alerts');
+          } catch (error) {
+            console.warn('Failed to invalidate caches', error);
+          }
+        }
+        showToast(isEditMode ? 'Strategy updated successfully.' : 'Strategy created successfully.', 'success');
+        setTimeout(() => navigateToStrategies(), 400);
+
+      }).catch(error => {
+        showToast(
+          error.message || (isEditMode ? 'Failed to update strategy.' : 'Failed to create strategy.'),
+          'error'
+        );
+      });
+    });
+
+    updateSymbolInputMode();
+    updateAlertMode();
+    updateTokens();
+    updateWebhookPreview();
+
+    // Load master accounts function
+    function loadMasterAccounts() {
+      fetch('/api/accounts')  // Changed from /api/master-accounts
+        .then(r => r.json())
+        .then(data => {
+          // Extract accounts from response
+          const allAccounts = data.accounts || data || [];
+          // Filter to show only Master accounts
+          const accounts = allAccounts.filter(acc => (acc.role || '').toLowerCase() === 'master');
+          window.cachedMasterAccounts = accounts;
+          renderMasterAccountsUI(accounts);
+          updateAlertsPrefetch({ accounts });
+        })
+        .catch(err => {
+          console.error('Failed to load master accounts:', err);
+          if (masterAccountsContainer) {
+            masterAccountsContainer.innerHTML = '<div class="text-danger">Failed to load accounts</div>';
+          }
+        });
+    }
+
+    // Render master accounts UI
+    function renderMasterAccountsUI(accounts) {
+      if (!masterAccountsContainer) return;
+
+      const accountsList = Array.isArray(accounts) ? accounts : [];
+
+      if (accountsList.length === 0) {
+        masterAccountsContainer.innerHTML = '<div class="text-muted">No master accounts available</div>';
+        return;
+      }
+
+      masterAccountsContainer.innerHTML = accountsList.map(acc => {
+        const clientId = acc.client_id || acc.clientId || '';
+        const broker = acc.broker || '';
+        const accId = String(acc.id);
+        const isChecked = initialMasterAccounts.includes(accId) ? 'checked' : '';
+
+        return `
+          <div class="strategy-account-item">
+            <input type="checkbox" 
+                   class="strategy-checkbox" 
+                   id="account_${accId}" 
+                   name="masterAccounts" 
+                   value="${accId}" 
+                   ${isChecked}>
+            <label class="strategy-checkbox-label" for="account_${accId}">
+              ${clientId} ${broker ? `(${broker})` : ''}
+            </label>
+          </div>
+        `;
+      }).join('');
+    }
+
+    loadMasterAccounts();
+
+    if (isEditMode) {
+      loadStrategyForEdit();
+    }
+
+    loadSymbols();
+  };
+</script>
+{% endblock %}

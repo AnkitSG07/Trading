@@ -1,0 +1,5026 @@
+{% extends "layout.html" %}
+
+{% block title %}Account Configuration - DhanBot{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+  /* ===== TOAST NOTIFICATIONS ===== */
+  .toast {
+    position: fixed;
+    top: 1rem;
+    left: 50%;
+    right: auto;
+    padding: 1rem 1.25rem;
+    border-radius: 0.75rem;
+    color: #fff;
+    font-weight: 600;
+    z-index: 1100;
+    display: none;
+    box-shadow: 0 18px 45px -20px rgba(15, 23, 42, 0.35);
+    max-width: min(26rem, calc(100% - 2rem));
+    word-break: break-word;
+    backdrop-filter: blur(8px);
+    transform: translate(-50%, -10px);
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  .toast.show {
+    display: block;
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  .toast.success {
+    background-color: #16a34a;
+  }
+
+  .toast.error {
+    background-color: #dc2626;
+  }
+
+  @media (max-width: 640px) {
+    .toast {
+      left: 50%;
+      right: auto;
+      width: calc(100% - 2rem);
+      transform: translate(-50%, -10px);
+      text-align: center;
+    }
+
+    .toast.show {
+      transform: translate(-50%, 0);
+    }
+  }
+
+
+  /* ===== ACCOUNT CONFIG PAGE STYLES ===== */
+  .account-config-page {
+    position: relative;
+    padding: 2rem 0 3rem;
+    background: #f8f9fa;
+    color: #1f2937;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  .background-shapes {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .background-shapes .shape {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(500px);
+    opacity: 0;
+  }
+
+  .background-shapes .shape1 {
+    width: 420px;
+    height: 420px;
+    background: rgba(99, 102, 241, 0.2);
+    top: 10%;
+    left: 5%;
+    animation: account-config-drift 40s ease-in-out infinite alternate;
+  }
+
+  .background-shapes .shape2 {
+    width: 320px;
+    height: 320px;
+    background: rgba(20, 184, 166, 0.2);
+    bottom: 5%;
+    right: 10%;
+    animation: account-config-drift 45s ease-in-out infinite alternate;
+  }
+
+  .account-config-container {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ===== PAGE HEADER ===== */
+  .account-config-page .page-header {
+    background: linear-gradient(to right, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.06), transparent);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+
+  .account-config-page .page-title {
+    font-size: 32px;
+    font-weight: 999;
+    background: linear-gradient(to right, #6366f1, rgba(99, 102, 241, 0.6));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+
+  .account-config-page .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #6b7280;
+  }
+
+  .account-config-page .breadcrumb-current {
+    color: #1f2937;
+    font-weight: 200;
+  }
+
+  .account-config-page .page-header .btn-primary {
+    height: 36px;
+    min-height: 36px;
+    padding: 0 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 6px 20px -10px rgba(79, 70, 229, 0.7);
+  }
+
+  .account-config-page .page-header .btn-primary .icon,
+  .account-config-page .page-header .btn-primary svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+  }
+
+  /* ===== STATS GRID ===== */
+  .account-config-page .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .account-config-page .stat-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 0;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.15);
+  }
+
+  .account-config-page .stat-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .account-config-page .stat-icon {
+    width: 30px;
+    height: 30px;
+    margin-left: 10px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    margin-top: 7px;
+  }
+
+  .account-config-page .icon {
+    width: 19px;
+    height: 19px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    margin-top: 1px;
+  }
+
+  .account-config-page .icon-sm {
+    width: 16px;
+    height: 16px;
+  }
+
+  .account-config-page .stat-icon-primary {
+    background: rgba(99, 102, 241, 0.2);
+    color: #4f46e5;
+  }
+
+  .account-config-page .stat-icon-success {
+    background: rgba(16, 185, 129, 0.2);
+    color: #0f9d58;
+  }
+
+  .account-config-page .stat-icon-warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: #d97706;
+  }
+
+  .account-config-page .stat-icon-danger {
+    background: rgba(239, 68, 68, 0.2);
+    color: #dc2626;
+  }
+
+  .account-config-page .stat-icon-muted {
+    background: rgba(148, 163, 184, 0.2);
+    color: #475569;
+  }
+
+  .account-config-page .stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+    margin-top: 8px;
+    margin-bottom: 1px;
+    margin-left: -6px;
+  }
+
+  .account-config-page .stat-value {
+    font-size: 12px;
+    font-weight: 700;
+    margin-left: -6px;
+    margin-top: 6px;
+    margin-bottom: 1px;
+  }
+
+  /* ===== FORM SECTIONS ===== */
+  .account-config-page .form-section {
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.1);
+  }
+
+  .account-config-page .form-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .account-config-page .form-description {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 20px;
+  }
+
+  .account-config-page .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .account-config-page .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .account-config-page .form-group.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .account-config-page .form-label {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .account-config-page .copy-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .account-config-page .copy-field .form-input {
+    flex: 1 1 auto;
+  }
+
+  .account-config-page .copy-field .btn {
+    flex-shrink: 0;
+  }
+
+  .account-config-page .form-helper {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  .account-config-page .form-input,
+  .account-config-page select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #ffffff;
+  }
+
+  .account-config-page .form-input:focus,
+  .account-config-page select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    outline: none;
+  }
+
+  .account-config-page .password-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .account-config-page .password-field .toggle-password {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #6b7280;
+    padding: 0;
+  }
+
+  .account-config-page .form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  /* ===== BROKER GRID & SEARCH ===== */
+  .account-config-page .broker-search {
+    position: relative;
+    margin-bottom: 0;
+    max-width: 260px;
+    flex: 1 1 auto;
+  }
+
+  .account-config-page .search-wrapper {
+    position: relative;
+  }
+
+  .account-config-page .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: #9ca3af;
+    pointer-events: none;
+  }
+
+  .account-config-page .search-input {
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #1f2937;
+    font-weight: 500;
+    height: 40px;
+    width: 100%;
+    padding: 0 12px 0 36px;
+  }
+
+  .account-config-page .search-input::placeholder {
+    color: #9ca3af;
+    font-weight: 400;
+  }
+
+  .account-config-page .broker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+    margin-top: 24px;
+  }
+
+  .account-config-page .broker-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    padding: 1px;
+    border-radius: 14px;
+    border: 1.5px solid #e5e7eb;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .account-config-page .broker-card:hover {
+    border-color: rgba(99, 102, 241, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -15px rgba(79, 70, 229, 0.6);
+  }
+
+  .account-config-page .broker-card.active {
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.05);
+  }
+
+  .account-config-page .broker-card.coming-soon {
+    position: relative;
+    overflow: hidden;
+    cursor: not-allowed;
+    border-color: #e5e7eb;
+    opacity: 0.8;
+  }
+
+  .account-config-page .broker-card.coming-soon:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: #e5e7eb;
+  }
+
+  .account-config-page .broker-card.coming-soon .broker-avatar,
+  .account-config-page .broker-card.coming-soon .broker-name {
+    filter: blur(1px) grayscale(1);
+  }
+
+  .account-config-page .coming-soon-banner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #1f2937;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(2px);
+  }
+
+  .account-config-page .broker-card img {
+    width: 98px;
+    height: 58px;
+    border-radius: 50%;
+    object-fit: contain;
+    background: #ffffff;
+    padding: 9px;
+  }
+
+  .account-config-page .broker-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 16px;
+    text-transform: uppercase;
+  }
+
+  .account-config-page .broker-name {
+    font-size: 12px;
+    font-weight: 300;
+    text-align: center;
+    color: #374151;
+  }
+
+  .account-config-page .broker-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #6b7280;
+    padding: 16px 0;
+  }
+
+  /* ===== CARD WRAPPER ===== */
+  .account-config-page .card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 30px -15px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+  }
+
+  /* ===== TABS BAR ===== */
+  .account-config-page .tabs {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px 8px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .account-config-page .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    padding: 0 0 8px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: #1f2937;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .account-config-page .tab:hover {
+    color: #111827;
+  }
+
+  .account-config-page .tab.active {
+    font-weight: 600;
+  }
+
+  .account-config-page .tab.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background-color: #111827;
+    border-radius: 999px;
+  }
+
+  .account-config-page .tab .badge,
+  .account-config-page .tab-count {
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    font-size: 11px;
+    line-height: 24px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+  }
+
+  .account-config-page .tab .badge-success,
+  .account-config-page .tab-count.success {
+    background: #e6f9ef;
+    border: 1px solid rgba(5, 150, 105, 0.3);
+    color: #059669;
+  }
+
+  .account-config-page .tab .badge-danger,
+  .account-config-page .tab-count.failed {
+    background: #ffe7e7;
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    color: #dc2626;
+  }
+
+  .account-config-page .tab .badge-secondary,
+  .account-config-page .tab-count.all {
+    background: #eef2ff;
+    border: 1px solid #e5e7eb;
+    color: #4b5563;
+  }
+
+  /* ===== TOOLBAR ===== */
+  .account-config-page .toolbar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .account-config-page .toolbar-left {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+    order: 1;
+  }
+
+  .account-config-page .toolbar-left .broker-filter-select,
+  .account-config-page .toolbar-left select.broker-filter-select,
+  .account-config-page #broker-filter {
+    flex: 0 0 auto;
+    min-width: 120px;
+    max-width: 150px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.3;
+    padding: 0 32px 0 12px;
+    color: #1f2937;
+    white-space: nowrap;
+    appearance: none;
+  }
+
+  .account-config-page .toolbar-left .search-wrapper {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .account-config-page .toolbar-left .search-wrapper .search-input {
+    width: 100%;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: #f9fafb;
+    font-size: 14px;
+    line-height: 1.3;
+    padding-left: 32px;
+    padding-right: 10px;
+    color: #1f2937;
+    font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .account-config-page .toolbar-left .search-wrapper .search-input::placeholder {
+    color: #6b7280;
+    font-weight: 400;
+  }
+
+  .account-config-page .toolbar-left .search-wrapper .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: #6b7280;
+    pointer-events: none;
+  }
+
+  .account-config-page .toolbar>.dropdown {
+    order: 2;
+    flex: 0 0 auto;
+    min-width: 32px;
+    min-height: 32px;
+    align-self: center;
+  }
+
+  .account-config-page .toolbar>.dropdown .btn-ghost.btn-icon {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #1f2937;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+  }
+
+  .account-config-page .toolbar>.dropdown .btn-ghost.btn-icon:hover {
+    background: #f3f4f6;
+  }
+
+  /* ===== DROPDOWN MENUS ===== */
+  .account-config-page .dropdown {
+    position: relative;
+  }
+
+  .account-config-page .dropdown-menu {
+    position: fixed;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    max-width: calc(100vw - 20px);
+    display: none;
+    z-index: 9999;
+    padding: 8px 0;
+    right: auto;
+    overflow: hidden;
+  }
+
+  .account-config-page .dropdown.open .dropdown-menu {
+    display: block;
+  }
+
+  .account-config-page .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 10px 16px;
+    font-size: 14px;
+    color: #1f2937;
+    text-align: left;
+    cursor: pointer;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .account-config-page .dropdown-item:hover:not(.disabled) {
+    background: #f9fafb;
+  }
+
+  .account-config-page .dropdown-item.disabled {
+    color: #9ca3af;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .account-config-page .dropdown-item.danger {
+    color: #dc2626;
+  }
+
+  /* ===== TABLE STYLES ===== */
+  .account-config-page .table-wrapper {
+    overflow-x: auto;
+    background: #ffffff;
+  }
+
+  .account-config-page table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 720px;
+    background: #ffffff;
+    font-size: 12px;
+    color: #1f2937;
+  }
+
+  .account-config-page thead {
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .account-config-page th {
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4b5563;
+    line-height: 1.4;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+    text-align: left;
+  }
+
+  .account-config-page th:first-child {
+    width: 40px;
+  }
+
+  .account-config-page td {
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: #1f2937;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+    background: #ffffff;
+  }
+
+  .account-config-page tbody tr:hover td {
+    background: #f9fafb;
+  }
+
+  .account-config-page .checkbox,
+  .account-config-page .row-select-radio {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    min-height: 18px;
+    border-radius: 50%;
+    border: 2px solid #6366f1;
+    appearance: none;
+    cursor: pointer;
+    position: relative;
+    accent-color: #6366f1;
+    background: #fff;
+  }
+
+  .account-config-page .row-select-radio:checked,
+  .account-config-page .checkbox:checked {
+    border-color: #6366f1;
+  }
+
+  .account-config-page .row-select-radio:checked::after,
+  .account-config-page .checkbox:checked::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    background: #6366f1;
+    border-radius: 999px;
+    transform: translate(-50%, -50%);
+  }
+
+  .account-config-page .client-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .account-config-page .avatar {
+    width: 36px;
+    height: 36px;
+    line-height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    color: #4b5563;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .account-config-page .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 50%;
+    background: #ffffff;
+    display: block;
+  }
+
+  .account-config-page .client-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.2;
+  }
+
+  .account-config-page .client-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1f2937;
+  }
+
+  .account-config-page .client-sub {
+    font-size: 11px;
+    font-weight: 400;
+    color: #6b7280;
+    white-space: nowrap;
+  }
+
+  .account-config-page .balance-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: #1f1f1f;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+
+  .account-config-page .balance-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .account-config-page .balance-refresh-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.15s ease, opacity 0.15s ease;
+  }
+
+  .account-config-page .balance-refresh-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .account-config-page .balance-refresh-btn:hover:not(:disabled) {
+    color: #047857;
+  }
+
+  .account-config-page .balance-refresh-btn:focus-visible {
+    outline: 2px solid rgba(16, 185, 129, 0.4);
+    outline-offset: 2px;
+  }
+
+  .account-config-page .balance-refresh-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .account-config-page .balance-refresh-btn.is-loading {
+    opacity: 0.6;
+  }
+
+  .account-config-page .balance-refresh-btn.is-loading svg {
+    animation: balance-refresh-spin 1s linear infinite;
+  }
+
+  @keyframes balance-refresh-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* ===== BADGES & STATUS PILLS ===== */
+  .account-config-page .badge,
+  .account-config-page .status-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    max-width: 320px !important;
+    min-width: auto !important;
+    height: 28px !important;
+    padding: 0 12px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    border-radius: 999px !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    border: none;
+  }
+
+  .account-config-page .badge-success,
+  .account-config-page .status-pill.success {
+    background: #e6f9ef !important;
+    border: 1px solid rgba(5, 150, 105, 0.3) !important;
+    color: #059669 !important;
+  }
+
+  .account-config-page .badge-danger,
+  .account-config-page .status-pill.error {
+    background: #fee2e2 !important;
+    border: 1px solid rgba(220, 38, 38, 0.3) !important;
+    color: #dc2626 !important;
+    transition: max-width 0.3s ease !important;
+  }
+
+  .account-config-page .badge-danger:hover,
+  .account-config-page .status-pill.error:hover {
+    max-width: 500px !important;
+    cursor: help !important;
+    z-index: 10 !important;
+  }
+
+  .account-config-page .badge-secondary {
+    background: #eef2ff !important;
+    border: 1px solid #e5e7eb !important;
+    color: #4b5563 !important;
+  }
+
+  /* ===== BUTTONS ===== */
+  .account-config-page .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 11px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    background: #ffffff;
+    color: #1f2937;
+    min-height: 28px;
+    line-height: 1.2;
+  }
+
+  .account-config-page .btn:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 20px -18px rgba(15, 23, 42, 0.35);
+  }
+
+  .account-config-page .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .account-config-page .btn-primary {
+    background: linear-gradient(to right, #6366f1, rgba(99, 102, 241, 0.85));
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 10px 20px -15px rgba(79, 70, 229, 0.8);
+  }
+
+  .account-config-page .btn-primary:hover {
+    background: linear-gradient(to right, rgba(99, 102, 241, 0.95), rgba(99, 102, 241, 0.8));
+  }
+
+  .account-config-page .btn-outline {
+    border-color: #d1d5db;
+    background: #ffffff;
+    color: #374151;
+  }
+
+  .account-config-page .btn-outline:hover {
+    background: #f3f4f6;
+  }
+
+  .account-config-page .btn-success {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #0f9d58;
+  }
+
+  .account-config-page .btn-success:hover {
+    background: rgba(16, 185, 129, 0.2);
+  }
+
+  .account-config-page .btn-sm {
+    padding: 3px 6px;
+    font-size: 11px;
+    min-height: 24px;
+  }
+
+  .account-config-page .btn-icon {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    border-radius: 6px;
+    padding: 0;
+    font-size: 11px;
+    line-height: 1;
+  }
+
+  .account-config-page .btn-ghost {
+    background: transparent;
+    border: none;
+    color: #6b7280;
+  }
+
+  .account-config-page .btn-ghost:hover {
+    background: #f3f4f6;
+  }
+
+  .account-config-page .btn-soft-green,
+  .account-config-page .btn.btn-sm.btn-success {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(5, 150, 105, 0.3);
+    background: #ecfff5;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: #059669;
+    white-space: nowrap;
+  }
+
+  .account-config-page .btn-soft-green:hover {
+    background: #e6f9ef;
+  }
+
+  .account-config-page .btn-soft-green .btn-icon-box {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    border-radius: 4px;
+    border: 1px solid rgba(5, 150, 105, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    background: transparent;
+    line-height: 1;
+    color: inherit;
+  }
+
+  .account-config-page .btn-soft-green .icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .account-config-page td[data-field="action-cell"] {
+    display: table-cell !important;
+    vertical-align: middle !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    overflow: visible !important;
+    white-space: nowrap;
+  }
+
+  .account-config-page td[data-field="action-cell"]>.flex.items-center.gap-2 {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    background: transparent !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  .account-config-page td[data-field="action-cell"] .btn.btn-sm.btn-success {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 8px;
+    height: 28px;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(5, 150, 105, 0.3);
+    background: #ecfff5;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: #059669;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .account-config-page td[data-field="action-cell"] .btn-ghost.btn-icon {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #1f2937;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .account-config-page td[data-field="action-cell"] .btn-ghost.btn-icon:hover {
+    background: #f3f4f6;
+  }
+
+  .account-config-page td[data-field="action-cell"] .dropdown {
+    position: relative !important;
+    display: inline-block !important;
+    margin: 0 !important;
+  }
+
+  .account-config-page td[data-field="action-cell"] .dropdown-menu {
+    position: fixed !important;
+    min-width: 200px;
+    max-width: calc(100vw - 20px);
+    background: #ffffff;
+    z-index: 9999 !important;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.15);
+    padding: 8px 0;
+    right: auto;
+    overflow: hidden;
+  }
+
+  .account-config-page td[data-field="action-cell"] .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    background: transparent;
+    border: 0;
+    color: #1f2937;
+    text-align: left;
+    line-height: 1.3;
+  }
+
+  .account-config-page td[data-field="action-cell"] .dropdown-item.disabled {
+    color: #9ca3af;
+  }
+
+  .account-config-page td[data-field="action-cell"] .dropdown-item:hover:not(.disabled) {
+    background: #f9fafb;
+  }
+
+  /* ===== TABLE FOOTER & PAGINATION ===== */
+  .account-config-page .table-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background: #ffffff;
+    padding: 12px 20px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 13px;
+    color: #4b5563;
+    line-height: 1.4;
+  }
+
+  .account-config-page .footer-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+
+  .account-config-page .footer-group {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .account-config-page .footer-controls select {
+    height: 36px;
+    min-height: 36px;
+    width: 60px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    padding: 0 28px 0 10px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: #1f2937;
+  }
+
+  .account-config-page .pagination-btn,
+  .account-config-page .btn.btn-icon.btn-ghost {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .account-config-page .pagination-btn:hover,
+  .account-config-page .btn.btn-icon.btn-ghost:hover {
+    background: #f9fafb;
+    color: #1f2937;
+  }
+
+  /* ===== UTILITIES ===== */
+  .account-config-page .text-sm {
+    font-size: 12px;
+  }
+
+  .account-config-page .text-xs {
+    font-size: 12px;
+  }
+
+  .account-config-page .text-muted {
+    color: #6b7280;
+  }
+
+  .account-config-page .font-medium {
+    font-weight: 600;
+  }
+
+  .account-config-page .truncate {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .account-config-page .flex {
+    display: flex;
+  }
+
+  .account-config-page .items-center {
+    align-items: center;
+  }
+
+  .account-config-page .gap-2 {
+    gap: 8px;
+  }
+
+  .account-config-page .gap-3 {
+    gap: 12px;
+  }
+
+  .account-config-page .hidden {
+    display: none !important;
+  }
+
+  .account-config-page .animate-in {
+    animation: account-config-fade-in 0.3s ease-in-out;
+  }
+
+  /* ===== RESPONSIVE DESIGN ===== */
+  .account-config-page .mobile-hide {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .account-config-page .mobile-hide.md-show {
+      display: table-cell;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .account-config-page .mobile-hide.lg-show {
+      display: table-cell;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .account-config-page .mobile-hide.xl-show {
+      display: table-cell;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .account-config-page .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .account-config-page .page-title {
+      font-size: 24px;
+    }
+
+    .account-config-page .stats-grid {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+
+    .account-config-page .toolbar {
+      align-items: stretch;
+    }
+
+    .account-config-page .toolbar-left {
+      width: 100%;
+    }
+
+    .account-config-page .form-actions {
+      justify-content: stretch;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .account-config-page .toolbar-left {
+      gap: 6px;
+      flex: 1 1 0;
+    }
+
+    .account-config-page .toolbar-left .broker-filter-select,
+    .account-config-page .toolbar-left select.broker-filter-select,
+    .account-config-page #broker-filter {
+      min-width: 100px;
+      max-width: 110px;
+      font-size: 13px;
+      padding: 0 28px 0 8px;
+      border-radius: 6px;
+      height: 34px;
+    }
+
+    .account-config-page .toolbar-left .search-wrapper {
+      flex: 1 1 0;
+      min-width: 80px;
+    }
+
+    .account-config-page .toolbar-left .search-wrapper .search-input {
+      height: 34px;
+      font-size: 13px;
+      border-radius: 6px;
+      padding-left: 30px;
+      padding-right: 8px;
+    }
+
+    .account-config-page .toolbar>.dropdown .btn-ghost.btn-icon {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      min-height: 32px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes account-config-drift {
+    0% {
+      transform: translate(0, 0) rotate(0deg);
+    }
+
+    50% {
+      transform: translate(-40px, 20px) rotate(180deg);
+    }
+
+    100% {
+      transform: translate(0, 0) rotate(360deg);
+    }
+  }
+
+  @keyframes account-config-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ===== COMPACT TABLE ROW OVERRIDES ===== */
+
+  /* Reduce table row height */
+  .account-config-page td {
+    padding: 6px 20px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+  }
+
+  .account-config-page th:nth-child(1),
+  .account-config-page td:nth-child(1) {
+    width: 45px !important;
+    padding: 6px 10px !important;
+  }
+
+  /* Developer URL - minimal */
+  .account-config-page th:nth-child(6),
+  .account-config-page td:nth-child(6) {
+    width: 50px !important;
+    min-width: 50px !important;
+    max-width: 50px !important;
+    padding: 6px 4px !important;
+    text-align: center !important;
+  }
+
+  /* Static IP - minimal */
+  .account-config-page th:nth-child(7),
+  .account-config-page td:nth-child(7) {
+    width: 10px !important;
+    padding: 6px 90px !important;
+    text-align: center !important;
+  }
+
+  /* Copy buttons in URL/IP columns - icon only */
+  .account-config-page td:nth-child(6) .btn-sm,
+  .account-config-page td:nth-child(7) .btn-sm {
+    width: 28px !important;
+    height: 24px !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+    border-radius: 4px !important;
+  }
+
+  .account-config-page th:nth-child(7) {
+    padding: 10px 0px !important;
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+  }
+
+  .account-config-page th {
+    padding: 10px 15px !important;
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+  }
+
+  /* The actual structure uses nested divs with p tags */
+  .account-config-page td .flex.items-center.gap-2 {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  .account-config-page td .flex.items-center.gap-2>div:last-child {
+    width: 120px;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    line-height: 1 !important;
+  }
+
+  /* Target the actual p tags for name and client ID */
+  .account-config-page td p.font-medium.text-sm {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    color: #1f2937 !important;
+  }
+
+  .account-config-page td p.text-xs.text-muted {
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    line-height: 1.6 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #6b7280 !important;
+  }
+
+  /* Reduce avatar size */
+  .account-config-page .avatar {
+    width: 28px !important;
+    height: 28px !important;
+    line-height: 40px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    font-size: 12px !important;
+  }
+
+  /* Fix status pill - compact with rounded corners */
+  .account-config-page .badge,
+  .account-config-page .status-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    max-width: 120px !important;
+    min-width: auto !important;
+    height: auto !important;
+    min-height: 30px !important;
+    max-height: 30px !important;
+    padding: 6px 14px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    border-radius: 20px !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Specific styling for danger/error badges */
+  .account-config-page .badge-danger,
+  .account-config-page .status-pill.error {
+    background: #ef4444 !important;
+    border: none !important;
+    color: #ffffff !important;
+    transition: max-width 0.3s ease !important;
+  }
+
+  /* On hover, allow expansion to see full text */
+  .account-config-page .badge-danger:hover,
+  .account-config-page .status-pill.error:hover {
+    max-width: 250px !important;
+    cursor: help !important;
+    z-index: 10 !important;
+    position: relative !important;
+    white-space: normal !important;
+    height: auto !important;
+    max-height: 50px !important;
+  }
+
+  /* Success badge - green with rounded style */
+  .account-config-page .badge-success,
+  .account-config-page .status-pill.success {
+    background: #10b981 !important;
+    border: none !important;
+    color: #ffffff !important;
+    padding: 6px 16px !important;
+    height: 30px !important;
+    max-height: 30px !important;
+    line-height: 1.2 !important;
+    font-weight: 600 !important;
+  }
+
+  /* Compact balance cell */
+  .account-config-page .balance-cell {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  .account-config-page .balance-text {
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    line-height: 1.2 !important;
+    color: #1f2937 !important;
+  }
+
+  /* Compact action buttons in table */
+  .account-config-page td[data-field="action-cell"] {
+    max-width: 121px;
+    padding: 6px 10px !important;
+    vertical-align: middle !important;
+  }
+
+  .account-config-page td[data-field="action-cell"] .btn.btn-sm.btn-success {
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 0 10px !important;
+    font-size: 11px !important;
+  }
+
+  .account-config-page td[data-field="action-cell"] .btn-ghost.btn-icon {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
+  }
+
+  /* Remove extra spacing in table rows on hover */
+  .account-config-page tbody tr:hover td {
+    background: #f9fafb !important;
+  }
+
+  /* Compact checkbox/radio */
+  .account-config-page .checkbox,
+  .account-config-page .row-select-radio {
+    width: 12px !important;
+    height: 12px !important;
+    min-width: 14px !important;
+    min-height: 14px !important;
+  }
+
+  .account-config-page .row-select-radio:checked::after,
+  .account-config-page .checkbox:checked::after {
+    width: 5px !important;
+    height: 5px !important;
+  }
+
+  /* Balance refresh button */
+  .account-config-page .balance-refresh-btn svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="account-config-page">
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+  <div class="background-shapes">
+    <div class="shape shape1"></div>
+    <div class="shape shape2"></div>
+  </div>
+
+  <div class="account-config-container container">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Account Configuration</h1>
+        <div class="breadcrumb">
+          <span>Dashboard</span>
+          <span>•</span>
+          <span class="breadcrumb-current">Account Configuration</span>
+        </div>
+      </div>
+      <button id="add-account-btn" class="btn btn-primary" type="button">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span id="add-btn-text">Add New Account</span>
+      </button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon stat-icon-primary">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="stat-label">Total capacity</p>
+            <p class="stat-value" id="total-capacity">0</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon stat-icon-success">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="stat-label">Master capacity</p>
+            <p class="stat-value" id="master-accounts-count">0</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon stat-icon-warning">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="stat-label">Children capacity</p>
+            <p class="stat-value" id="child-accounts-count">0</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon stat-icon-danger">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z">
+              </path>
+            </svg>
+          </div>
+          <div>
+            <p class="stat-label">Plan name</p>
+            <p class="stat-value" id="current-plan">—</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon stat-icon-muted">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          </div>
+          <div>
+            <p class="stat-label">Validity</p>
+            <p class="stat-value" id="plan-validity">—</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="add-account-section" class="form-section animate-in" style="display:none;">
+      <h2 class="form-title">Add/Edit Account Details</h2>
+      <p class="form-description">Select your broker to configure account credentials.</p>
+
+      <div class="broker-search">
+        <svg class="icon icon-sm search-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <input type="text" class="form-input search-input" id="broker-search" placeholder="Search broker...">
+      </div>
+
+      <div class="broker-grid broker-scroll" id="broker-grid">
+        <p class="broker-empty">Search or select a broker to begin.</p>
+      </div>
+
+      <form id="broker-credentials-form">
+        <div id="broker-fields" class="form-grid">
+          <p class="form-placeholder">Please select a broker above to view configuration fields.</p>
+        </div>
+        <div id="cred-check-result" class="form-feedback"></div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-outline" id="cancel-add-account-btn">Close</button>
+          <button type="submit" class="btn btn-primary" id="submit-account-btn" style="display:none;">Add
+            Account</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="tabs" id="status-tabs">
+        <button class="tab status-tab active" type="button" data-status="all">
+          All
+          <span class="badge badge-secondary" id="tab-count-all">0</span>
+        </button>
+        <button class="tab status-tab" type="button" data-status="success">
+          Success
+          <span class="badge badge-success" id="tab-count-success">0</span>
+        </button>
+        <button class="tab status-tab" type="button" data-status="failed">
+          Failed
+          <span class="badge badge-danger" id="tab-count-failed">0</span>
+        </button>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <select id="broker-filter">
+            <option value="">All Brokers</option>
+          </select>
+          <div class="search-wrapper">
+            <svg class="icon icon-sm search-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input type="text" class="form-input search-input" id="account-search" placeholder="Search...">
+          </div>
+        </div>
+
+        <div class="dropdown" id="more-dropdown">
+          <button class="btn btn-icon btn-ghost" type="button" data-dropdown-toggle="more-dropdown" aria-haspopup="true"
+            aria-expanded="false">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="1"></circle>
+              <circle cx="12" cy="5" r="1"></circle>
+              <circle cx="12" cy="19" r="1"></circle>
+            </svg>
+          </button>
+          <div class="dropdown-menu" role="menu">
+            <button class="dropdown-item" type="button" data-action="export-accounts">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Export
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 48px;">
+                <input type="checkbox" class="checkbox" id="select-all-accounts" aria-label="Select all accounts">
+              </th>
+              <th>Client ID</th>
+              <th class="mobile-hide lg-show">Opening Balance</th>
+              <th>Auto-Login</th>
+              <th class="mobile-hide md-show">Last Login Time</th>
+              <th class="mobile-hide xl-show">Developer URL</th>
+              <th class="mobile-hide xl-show">Static IP</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="accounts-table-body"></tbody>
+        </table>
+      </div>
+
+      <div id="accounts-empty-state" class="empty-state" style="display:none;">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <circle cx="12" cy="16" r="1"></circle>
+        </svg>
+        <p>No accounts found matching your criteria.</p>
+      </div>
+
+      <div class="table-footer">
+        <div class="text-sm text-muted" id="accounts-summary">No accounts to display</div>
+        <div class="footer-controls">
+          <div class="footer-group">
+            <span class="text-sm text-muted">Rows per page:</span>
+            <select id="accounts-rows-per-page">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="15">15</option>
+              <option value="20">20</option>
+            </select>
+          </div>
+          <span class="text-sm text-muted" id="accounts-range">0-0 of 0</span>
+          <div class="footer-group">
+            <button class="btn btn-icon btn-ghost" id="accounts-page-prev" type="button" disabled>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <button class="btn btn-icon btn-ghost" id="accounts-page-next" type="button" disabled>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  if (!window.pageScripts) window.pageScripts = {};
+  if (!window.pageScriptStates) window.pageScriptStates = {};
+
+  window.pageScripts["Add-Account"] = function () {
+    const ACCOUNTS_CACHE_TTL_MS = 60 * 1000; // one minute cache window
+    const ADD_ACCOUNT_PREFETCH_KEY = 'Add-Account';
+    const ADD_ACCOUNT_PREFETCH_TTL = Math.max(
+      Number.isFinite(window.PAGE_PREFETCH_DEFAULT_TTL) ? window.PAGE_PREFETCH_DEFAULT_TTL : 2 * 60 * 1000,
+      ACCOUNTS_CACHE_TTL_MS
+    );
+    const ACCOUNTS_CACHE_STORAGE_KEY = 'add-account:accounts-cache';
+    const AUTO_LOGIN_RETRY_INTERVAL_MS = 5 * 60 * 1000; // five minutes between retries
+    const AUTO_LOGIN_CHECKING_TIMEOUT_MS = 30 * 1000; // reset "checking" states after 30s
+    const AUTO_LOGIN_ERROR_TTL_MS = 24 * 60 * 60 * 1000; // retain errors longer
+
+    if (!window.CSS) {
+      window.CSS = {};
+    }
+    if (typeof window.CSS.escape !== 'function') {
+      window.CSS.escape = function (value) {
+        if (arguments.length === 0) {
+          throw new TypeError('CSS.escape requires an argument.');
+        }
+        const string = String(value);
+        const length = string.length;
+        let index = -1;
+        let result = '';
+        const firstCodeUnit = string.charCodeAt(0);
+        while (++index < length) {
+          const codeUnit = string.charCodeAt(index);
+          if (codeUnit === 0x0000) {
+            result += '�';
+            continue;
+          }
+          if (
+            (codeUnit >= 0x0001 && codeUnit <= 0x001f) ||
+            codeUnit === 0x007f ||
+            (index === 0 && codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
+            (index === 1 && codeUnit >= 0x0030 && codeUnit <= 0x0039 && firstCodeUnit === 0x002d)
+          ) {
+            result += `\\${codeUnit.toString(16)} `;
+            continue;
+          }
+          if (index === 0 && codeUnit === 0x002d && length === 1) {
+            result += `\\${string.charAt(index)}`;
+            continue;
+          }
+          if (
+            codeUnit >= 0x0080 ||
+            codeUnit === 0x002d ||
+            codeUnit === 0x005f ||
+            (codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
+            (codeUnit >= 0x0041 && codeUnit <= 0x005a) ||
+            (codeUnit >= 0x0061 && codeUnit <= 0x007a)
+          ) {
+            result += string.charAt(index);
+            continue;
+          }
+          result += `\\${string.charAt(index)}`;
+        }
+        return result;
+      };
+    }
+
+    const previousState = window.pageScriptStates["Add-Account"];
+    const previousCachedAccounts = previousState && previousState.cachedAccounts;
+    const previousCachedAutoLoginResults = previousState && previousState.cachedAutoLoginResults;
+    const previousCachedFilters = previousState && previousState.cachedFilters;
+    const persistedAccountsCache = previousCachedAccounts ? null : readPersistedAccountsCache();
+
+    // Ensure the Add Account prefetch cache is defined before it is read.
+    let cachedAddAccountPrefetch = null;
+    const prefetchedAccountsCache = previousCachedAccounts ? null : readAddAccountPrefetch();
+
+    if (previousState && typeof previousState.cleanup === 'function') {
+      try {
+        previousState.cleanup();
+      } catch (error) {
+        console.warn('Failed to cleanup previous Add Account state:', error);
+      }
+    }
+
+    let isActive = true;
+
+    const state = {
+      listeners: [],
+      abortControllers: [],
+      intervals: [],  
+      cachedAccounts: previousCachedAccounts
+        ? {
+          accounts: Array.isArray(previousCachedAccounts.accounts)
+            ? JSON.parse(JSON.stringify(previousCachedAccounts.accounts))
+            : [],
+          signature: previousCachedAccounts.signature || null,
+          fetchedAt: previousCachedAccounts.fetchedAt || null
+        }
+        : persistedAccountsCache
+          ? normalizeAccountsCache(persistedAccountsCache)
+          : prefetchedAccountsCache
+            ? clonePrefetchedAccountsCache(prefetchedAccountsCache)
+            : null,
+      cachedAutoLoginResults: previousCachedAutoLoginResults
+        ? JSON.parse(JSON.stringify(previousCachedAutoLoginResults))
+        : {},
+      cachedFilters: previousCachedFilters
+        ? {
+          statusFilter: previousCachedFilters.statusFilter || 'all',
+          brokerFilter: previousCachedFilters.brokerFilter || '',
+          searchFilter: previousCachedFilters.searchFilter || '',
+          selectedAccountIds: Array.isArray(previousCachedFilters.selectedAccountIds)
+            ? [...previousCachedFilters.selectedAccountIds]
+            : []
+        }
+        : null,
+      cleanup() {
+        if (!isActive) {
+          return;
+        }
+        isActive = false;
+        this.intervals.forEach(intervalId => {
+          try {
+            clearInterval(intervalId);
+          } catch (err) {
+            console.warn('Failed to clear interval:', err);
+          }
+        });
+        this.intervals = [];  
+        this.abortControllers.forEach(controller => {
+          try {
+            controller.abort();
+          } catch (err) {
+            console.warn('Failed to abort fetch controller:', err);
+          }
+        });
+        this.abortControllers = [];
+        this.listeners.forEach(removeListener => {
+          try {
+            removeListener();
+          } catch (err) {
+            console.warn('Failed to remove event listener:', err);
+          }
+        });
+        this.listeners = [];
+      }
+    };
+
+    window.pageScriptStates["Add-Account"] = state;
+
+    function safeStorageGet(key) {
+      try {
+        return window.localStorage ? window.localStorage.getItem(key) : null;
+      } catch (error) {
+        console.warn('Failed to read storage key', key, error);
+        return null;
+      }
+    }
+
+    function safeStorageSet(key, value) {
+      try {
+        if (window.localStorage) {
+          window.localStorage.setItem(key, value);
+        }
+      } catch (error) {
+        console.warn('Failed to persist storage key', key, error);
+      }
+    }
+
+    function safeStorageRemove(key) {
+      try {
+        if (window.localStorage) {
+          window.localStorage.removeItem(key);
+        }
+      } catch (error) {
+        console.warn('Failed to remove storage key', key, error);
+      }
+    }
+
+    function safeSessionGet(key) {
+      try {
+        return window.sessionStorage ? window.sessionStorage.getItem(key) : null;
+      } catch (error) {
+        console.warn('Failed to read session storage key', key, error);
+        return null;
+      }
+    }
+
+    function safeSessionSet(key, value) {
+      try {
+        if (window.sessionStorage) {
+          window.sessionStorage.setItem(key, value);
+        }
+      } catch (error) {
+        console.warn('Failed to persist session storage key', key, error);
+      }
+    }
+
+    function safeSessionRemove(key) {
+      try {
+        if (window.sessionStorage) {
+          window.sessionStorage.removeItem(key);
+        }
+      } catch (error) {
+        console.warn('Failed to remove session storage key', key, error);
+      }
+    }
+
+    const AUTO_LOGIN_FIRST_LOAD_KEY = 'add-account:auto-login:first-load';
+    const AUTO_LOGIN_ATTEMPTS_KEY = 'add-account:auto-login:attempted-clients';
+    const hasSeenAutoLoginInSession = safeSessionGet(AUTO_LOGIN_FIRST_LOAD_KEY) === '1';
+    const allowTransitionalStatuses = !hasSeenAutoLoginInSession;
+    if (!hasSeenAutoLoginInSession) {
+      safeSessionSet(AUTO_LOGIN_FIRST_LOAD_KEY, '1');
+    }
+
+    function cloneAccountsList(accounts) {
+      if (!Array.isArray(accounts)) {
+        return [];
+      }
+      try {
+        return JSON.parse(JSON.stringify(accounts));
+      } catch (error) {
+        console.warn('Failed to clone accounts list:', error);
+        return Array.from(accounts);
+      }
+    }
+
+    function computeAccountsSignature(accounts) {
+      try {
+        return JSON.stringify(Array.isArray(accounts) ? accounts : []);
+      } catch (error) {
+        console.warn('Failed to compute accounts signature:', error);
+        return String(Date.now());
+      }
+    }
+
+    function isEmptyAccountField(value) {
+      return value === undefined || value === null || value === '';
+    }
+
+    function mergeAccountRecords(existing, incoming) {
+      if (!existing || typeof existing !== 'object') {
+        return { ...incoming };
+      }
+      const merged = {};
+      const keys = new Set([
+        ...Object.keys(existing || {}),
+        ...Object.keys(incoming || {})
+      ]);
+
+      keys.forEach(key => {
+        const incomingValue = incoming ? incoming[key] : undefined;
+        const existingValue = existing[key];
+
+        if (!isEmptyAccountField(incomingValue)) {
+          merged[key] = incomingValue;
+        } else if (!isEmptyAccountField(existingValue)) {
+          merged[key] = existingValue;
+        } else {
+          merged[key] = incomingValue;
+        }
+      });
+
+      return merged;
+    }
+
+    function mergeAccountsByClientId(existingAccounts, incomingAccounts) {
+      if (!Array.isArray(incomingAccounts)) {
+        return [];
+      }
+
+      const existingMap = new Map();
+      if (Array.isArray(existingAccounts)) {
+        existingAccounts.forEach(acc => {
+          if (acc && typeof acc === 'object' && acc.client_id) {
+            existingMap.set(acc.client_id, acc);
+          }
+        });
+      }
+
+      return incomingAccounts.map(acc => {
+        if (!acc || typeof acc !== 'object') {
+          return acc;
+        }
+        const cid = acc.client_id;
+        if (!cid || !existingMap.has(cid)) {
+          return { ...acc };
+        }
+        return mergeAccountRecords(existingMap.get(cid), acc);
+      });
+    }
+
+    function createAccountsCache(accounts, signatureOverride) {
+      const normalized = normalizeAccountsCache(
+        {
+          accounts,
+          signature: typeof signatureOverride === 'string' ? signatureOverride : null,
+          fetchedAt: Date.now()
+        },
+        Date.now()
+      );
+      persistAccountsCache(normalized);
+      return normalized;
+    }
+
+    function normalizeAccountsCache(cache, defaultFetchedAt) {
+      if (!cache || typeof cache !== 'object') {
+        return null;
+      }
+      const accounts = Array.isArray(cache.accounts) ? cloneAccountsList(cache.accounts) : [];
+      const fetchedAt = typeof cache.fetchedAt === 'number'
+        ? cache.fetchedAt
+        : (typeof defaultFetchedAt === 'number' ? defaultFetchedAt : Date.now());
+      const signature = typeof cache.signature === 'string'
+        ? cache.signature
+        : computeAccountsSignature(accounts);
+      return {
+        accounts,
+        signature,
+        fetchedAt
+      };
+    }
+
+    function readPersistedAccountsCache() {
+      const raw = safeStorageGet(ACCOUNTS_CACHE_STORAGE_KEY);
+      if (!raw) {
+        return null;
+      }
+      try {
+        const parsed = JSON.parse(raw);
+        return normalizeAccountsCache(parsed);
+      } catch (error) {
+        console.warn('Failed to parse persisted accounts cache:', error);
+        safeStorageRemove(ACCOUNTS_CACHE_STORAGE_KEY);
+        return null;
+      }
+    }
+
+    function persistAccountsCache(cache) {
+      const normalized = normalizeAccountsCache(cache);
+      if (!normalized) {
+        safeStorageRemove(ACCOUNTS_CACHE_STORAGE_KEY);
+        return;
+      }
+      try {
+        safeStorageSet(ACCOUNTS_CACHE_STORAGE_KEY, JSON.stringify(normalized));
+      } catch (error) {
+        console.warn('Failed to persist accounts cache:', error);
+      }
+    }
+
+    function isCacheFresh(cache, ttl) {
+      if (!cache || typeof cache !== 'object') {
+        return false;
+      }
+      const fetchedAt = typeof cache.fetchedAt === 'number' ? cache.fetchedAt : 0;
+      if (!fetchedAt) {
+        return false;
+      }
+      const freshnessWindow = typeof ttl === 'number' ? ttl : 0;
+      if (!freshnessWindow) {
+        return false;
+      }
+      return Date.now() - fetchedAt < freshnessWindow;
+    }
+
+    function cloneAutoLoginResults(results) {
+      if (!results || typeof results !== 'object') {
+        return {};
+      }
+      try {
+        return JSON.parse(JSON.stringify(results));
+      } catch (error) {
+        console.warn('Failed to clone auto login results:', error);
+        return { ...results };
+      }
+    }
+
+    function persistAutoLoginState() {
+      state.cachedAutoLoginResults = cloneAutoLoginResults(autoLoginResults);
+    }
+
+    function loadAutoLoginAttempts() {
+      const raw = safeSessionGet(AUTO_LOGIN_ATTEMPTS_KEY) || safeStorageGet(AUTO_LOGIN_ATTEMPTS_KEY);
+      if (!raw) {
+        return new Set();
+      }
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return new Set(parsed.filter(Boolean));
+        }
+        if (parsed && typeof parsed === 'object') {
+          return new Set(Object.keys(parsed));
+        }
+      } catch (error) {
+        console.warn('Failed to parse auto-login attempt cache', error);
+      }
+      return new Set();
+    }
+
+    function persistAutoLoginAttempts() {
+      const payload = JSON.stringify(Array.from(autoLoginAttemptedClients));
+      safeSessionSet(AUTO_LOGIN_ATTEMPTS_KEY, payload);
+      safeStorageSet(AUTO_LOGIN_ATTEMPTS_KEY, payload);
+    }
+
+    function markAutoLoginAttempted(clientId) {
+      if (!clientId) return;
+      if (!autoLoginAttemptedClients.has(clientId)) {
+        autoLoginAttemptedClients.add(clientId);
+        persistAutoLoginAttempts();
+      }
+    }
+
+    function getAutoLoginLastAttempt(result) {
+      if (!result || typeof result !== 'object') {
+        return 0;
+      }
+      return typeof result.lastAttemptAt === 'number' ? result.lastAttemptAt : 0;
+    }
+
+    function isAutoLoginResultFresh(result) {
+      const lastAttemptAt = getAutoLoginLastAttempt(result);
+      if (!lastAttemptAt) {
+        return false;
+      }
+      const ttl = result && result.status === 'error' ? AUTO_LOGIN_ERROR_TTL_MS : ACCOUNTS_CACHE_TTL_MS;
+      if (!ttl || (Number.isFinite(ttl) && ttl <= 0)) {
+        return false;
+      }
+      if (!Number.isFinite(ttl)) {
+        return true;
+      }
+      return Date.now() - lastAttemptAt <= ttl;
+    }
+
+    function isAutoLoginCheckingStuck(result) {
+      if (!result || result.status !== 'checking') {
+        return false;
+      }
+      const lastAttemptAt = getAutoLoginLastAttempt(result);
+      if (!lastAttemptAt) {
+        return true;
+      }
+      return Date.now() - lastAttemptAt > AUTO_LOGIN_CHECKING_TIMEOUT_MS;
+    }
+
+    function resetStaleAutoLoginResults() {
+      let removed = false;
+      const now = Date.now();
+      Object.entries(autoLoginResults).forEach(([clientId, result]) => {
+        if (!result || typeof result !== 'object') {
+          delete autoLoginResults[clientId];
+          removed = true;
+          return;
+        }
+
+        const lastAttemptAt = getAutoLoginLastAttempt(result);
+        const ttl = result.status === 'error' ? AUTO_LOGIN_ERROR_TTL_MS : ACCOUNTS_CACHE_TTL_MS;
+        const isStale = !lastAttemptAt || (Number.isFinite(ttl) && now - lastAttemptAt > ttl);
+        if (isAutoLoginCheckingStuck(result) || isStale) {
+          delete autoLoginResults[clientId];
+          removed = true;
+        }
+      });
+      if (removed) {
+        persistAutoLoginState();
+      }
+      return removed;
+    }
+
+    function shouldAttemptAutoLogin(acc, options = {}) {
+      if (!acc || !acc.client_id) {
+        return false;
+      }
+      const { force = false } = options;
+      if (!force && autoLoginAttemptedClients.has(acc.client_id)) {
+        return false;
+      }
+      const result = autoLoginResults[acc.client_id];
+      if (!result) {
+        return true;
+      }
+      if (result.status === 'success' || result.status === 'checking') {
+        return false;
+      }
+      if (result.status === 'error' && isAutoLoginResultFresh(result)) {
+        return false;
+      }
+      const lastAttemptAt = typeof result.lastAttemptAt === 'number' ? result.lastAttemptAt : 0;
+      if (!lastAttemptAt) {
+        return true;
+      }
+      return Date.now() - lastAttemptAt >= AUTO_LOGIN_RETRY_INTERVAL_MS;
+    }
+
+    function persistFiltersAndSelection() {
+      state.cachedFilters = {
+        statusFilter,
+        brokerFilter,
+        searchFilter,
+        rowsPerPage,
+        currentPage,
+        selectedAccountIds: Array.from(selectedAccountIds)
+      };
+    }
+
+    function restoreFilterUI() {
+      document.querySelectorAll('#status-tabs .status-tab').forEach(button => {
+        const buttonStatus = button.dataset.status || 'all';
+        const isActive = buttonStatus === statusFilter;
+        button.classList.toggle('active', isActive);
+        if (isActive) {
+          button.setAttribute('aria-selected', 'true');
+        } else {
+          button.removeAttribute('aria-selected');
+        }
+      });
+
+      const brokerFilterSelect = document.getElementById('broker-filter');
+      if (brokerFilterSelect) {
+        const availableValues = Array.from(brokerFilterSelect.options).map(option => option.value);
+        if (brokerFilter && availableValues.includes(brokerFilter)) {
+          brokerFilterSelect.value = brokerFilter;
+        } else {
+          brokerFilterSelect.value = '';
+          if (brokerFilter) {
+            brokerFilter = '';
+          }
+        }
+      }
+
+      const accountSearchInput = document.getElementById('account-search');
+      if (accountSearchInput) {
+        accountSearchInput.value = searchFilter || '';
+      }
+    }
+
+    function pruneAutoLoginResults() {
+      const validIds = new Set(
+        allAccounts
+          .map(acc => (acc && acc.client_id ? acc.client_id : null))
+          .filter(Boolean)
+      );
+      let removed = false;
+      Object.keys(autoLoginResults).forEach(key => {
+        if (key && !validIds.has(key)) {
+          delete autoLoginResults[key];
+          removed = true;
+        }
+      });
+      if (removed) {
+        persistAutoLoginState();
+      }
+    }
+
+    const registerListener = (target, type, handler, options) => {
+      if (!target || typeof target.addEventListener !== 'function') {
+        return;
+      }
+      target.addEventListener(type, handler, options);
+      state.listeners.push(() => {
+        if (target && typeof target.removeEventListener === 'function') {
+          target.removeEventListener(type, handler, options);
+        }
+      });
+    };
+
+    const registerInterval = (handler, delay) => {
+      if (typeof handler !== 'function' || !Number.isFinite(delay)) {
+        return () => { };
+      }
+      const id = window.setInterval(handler, delay);
+      state.intervals.push(id);
+      return () => {
+        clearInterval(id);
+        state.intervals = state.intervals.filter(intervalId => intervalId !== id);
+      };
+    };
+    
+    const registerAbortController = controller => {
+      if (!controller) {
+        return () => { };
+      }
+      state.abortControllers.push(controller);
+      return () => {
+        state.abortControllers = state.abortControllers.filter(c => c !== controller);
+      };
+    };
+
+    const brokerIcons = {{ (broker_icons or { }) | tojson
+  }};
+  window.brokerIcons = brokerIcons;
+
+  const brokerFields = {
+    flattrade: [
+      { label: "Flattrade Client ID", name: "client_id", type: "text" },
+      { label: "Password", name: "password", type: "password" },
+      { label: "API Key", name: "api_key", type: "text" },
+      { label: "API Secret", name: "api_secret", type: "password" },
+      { label: "TOTP Key", name: "totp_secret", type: "text" },
+      { label: "Email Id (optional)", name: "email", type: "text", optional: true },
+      { label: "Mobile no (optional)", name: "mobile", type: "text", optional: true }
+    ],
+    acagarwal: [
+      { label: "AC Agarwal Client ID", name: "client_id", type: "text" },
+      { label: "API Key", name: "api_key", type: "text" },
+      { label: "API Secret", name: "api_secret", type: "password" },
+      { label: "Email Id (optional)", name: "email", type: "text", optional: true },
+      { label: "Mobile no (optional)", name: "mobile", type: "text", optional: true }
+    ],
+    motilaloswal: [
+      { label: "Motilal Oswal Client ID", name: "client_id", type: "text" },
+      { label: "Password", name: "password", type: "password" },
+      { label: "API Key", name: "api_key", type: "text" },
+      { label: "PAN", name: "pan", type: "text" },
+      { label: "TOTP Key", name: "totp_secret", type: "text" },
+      { label: "Email Id (optional)", name: "email", type: "text", optional: true },
+      { label: "Mobile no (optional)", name: "mobile", type: "text", optional: true }
+    ],
+    kotakneo: [
+      { label: "10 Digit Mobile Number/PAN", name: "client_id", type: "text" },
+      { label: "Password", name: "password", type: "password" },
+      { label: "API Key", name: "api_key", type: "text" },
+      { label: "API Secret", name: "api_secret", type: "password" },
+      { label: "MPIN", name: "mpin", type: "password" },
+      { label: "Client Name", name: "client_name", type: "text" },
+      { label: "Email Id (optional)", name: "email", type: "text", optional: true },
+      { label: "Mobile no (optional)", name: "mobile", type: "text", optional: true }
+    ],
+    tradejini: [
+      { label: "Tradejini Client ID", name: "client_id", type: "text" },
+      { label: "Password", name: "password", type: "password" },
+      { label: "API Key", name: "api_key", type: "text" },
+      { label: "API Secret", name: "api_secret", type: "password" },
+      { label: "MPIN", name: "mpin", type: "password" },
+      { label: "Client Name", name: "client_name", type: "text" },
+      { label: "Email Id (optional)", name: "email", type: "text", optional: true },
+      { label: "Mobile no (optional)", name: "mobile", type: "text", optional: true }
+    ],
+    zebu: [
+      { label: "Zebu Client ID", name: "client_id", type: "text" },
+      { label: "Password", name: "password", type: "password" },
+      { label: "API Key", name: "api_key", type: "text" },
+      { label: "API Secret", name: "api_secret", type: "password" },
+      { label: "MPIN", name: "mpin", type: "password" },
+      { label: "Client Name", name: "client_name", type: "text" },
+      { label: "Email Id (optional)", name: "email", type: "text", optional: true },
+      { label: "Mobile no (optional)", name: "mobile", type: "text", optional: true }
+    ],
+    enrichmoney: [
+      { label: "Enrich Money Client ID", name: "client_id", type: "text" },
+      { label: "Password", name: "password", type: "password" },
+      { label: "API Key", name: "api_key", type: "text" },
+      { label: "API Secret", name: "api_secret", type: "password" },
+      { label: "MPIN", name: "mpin", type: "password" },
+      { label: "Client Name", name: "client_name", type: "text" },
+      { label: "Email Id (optional)", name: "email", type: "text", optional: true },
+      { label: "Mobile no (optional)", name: "mobile", type: "text", optional: true }
+    ],
+    dhan: [
+      { label: "Dhan Client ID", name: "client_id", type: "text" },
+      {
+        label: "Access Token",
+        name: "access_token",
+        type: "password",
+        placeholder: "Paste the access token from the Dhan app"
+      },
+      { label: "Client Name", name: "client_name", type: "text" },
+      { label: "Email Id (optional)", name: "email", type: "text", optional: true },
+      { label: "Mobile no (optional)", name: "mobile", type: "text", optional: true }
+    ],
+    finvasia: [
+      { label: "Client ID", name: "client_id", type: "text" },
+      { label: "Password", name: "password", type: "password" },
+      { label: "TOTP Secret", name: "totp_secret", type: "text", tip: "Copy the secret string from Shoonya → Profile → Security → TOTP. Do not enter the 6-digit code." },
+      { label: "Vendor Code", name: "vendor_code", type: "text", tip: "From Prism back office → Profile → API Key." },
+      { label: "API Key", name: "api_key", type: "text", tip: "API Key/Secret from Prism back office." },
+      { label: "IMEI", name: "imei", type: "text", tip: "Use the IMEI registered in Prism." },
+      { label: "Email Id (optional)", name: "email", type: "text", optional: true },
+      { label: "Mobile no (optional)", name: "mobile", type: "text", optional: true }
+    ],
+    fyers: [
+      { label: "Fyers App ID", name: "client_id", type: "text" },
+      { label: "Secret Key", name: "secret_key", type: "password" },
+      { label: "Email Id (optional)", name: "email", type: "text", optional: true },
+      { label: "Mobile no (optional)", name: "mobile", type: "text", optional: true }
+    ],
+    groww: [
+      { label: "Groww Client ID", name: "client_id", type: "text" },
+      { label: "Access Token", name: "access_token", type: "password" },
+      { label: "Email Id (optional)", name: "email", type: "text", optional: true },
+      { label: "Mobile no (optional)", name: "mobile", type: "text", optional: true }
+    ],
+    aliceblue: [
+      { label: "Alice Blue Client ID", name: "client_id", type: "text" },
+      { label: "API Key", name: "api_key", type: "text" },
+      { label: "Email Id (optional)", name: "email", type: "text", optional: true },
+      { label: "Mobile no (optional)", name: "mobile", type: "text", optional: true }
+    ],
+    zerodha: [
+      { label: "Zerodha Client ID", name: "client_id", type: "text" },
+      { label: "Password", name: "password", type: "password" },
+      { label: "API Key", name: "api_key", type: "text" },
+      { label: "API Secret", name: "api_secret", type: "text" },
+      { label: "TOTP Key", name: "totp_secret", type: "text" },
+      { label: "Email Id (optional)", name: "email", type: "text", optional: true },
+      { label: "Mobile no (optional)", name: "mobile", type: "text", optional: true }
+    ],
+    broker1: [
+      { label: "Other Broker Client ID", name: "client_id", type: "text", placeholder: "Other Broker Client ID" },
+      { label: "MPIN", name: "mpin", type: "password", placeholder: "MPIN" },
+      { label: "API Key", name: "api_key", type: "text", placeholder: "API Key" },
+      { label: "Secret Key", name: "secret_key", type: "password", placeholder: "Secret Key" },
+      { label: "TOTP Key", name: "totp_secret", type: "text", placeholder: "TOTP Key" },
+      { label: "Email Id (optional)", name: "email", type: "text", optional: true, placeholder: "Email Id (optional)" },
+      { label: "Mobile no (optional)", name: "mobile", type: "text", optional: true, placeholder: "Mobile no (optional)" }
+    ]
+  };
+
+  const brokerNameOverrides = {
+    broker1: 'Other Broker'
+  };
+
+  const brokerColorMap = {
+    broker1: "bg-gray",
+    flattrade: "bg-indigo",
+    acagarwal: "bg-blue",
+    motilaloswal: "bg-indigo",
+    kotakneo: "bg-red",
+    tradejini: "bg-teal",
+    zebu: "bg-blue",
+    enrichmoney: "bg-gray",
+    dhan: "bg-emerald",
+    finvasia: "bg-yellow",
+    fyers: "bg-indigo",
+    groww: "bg-cyan",
+    aliceblue: "bg-teal",
+    zerodha: "bg-orange"
+  };
+
+  const supportedBrokers = new Set([
+    'dhan',
+    'finvasia',
+    'fyers',
+    'aliceblue',
+    'zerodha'
+  ]);
+
+  const MIN_ROWS_PER_PAGE = 5;
+  const MAX_ROWS_PER_PAGE = 20;
+
+  const BALANCE_POLL_INTERVAL_MS = 45000;
+  const BALANCE_POLL_DEBOUNCE_MS = 8000;
+  const BALANCE_POLL_ERROR_THROTTLE_MS = 45000;
+  
+  const brokerRedirectPaths = {
+    zerodha: 'zerodha_redirects',
+    fyers: 'fyers_redirects'
+  };
+
+  let allAccounts = [];
+  let statusFilter = 'all';
+  let brokerFilter = '';
+  let searchFilter = '';
+  let rowsPerPage = 10;
+  let currentPage = 1;
+  let editingAccountId = null;
+  let currentBrokerSelected = null;
+  let autoLoginResults = cloneAutoLoginResults(state.cachedAutoLoginResults);
+  let autoLoginAttemptedClients = loadAutoLoginAttempts();
+  let selectedAccountIds = new Set();
+  let currentPageAccounts = [];
+  let toastHideTimeout = null;
+  let balancePollInFlight = false;
+  let lastBalancePollAt = 0;
+  let lastBalanceErrorToastAt = 0;
+  let balancePollingStarted = false;
+  
+  const DATE_TIME_FORMATTER = new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+
+  function formatBalance(balance) {
+    if (typeof balance === 'number' && !Number.isNaN(balance)) {
+      return `₹${balance.toLocaleString('en-IN')}`;
+    }
+    if (typeof balance === 'string' && balance.trim()) {
+      return balance;
+    }
+    return '—';
+  }
+
+  function parseApiTimestamp(value) {
+    if (!value) return null;
+    if (value instanceof Date) {
+      const time = value.getTime();
+      return Number.isNaN(time) ? null : new Date(time);
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+
+      const isoLike = trimmed.includes('T') ? trimmed : trimmed.replace(' ', 'T');
+      const hasTimezone = /([zZ]|[+-]\d{2}:?\d{2})$/.test(isoLike);
+      const normalized = hasTimezone ? isoLike : `${isoLike}Z`;
+      const utcDate = new Date(normalized);
+      if (!Number.isNaN(utcDate.getTime())) {
+        return utcDate;
+      }
+    }
+
+    const fallbackDate = new Date(value);
+    return Number.isNaN(fallbackDate.getTime()) ? null : fallbackDate;
+  }
+
+  function formatDateTime(value) {
+    const date = parseApiTimestamp(value);
+    if (!date) return '--';
+    try {
+      return DATE_TIME_FORMATTER.format(date);
+    } catch (err) {
+      console.warn('Failed to format date:', err);
+      return '--';
+    }
+  }
+
+  function isAuthError(reason) {
+    if (!reason) return false;
+    const text = String(reason).toLowerCase();
+    return (
+      text.includes('token') ||
+      text.includes('auth') ||
+      text.includes('unauth') ||
+      text.includes('forbidden') ||
+      text.includes('expired') ||
+      text.includes('session')
+    );
+  }
+  
+  Object.keys(autoLoginResults).forEach(clientId => {
+    if (clientId && !autoLoginAttemptedClients.has(clientId)) {
+      autoLoginAttemptedClients.add(clientId);
+    }
+  });
+  persistAutoLoginAttempts();
+
+  function clampRowsPerPage(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return rowsPerPage;
+    }
+    return Math.min(MAX_ROWS_PER_PAGE, Math.max(MIN_ROWS_PER_PAGE, Math.floor(numeric)));
+  }
+
+  function clonePrefetchedAccountsCache(cache) {
+    if (!cache || typeof cache !== 'object') {
+      return null;
+    }
+    const accounts = Array.isArray(cache.accounts) ? cloneAccountsList(cache.accounts) : [];
+    return {
+      accounts,
+      signature: typeof cache.signature === 'string'
+        ? cache.signature
+        : computeAccountsSignature(accounts),
+      fetchedAt: typeof cache.fetchedAt === 'number' ? cache.fetchedAt : Date.now()
+    };
+  }
+
+  function readAddAccountPrefetch() {
+    if (cachedAddAccountPrefetch) {
+      return clonePrefetchedAccountsCache(cachedAddAccountPrefetch);
+    }
+    if (typeof window.getPagePrefetchData !== 'function') {
+      return null;
+    }
+    const payload = window.getPagePrefetchData(ADD_ACCOUNT_PREFETCH_KEY);
+    if (!payload || typeof payload !== 'object') {
+      return null;
+    }
+    const normalized = clonePrefetchedAccountsCache(payload);
+    if (!normalized) {
+      cachedAddAccountPrefetch = null;
+      return null;
+    }
+    cachedAddAccountPrefetch = normalized;
+    return clonePrefetchedAccountsCache(normalized);
+  }
+
+  function updateAddAccountPrefetch(cache) {
+    if (!cache || typeof window.setPagePrefetchData !== 'function') {
+      return;
+    }
+    const normalized = clonePrefetchedAccountsCache(cache);
+    if (!normalized) {
+      return;
+    }
+    cachedAddAccountPrefetch = normalized;
+    window.setPagePrefetchData(ADD_ACCOUNT_PREFETCH_KEY, normalized, { ttl: ADD_ACCOUNT_PREFETCH_TTL });
+  }
+
+  if (state.cachedFilters) {
+    statusFilter = state.cachedFilters.statusFilter || statusFilter;
+    brokerFilter = state.cachedFilters.brokerFilter || brokerFilter;
+    searchFilter = state.cachedFilters.searchFilter || searchFilter;
+    rowsPerPage = clampRowsPerPage(state.cachedFilters.rowsPerPage || rowsPerPage);
+    currentPage = Math.max(1, Number(state.cachedFilters.currentPage) || currentPage);
+    if (Array.isArray(state.cachedFilters.selectedAccountIds)) {
+      selectedAccountIds = new Set(state.cachedFilters.selectedAccountIds);
+    }
+  }
+
+  if (state.cachedAccounts && Array.isArray(state.cachedAccounts.accounts) && state.cachedAccounts.accounts.length) {
+    allAccounts = cloneAccountsList(state.cachedAccounts.accounts);
+  }
+
+  if (state.cachedAccounts && !state.cachedAccounts.signature) {
+    state.cachedAccounts.signature = computeAccountsSignature(state.cachedAccounts.accounts || []);
+  }
+  if (state.cachedAccounts && !state.cachedAccounts.fetchedAt) {
+    state.cachedAccounts.fetchedAt = Date.now();
+  }
+
+  persistAutoLoginState();
+  pruneAutoLoginResults();
+  resetStaleAutoLoginResults();
+
+  const hasFreshCache = isCacheFresh(state.cachedAccounts, ACCOUNTS_CACHE_TTL_MS);
+  const hasCachedAutoLoginResults = Object.keys(autoLoginResults).length > 0;
+
+  if (allAccounts.length) {
+    populateBrokerCarousel();
+    populateBrokerFilter();
+    restoreFilterUI();
+    updateCounts();
+    applyFilters();
+  } else {
+    restoreFilterUI();
+  }
+  persistFiltersAndSelection();
+
+  if (allAccounts.length && (hasFreshCache || hasCachedAutoLoginResults)) {
+    scheduleAutoLoginChecks();
+  }
+
+  function formatBrokerName(broker) {
+    if (!broker) return '';
+    if (brokerNameOverrides[broker]) {
+      return brokerNameOverrides[broker];
+    }
+    return broker
+      .split(/[_-]/)
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+
+  function getBrokerColor(broker) {
+    return brokerColorMap[broker] || 'bg-gray';
+  }
+
+  function normalizeBrokerKey(broker) {
+    return (broker || '')
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/[_-]/g, '')
+      .replace(/&/g, 'and')
+      .replace(/\./g, '');
+  }
+
+  function getBrokerIconUrl(broker) {
+    const key = normalizeBrokerKey(broker);
+    if (!key) return '';
+    return brokerIcons[key] || '';
+  }
+
+  function getBrokerInitials(acc) {
+    const username = (acc.username || '').trim();
+    if (username) {
+      const parts = username.split(/\s+/);
+      const first = parts[0] ? parts[0].charAt(0) : '';
+      const second = parts.length > 1 ? parts[parts.length - 1].charAt(0) : (parts[0] ? parts[0].charAt(1) : '');
+      return (first + (second || '')).toUpperCase();
+    }
+    const client = (acc.client_id || '').toString();
+    if (client) {
+      return client.substring(0, 2).toUpperCase();
+    }
+    const broker = (acc.broker || '').toString();
+    return broker.substring(0, 2).toUpperCase();
+  }
+
+  function escapeHtml(str) {
+    if (str === undefined || str === null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function getBaseAppUrl() {
+    if (window.appBaseUrl) {
+      return String(window.appBaseUrl).replace(/\/$/, '');
+    }
+    const origin = window.location.origin;
+    if (origin) {
+      return origin.replace(/\/$/, '');
+    }
+    const fallback = `${window.location.protocol}//${window.location.host}`;
+    return fallback.replace(/\/$/, '');
+  }
+
+  function buildRedirectUrl(broker, clientId) {
+    const path = brokerRedirectPaths[broker];
+    const id = String(clientId || '').trim();
+    if (!path || !id) return '';
+    const base = getBaseAppUrl();
+    return `${base}/${path}/${encodeURIComponent(id)}`;
+  }
+
+  function capitalizeWords(str) {
+    return String(str || '')
+      .replace(/_/g, ' ')
+      .replace(/\w/g, match => match.toUpperCase());
+  }
+
+  function fetchJson(url, options = {}) {
+    options.credentials = options.credentials || 'same-origin';
+    return fetch(url, options).then(async response => {
+      const text = await response.text();
+      let data;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        data = { error: text };
+      }
+      if (!response.ok) {
+        const msg = data.error || data.message || response.statusText || 'An unknown error occurred.';
+        throw new Error(msg);
+      }
+      return data;
+    });
+  }
+
+  function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const normalizedType = type === 'success' ? 'success' : 'error';
+
+    if (!toast) {
+      console.log(`[${normalizedType.toUpperCase()}] ${message}`);
+      return;
+    }
+
+    toast.textContent = message;
+    toast.className = `toast ${normalizedType} show`;
+
+    clearTimeout(toastHideTimeout);
+    toastHideTimeout = setTimeout(() => {
+      toast.className = 'toast';
+    }, 3500);
+  }
+
+
+  function dispatchAccountsChanged(detail = {}) {
+    try {
+      document.dispatchEvent(new CustomEvent('accounts:changed', { detail }));
+    } catch (error) {
+      console.warn('Failed to dispatch accounts:changed event', error);
+    }
+  }
+
+  
+  function populateBrokerCarousel(searchTerm = '') {
+    const scrollContainer = document.querySelector('.broker-scroll');
+    if (!scrollContainer) return;
+
+    const search = searchTerm.trim().toLowerCase();
+    const brokers = Object.keys(brokerFields);
+    const filtered = search
+      ? brokers.filter(b => formatBrokerName(b).toLowerCase().includes(search))
+      : brokers;
+
+    const orderedBuckets = filtered.reduce((acc, broker) => {
+      if (supportedBrokers.has(broker)) {
+        acc.supported.push(broker);
+      } else {
+        acc.comingSoon.push(broker);
+      }
+      return acc;
+    }, { supported: [], comingSoon: [] });
+
+    const ordered = [...orderedBuckets.supported, ...orderedBuckets.comingSoon];
+
+    if (!ordered.length) {
+      scrollContainer.innerHTML = '<p class="broker-empty">No brokers found.</p>';
+      return;
+    }
+
+    scrollContainer.innerHTML = ordered.map(broker => {
+      const brokerName = formatBrokerName(broker);
+      const iconUrl = brokerIcons[broker];
+      const isActive = currentBrokerSelected === broker;
+      const isComingSoon = !supportedBrokers.has(broker);
+      const initials = brokerName ? brokerName.substring(0, 2).toUpperCase() : broker.substring(0, 2).toUpperCase();
+      const avatarContent = iconUrl
+        ? `<img src="${iconUrl}" alt="${escapeHtml(brokerName)}">`
+        : `<span>${escapeHtml(initials)}</span>`;
+      const cardClasses = ['broker-card', isActive ? 'active' : '', isComingSoon ? 'coming-soon' : '']
+        .filter(Boolean)
+        .join(' ');
+      const comingSoonBanner = isComingSoon ? '<div class="coming-soon-banner">Coming Soon</div>' : '';
+      return `
+        <button class="${cardClasses}" type="button" data-broker="${broker}" title="${escapeHtml(brokerName)}" data-coming-soon="${isComingSoon}" ${isComingSoon ? 'disabled aria-disabled="true"' : ''}>
+          <div class="broker-avatar ${getBrokerColor(broker)}">
+            ${avatarContent}
+          </div>
+          <span class="broker-name">${escapeHtml(brokerName)}</span>
+          ${comingSoonBanner}
+        </button>
+      `;
+    }).join('');
+
+    scrollContainer.querySelectorAll('.broker-card').forEach(item => {
+      const isComingSoon = item.dataset.comingSoon === 'true';
+      if (isComingSoon) return;
+      item.addEventListener('click', function () {
+        scrollContainer.querySelectorAll('.broker-card').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+        showBrokerForm(this.dataset.broker);
+      });
+    });
+  }
+
+  function getSelectedBroker() {
+    const selected = document.querySelector('.broker-card.active');
+    return selected ? selected.dataset.broker : null;
+  }
+
+  function showBrokerForm(broker) {
+    currentBrokerSelected = broker;
+    const fields = brokerFields[broker];
+    const container = document.getElementById('broker-fields');
+    const submitBtn = document.getElementById('submit-account-btn');
+    const resultDiv = document.getElementById('cred-check-result');
+    const formActions = document.querySelector('.form-actions');
+
+    if (!container) return;
+
+    container.innerHTML = '';
+    if (resultDiv) resultDiv.textContent = '';
+    if (submitBtn) submitBtn.style.display = 'none';
+    if (formActions) formActions.style.display = 'none';
+
+    if (!fields) {
+      container.innerHTML = '<p class="form-placeholder">No configuration fields defined for this broker.</p>';
+      return;
+    }
+
+    let formHtml = '';
+    if (broker !== 'broker1') {
+      formHtml += `
+        <div class="form-group">
+          <label class="form-label" for="username">Username (for your reference)</label>
+          <input class="form-input" name="username" type="text" id="username" required>
+        </div>`;
+    }
+
+    fields.forEach(f => {
+      const inputName = typeof f.name === 'string' ? f.name : '';
+      const inputType = typeof f.type === 'string' ? f.type : 'text';
+      const placeholder = typeof f.placeholder === 'string' ? f.placeholder : f.label;
+      const inputId = escapeHtml(inputName);
+
+      const classList = ['form-input'];
+      if (f.className) classList.push(f.className);
+      if (f.readonly) classList.push('bg-light', 'input-readonly');
+
+      const attributeParts = [
+        `class="${escapeHtml(classList.join(' '))}"`,
+        `name="${escapeHtml(inputName)}"`,
+        `type="${escapeHtml(inputType)}"`,
+        `id="${inputId}"`,
+        `placeholder="${escapeHtml(placeholder || '')}"`
+      ];
+
+      if (!f.optional) {
+        attributeParts.push('required');
+      }
+      if (f.readonly) {
+        attributeParts.push('readonly', 'aria-readonly="true"', 'data-force-readonly="true"');
+      }
+      if (f.autofillOnly) {
+        attributeParts.push('data-autofill-only="true"');
+      }
+      if (f.autocomplete) {
+        attributeParts.push(`autocomplete="${escapeHtml(f.autocomplete)}"`);
+      }
+      if (typeof f.maxlength === 'number') {
+        attributeParts.push(`maxlength="${escapeHtml(String(f.maxlength))}"`);
+      }
+
+      const attributeString = attributeParts.join(' ');
+
+      if (inputType === 'password') {
+        formHtml += `
+        <div class="form-group">
+          <label class="form-label" for="${inputId}">${escapeHtml(f.label)}</label>
+          <div class="password-field">
+            <input ${attributeString}>
+            <button class="toggle-password" type="button" data-target="${inputId}" aria-label="Toggle password visibility">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+          ${f.tip ? `<p class="form-helper text-muted">${escapeHtml(f.tip)}</p>` : ''}
+        </div>`;
+      } else {
+        formHtml += `
+        <div class="form-group">
+          <label class="form-label" for="${inputId}">${escapeHtml(f.label)}</label>
+          <input ${attributeString}>
+          ${f.tip ? `<p class="form-helper text-muted">${escapeHtml(f.tip)}</p>` : ''}
+        </div>`;
+      }
+    });
+
+    container.innerHTML = formHtml;
+    container.querySelectorAll('.toggle-password').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const target = container.querySelector(`#${CSS.escape(this.dataset.target)}`);
+        if (target) {
+          const show = target.type === 'password';
+          target.type = show ? 'text' : 'password';
+          this.innerHTML = show ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+        }
+      });
+    });
+
+    if (submitBtn) submitBtn.style.display = 'inline-flex';
+    if (formActions) formActions.style.display = 'flex';
+
+    if (brokerRedirectPaths[broker]) {
+      const redirectInputId = `${broker}-redirect-url`;
+      const brokerDisplayName = formatBrokerName(broker);
+      const redirectGroup = document.createElement('div');
+      redirectGroup.className = 'form-group full-width redirect-url-group';
+      redirectGroup.innerHTML = `
+        <label class="form-label" for="${escapeHtml(redirectInputId)}">${escapeHtml(brokerDisplayName)} Redirect URL</label>
+        <div class="copy-field">
+          <input class="form-input" type="text" id="${escapeHtml(redirectInputId)}" readonly placeholder="Enter Client ID to generate redirect URL">
+          <button class="btn btn-outline" type="button" data-action="copy-redirect">Copy URL</button>
+        </div>
+        <p class="form-helper">Use this redirect URL while configuring your ${escapeHtml(brokerDisplayName)} app.</p>
+      `;
+
+      container.appendChild(redirectGroup);
+
+      const redirectInput = redirectGroup.querySelector(`#${CSS.escape(redirectInputId)}`);
+      const copyBtn = redirectGroup.querySelector('[data-action="copy-redirect"]');
+      const clientInput = container.querySelector('input[name="client_id"]');
+
+      const updateRedirectUrl = () => {
+        const value = clientInput ? clientInput.value : '';
+        const url = buildRedirectUrl(broker, value);
+        if (redirectInput) redirectInput.value = url;
+        if (copyBtn) copyBtn.disabled = !url;
+      };
+
+      if (clientInput) {
+        clientInput.addEventListener('input', updateRedirectUrl);
+        updateRedirectUrl();
+      } else if (copyBtn) {
+        copyBtn.disabled = true;
+      }
+
+      if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+          if (copyBtn.disabled) return;
+          const value = redirectInput ? redirectInput.value : '';
+          if (!value) {
+            showToast('Enter client ID to generate redirect URL first.', 'error');
+            return;
+          }
+          copyToClipboard(value, 'Redirect URL copied to clipboard.');
+        });
+      }
+    }
+  }
+
+  function activateBroker(broker) {
+    if (!broker) {
+      return;
+    }
+    const cards = document.querySelectorAll('.broker-card');
+    let found = false;
+    cards.forEach(card => {
+      const isTarget = card.dataset.broker === broker;
+      card.classList.toggle('active', isTarget);
+      if (isTarget) {
+        found = true;
+      }
+    });
+    showBrokerForm(broker);
+    if (!found) {
+      window.requestAnimationFrame(() => {
+        document.querySelectorAll('.broker-card').forEach(card => {
+          card.classList.toggle('active', card.dataset.broker === broker);
+        });
+      });
+    }
+  }
+
+  function openAddAccountForm() {
+    const addAccountSection = document.getElementById('add-account-section');
+    const addBtnText = document.getElementById('add-btn-text');
+    const addAccountBtn = document.getElementById('add-account-btn');
+    if (addAccountSection) addAccountSection.style.display = 'block';
+    if (addBtnText) addBtnText.textContent = 'Cancel';
+    if (addAccountBtn) addAccountBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  function hideBrokerForm() {
+    const addAccountSection = document.getElementById('add-account-section');
+    const addBtnText = document.getElementById('add-btn-text');
+    const addAccountBtn = document.getElementById('add-account-btn');
+    const form = document.getElementById('broker-credentials-form');
+    const submitBtn = document.getElementById('submit-account-btn');
+
+    if (form) {
+      form.reset();
+      form.querySelectorAll('input').forEach(input => {
+        const forceReadonly = input.dataset.forceReadonly === 'true' || input.dataset.autofillOnly === 'true';
+        if (forceReadonly) {
+          input.readOnly = true;
+          input.classList.add('bg-light', 'input-readonly');
+        } else {
+          input.readOnly = false;
+          input.classList.remove('bg-light', 'input-readonly');
+        }
+      });
+    }
+
+    const brokerSearchInput = document.getElementById('broker-search');
+    if (brokerSearchInput) brokerSearchInput.value = '';
+
+    if (submitBtn) submitBtn.textContent = 'Add Account';
+    editingAccountId = null;
+    currentBrokerSelected = null;
+
+    document.querySelectorAll('.broker-card').forEach(i => i.classList.remove('active'));
+    populateBrokerCarousel();
+
+    if (addAccountSection) addAccountSection.style.display = 'none';
+    if (addBtnText) addBtnText.textContent = 'Add New Account';
+    if (addAccountBtn) addAccountBtn.setAttribute('aria-expanded', 'false');
+
+    const resultDiv = document.getElementById('cred-check-result');
+    if (resultDiv) resultDiv.textContent = '';
+  }
+
+  function sanitizeClientId(id) {
+    return String(id || '').replace(/[^a-zA-Z0-9_-]/g, '');
+  }
+
+  function getAccountRowId(acc, index = 0) {
+    if (acc && acc._rowId) {
+      return acc._rowId;
+    }
+
+    const candidates = [
+      acc && acc.client_id,
+      acc && acc.username,
+      acc && acc.account_id,
+      acc && acc.id,
+      `${acc && acc.broker ? acc.broker : 'broker'}-${index}`
+    ];
+
+    for (const candidate of candidates) {
+      const sanitized = sanitizeClientId(candidate);
+      if (sanitized) {
+        if (acc) acc._rowId = sanitized;
+        return sanitized;
+      }
+    }
+
+    const fallback = `acc-${index}-${Math.random().toString(36).slice(2, 8)}`;
+    if (acc) acc._rowId = fallback;
+    return fallback;
+  }
+
+  function getAccountRowIdFromInstance(acc) {
+    const index = allAccounts.indexOf(acc);
+    return getAccountRowId(acc, index >= 0 ? index : 0);
+  }
+
+  function getAccountByRowId(rowId) {
+    if (!rowId) return null;
+    for (let i = 0; i < allAccounts.length; i += 1) {
+      const acc = allAccounts[i];
+      if (getAccountRowId(acc, i) === rowId) {
+        return acc;
+      }
+    }
+    return null;
+  }
+
+  function getSelectedAccounts() {
+    return Array.from(selectedAccountIds)
+      .map(id => getAccountByRowId(id))
+      .filter(Boolean);
+  }
+
+  function getVisibleAccounts() {
+    const tbody = document.getElementById('accounts-table-body');
+    if (!tbody) return [];
+
+    const visibleIds = Array.from(tbody.querySelectorAll('tr'))
+      .filter(row => row && row.style.display !== 'none')
+      .map(row => row.dataset.clientId)
+      .filter(Boolean);
+
+    return visibleIds
+      .map(id => getAccountByRowId(id))
+      .filter(Boolean);
+  }
+
+  function updateVisibleBalanceCell(acc) {
+    if (!acc) return;
+    const rowId = getAccountRowIdFromInstance(acc);
+    const tbody = document.getElementById('accounts-table-body');
+    if (!tbody || !rowId) return;
+
+    const row = tbody.querySelector(`tr[data-client-id="${CSS.escape(rowId)}"]`);
+    if (!row) return;
+    const balanceField = row.querySelector('[data-field="balance"]');
+    if (balanceField) {
+      balanceField.textContent = formatBalance(acc.opening_balance);
+    }
+  }
+  
+  function clearSelection() {
+    selectedAccountIds = new Set();
+    updateSelectionUI();
+  }
+
+  function getDeveloperUrl(acc) {
+    const creds = acc.credentials || {};
+    return creds.developer_url || creds.redirect_uri || creds.api_url || creds.url || '';
+  }
+
+  function getStaticIp(acc) {
+    const creds = acc.credentials || {};
+    return creds.static_ip || creds.ip || acc.device_number || '';
+  }
+
+  function renderCopyCell(type, value) {
+    if (!value) {
+      return '<span class="text-xs text-muted">--</span>';
+    }
+    const label = type === 'url' ? 'Copy URL' : 'Copy IP';
+    return `
+      <button class="btn btn-sm btn-success" type="button" data-action="copy-${type}">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        ${label}
+      </button>
+    `;
+  }
+
+  function renderActionCell(acc, sanitizedId) {
+    const dropdownId = `dropdown-${sanitizedId}`;
+    const hasUrl = !!getDeveloperUrl(acc);
+    const hasIp = !!getStaticIp(acc);
+    return `
+      <div class="flex items-center gap-2">
+        <button class="btn btn-sm btn-success mobile-hide" type="button" data-action="reconnect">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          Reconnect
+        </button>
+        <div class="dropdown" id="${dropdownId}">
+          <button class="btn btn-icon btn-ghost" type="button" data-dropdown-toggle="${dropdownId}" aria-haspopup="true" aria-expanded="false">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="1"></circle>
+              <circle cx="12" cy="5" r="1"></circle>
+              <circle cx="12" cy="19" r="1"></circle>
+            </svg>
+          </button>
+          <div class="dropdown-menu" role="menu">
+            <button class="dropdown-item" type="button" data-action="reconnect">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              Reconnect
+            </button>
+            <button class="dropdown-item${hasUrl ? '' : ' disabled'}" type="button" data-action="copy-url" data-requires="url">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Copy URL
+            </button>
+            <button class="dropdown-item${hasIp ? '' : ' disabled'}" type="button" data-action="copy-ip" data-requires="ip">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Copy IP
+            </button>
+            <button class="dropdown-item" type="button" data-action="edit">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              Edit
+            </button>
+            <button class="dropdown-item danger" type="button" data-action="delete">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderErrorBadge(reason, labelText = 'Error') {
+    const tooltip = reason ? escapeHtml(String(reason)) : escapeHtml(String(labelText || 'Error'));
+    const badgeLabel = labelText ? escapeHtml(String(labelText)) : 'Error';
+    return `
+      <span class="badge badge-danger">${badgeLabel}</span>
+      <i
+        class="bi bi-info-circle text-danger error-info"
+        style="margin-left:4px;"
+        title="${tooltip}"
+        data-error-reason="${tooltip}"
+        role="button"
+        tabindex="0"
+        aria-label="View error details"
+      ></i>
+    `;
+  }
+
+  function renderSuccessBadge() {
+    return '<span class="badge badge-success">Success</span>';
+  }
+
+  function getDetailedErrorReason(acc, auto, useAutoStatus) {
+    const errorSources = [];
+
+    if (useAutoStatus && auto) {
+      errorSources.push(auto.reason, auto.error);
+    }
+
+    errorSources.push(
+      acc.last_error_reason,
+      Array.isArray(acc.errors) ? acc.errors[0] : acc.errors,
+      acc.last_error,
+    );
+
+    return errorSources.find(reason => Boolean(reason));
+  }
+  
+  function renderStatusBadge(acc) {
+    const auto = autoLoginResults[acc.client_id];
+    const useAutoStatus = auto && isAutoLoginResultFresh(auto) && !isAutoLoginCheckingStuck(auto);
+    const detailedReason = getDetailedErrorReason(acc, auto, useAutoStatus);
+
+    const authError = (() => {
+      if (useAutoStatus && auto && auto.reason) {
+        return isAuthError(auto.reason);
+      }
+      if (detailedReason) {
+        return isAuthError(detailedReason);
+      }
+      const statusText = (acc.status || '').toString().toLowerCase();
+      return statusText === 'expired';
+    })();
+
+    if (useAutoStatus) {
+      if (auto.status === 'error') {
+        return renderErrorBadge(detailedReason || acc.status || 'Error', authError ? 'Expired' : 'Error');
+      }
+      if (auto.status === 'success') {
+        return renderSuccessBadge();
+      }
+      if (auto.status === 'checking' && allowTransitionalStatuses) {
+        return '<span class="badge badge-secondary">Connecting...</span>';
+      }
+    }
+
+    const status = (acc.status || '').toLowerCase();
+    if (status === 'connected') {
+      return renderSuccessBadge();
+    }
+    if (status === 'pending' && allowTransitionalStatuses) {
+      return '<span class="badge badge-secondary">Pending</span>';
+    }
+
+    const label = detailedReason || acc.status || 'Error';
+    const badgeLabel = authError || status === 'expired' ? 'Expired' : 'Error';
+    return renderErrorBadge(label, badgeLabel);
+  }
+
+  function renderAccounts(accountsToRender) {
+    const tbody = document.getElementById('accounts-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    accountsToRender.forEach((acc, index) => {
+      const sanitizedId = getAccountRowIdFromInstance(acc);
+      const row = document.createElement('tr');
+      row.dataset.clientId = sanitizedId;
+      row.dataset.developerUrl = getDeveloperUrl(acc) || '';
+      row.dataset.staticIp = getStaticIp(acc) || '';
+
+      const primaryLabel = acc.username || acc.client_id || '—';
+      const secondaryLabel = acc.client_id || '';
+      const brokerIcon = getBrokerIconUrl(acc && acc.broker);
+      const brokerAlt = formatBrokerName(acc && acc.broker) || 'Broker';
+      const avatarContent = brokerIcon
+        ? `<img src="${brokerIcon}" alt="${escapeHtml(brokerAlt)} logo">`
+        : escapeHtml(getBrokerInitials(acc));
+
+      row.innerHTML = `
+        <td>
+          <input type="checkbox" class="checkbox account-select" data-client-id="${sanitizedId}" aria-label="Select account ${escapeHtml(primaryLabel)}">
+        </td>
+        <td>
+          <div class="flex items-center gap-2">
+            <div class="avatar ${getBrokerColor(acc.broker)}">${avatarContent}</div>
+            <div>
+              <p class="font-medium text-sm truncate" title="${escapeHtml(primaryLabel)}">${escapeHtml(primaryLabel)}</p>
+              <p class="text-xs text-muted truncate" title="${escapeHtml(secondaryLabel)}">${escapeHtml(secondaryLabel)}</p>
+            </div>
+          </div>
+        </td>
+        <td class="mobile-hide lg-show">
+          <div class="balance-cell">
+            <span class="text-sm balance-text" data-field="balance">${escapeHtml(formatBalance(acc.opening_balance))}</span>
+            <button class="balance-refresh-btn" type="button" data-action="refresh-balance" title="Refresh balance" aria-label="Refresh balance"${acc && acc.client_id ? '' : ' disabled'}>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 2v6h-6"></path>
+                <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+                <path d="M3 22v-6h6"></path>
+                <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+              </svg>
+            </button>
+          </div>
+        </td>
+        <td><div data-field="status">${renderStatusBadge(acc)}</div></td>
+        <td class="mobile-hide md-show"><span class="text-xs" data-field="last-login">${escapeHtml(formatDateTime(acc.last_login))}</span></td>
+        <td class="mobile-hide xl-show" data-field="developer-cell">${renderCopyCell('url', row.dataset.developerUrl)}</td>
+        <td class="mobile-hide xl-show" data-field="static-cell">${renderCopyCell('ip', row.dataset.staticIp)}</td>
+        <td data-field="action-cell">${renderActionCell(acc, sanitizedId)}</td>
+      `;
+
+      const checkbox = row.querySelector('.account-select');
+      if (checkbox) {
+        checkbox.checked = selectedAccountIds.has(sanitizedId);
+      }
+
+      tbody.appendChild(row);
+    });
+  }
+
+  function updateBulkActionsMenu() {
+    const dropdown = document.getElementById('more-dropdown');
+    if (!dropdown) return;
+    const menu = dropdown.querySelector('.dropdown-menu');
+    if (!menu) return;
+
+    const selectedCount = selectedAccountIds.size;
+    const selectedAccounts = selectedCount === 1 ? getSelectedAccounts() : [];
+    const accountLabel = selectedAccounts.length
+      ? escapeHtml(
+        selectedAccounts[0].client_id ||
+        selectedAccounts[0].username ||
+        formatBrokerName(selectedAccounts[0].broker) ||
+        'Account'
+      )
+      : '';
+
+    if (selectedCount === 0) {
+      menu.innerHTML = `
+        <button class="dropdown-item" type="button" data-bulk-action="export-visible">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export Visible Accounts
+        </button>
+        <div class="dropdown-divider" role="separator"></div>
+        <div class="dropdown-empty text-xs text-muted">Select accounts to enable quick actions.</div>
+      `;
+      return;
+    }
+
+    if (selectedCount === 1) {
+      menu.innerHTML = `
+        <div class="dropdown-header text-xs text-muted">${accountLabel}</div>
+        <button class="dropdown-item" type="button" data-bulk-action="single-reconnect">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          Reconnect
+        </button>
+        <button class="dropdown-item" type="button" data-bulk-action="single-update">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="4 12 12 4 20 12"></polyline>
+            <line x1="12" y1="4" x2="12" y2="20"></line>
+          </svg>
+          Update
+        </button>
+        <button class="dropdown-item" type="button" data-bulk-action="single-edit">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          Edit
+        </button>
+        <button class="dropdown-item danger" type="button" data-bulk-action="single-delete">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          Delete
+        </button>
+        <button class="dropdown-item" type="button" data-bulk-action="single-export">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export
+        </button>
+      `;
+      return;
+    }
+
+    menu.innerHTML = `
+      <div class="dropdown-header text-xs text-muted">${selectedCount} accounts selected</div>
+      <button class="dropdown-item" type="button" data-bulk-action="bulk-reconnect">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Reconnect Selected
+      </button>
+      <button class="dropdown-item danger" type="button" data-bulk-action="bulk-delete">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        Delete Selected
+      </button>
+      <button class="dropdown-item" type="button" data-bulk-action="bulk-export">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Export Selected
+      </button>
+    `;
+  }
+
+  function updateSelectionUI() {
+    const knownIds = new Set(currentPageAccounts.map(acc => getAccountRowIdFromInstance(acc)));
+    selectedAccountIds = new Set(Array.from(selectedAccountIds).filter(id => knownIds.has(id)));
+
+    const tbody = document.getElementById('accounts-table-body');
+    const selectAllCheckbox = document.getElementById('select-all-accounts');
+    const visibleIds = new Set();
+
+    if (tbody) {
+      Array.from(tbody.querySelectorAll('tr')).forEach(row => {
+        const rowId = row.dataset.clientId;
+        if (!rowId) return;
+        if (row.style.display !== 'none') {
+          visibleIds.add(rowId);
+        }
+        const checkbox = row.querySelector('.account-select');
+        if (checkbox) {
+          checkbox.checked = selectedAccountIds.has(rowId);
+          checkbox.indeterminate = false;
+        }
+      });
+    }
+
+    selectedAccountIds = new Set(Array.from(selectedAccountIds).filter(id => visibleIds.has(id)));
+    if (selectAllCheckbox) {
+      if (!visibleIds.size) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.disabled = true;
+      } else {
+        selectAllCheckbox.disabled = false;
+        const selectedVisibleCount = Array.from(visibleIds).filter(id => selectedAccountIds.has(id)).length;
+        if (selectedVisibleCount === visibleIds.size) {
+          selectAllCheckbox.checked = true;
+          selectAllCheckbox.indeterminate = false;
+        } else if (selectedVisibleCount === 0) {
+          selectAllCheckbox.checked = false;
+          selectAllCheckbox.indeterminate = false;
+        } else {
+          selectAllCheckbox.checked = false;
+          selectAllCheckbox.indeterminate = true;
+        }
+      }
+    }
+
+    updateBulkActionsMenu();
+    persistFiltersAndSelection();
+  }
+
+  function populateBrokerFilter() {
+    const select = document.getElementById('broker-filter');
+    if (!select) return;
+    const desiredValue = brokerFilter || select.value;
+    const brokers = [...new Set(allAccounts.map(a => a.broker).filter(Boolean))].sort();
+    const options = ['<option value="">All Brokers</option>'];
+    brokers.forEach(b => {
+      options.push(`<option value="${b}">${escapeHtml(formatBrokerName(b))}</option>`);
+    });
+    select.innerHTML = options.join('');
+    if (desiredValue && brokers.includes(desiredValue)) {
+      select.value = desiredValue;
+      brokerFilter = desiredValue;
+    } else {
+      select.value = '';
+      if (brokerFilter) {
+        brokerFilter = '';
+      }
+    }
+  }
+
+  function matchesFilters(acc) {
+    let matches = true;
+    if (statusFilter === 'success') {
+      matches = (acc.status || '').toLowerCase() === 'connected';
+    } else if (statusFilter === 'failed') {
+      matches = (acc.status || '').toLowerCase() !== 'connected';
+    }
+
+    if (matches && brokerFilter) {
+      matches = acc.broker === brokerFilter;
+    }
+
+    if (matches && searchFilter) {
+      const term = searchFilter.toLowerCase();
+      matches = String(acc.client_id || '').toLowerCase().includes(term) || (acc.username || '').toLowerCase().includes(term);
+    }
+
+    return matches;
+  }
+
+  function getFilteredAccounts() {
+    return allAccounts.filter(acc => matchesFilters(acc));
+  }
+
+  function getTotalPages(filteredTotal) {
+    if (!filteredTotal) return 1;
+    return Math.max(1, Math.ceil(filteredTotal / rowsPerPage));
+  }
+
+  function updatePaginationControls(filteredTotal) {
+    const rowsSelect = document.getElementById('accounts-rows-per-page');
+    const prevButton = document.getElementById('accounts-page-prev');
+    const nextButton = document.getElementById('accounts-page-next');
+    const totalPages = getTotalPages(filteredTotal);
+
+    if (rowsSelect) {
+      rowsSelect.disabled = false;
+      if (rowsSelect.value !== String(rowsPerPage)) {
+        rowsSelect.value = String(rowsPerPage);
+      }
+    }
+
+    if (prevButton) {
+      prevButton.disabled = filteredTotal === 0 || currentPage <= 1;
+    }
+
+    if (nextButton) {
+      nextButton.disabled = filteredTotal === 0 || currentPage >= totalPages;
+    }
+  }
+
+  function updateFooterCounts(filteredAccounts, startIndex = 0, pageCount = filteredAccounts.length) {
+    const filteredTotal = filteredAccounts.length;
+    const overallTotal = allAccounts.length;
+    const start = filteredTotal ? Math.min(startIndex + 1, filteredTotal) : 0;
+    const end = filteredTotal ? Math.min(startIndex + pageCount, filteredTotal) : 0;
+
+    const summary = document.getElementById('accounts-summary');
+    if (summary) {
+      if (!filteredTotal) {
+        summary.textContent = 'No accounts to display';
+      } else if (filteredTotal === overallTotal) {
+        summary.textContent = `Showing ${filteredTotal} account${filteredTotal === 1 ? '' : 's'}`;
+      } else {
+        summary.textContent = `Showing ${filteredTotal} of ${overallTotal} accounts`;
+      }
+    }
+
+    const range = document.getElementById('accounts-range');
+    if (range) {
+      range.textContent = filteredTotal ? `${start}-${end} of ${filteredTotal}` : '0-0 of 0';
+    }
+  }
+
+  function updateEmptyState(hasResults) {
+    const tbody = document.getElementById('accounts-table-body');
+    const emptyState = document.getElementById('accounts-empty-state');
+    if (!tbody || !emptyState) return;
+    emptyState.style.display = hasResults ? 'none' : 'flex';
+  }
+
+  function applyFilters() {
+    const tbody = document.getElementById('accounts-table-body');
+    if (!tbody) return;
+    const filteredAccounts = getFilteredAccounts();
+
+    if (!filteredAccounts.length) {
+      currentPage = 1;
+    } else {
+      const totalPages = getTotalPages(filteredAccounts.length);
+      currentPage = Math.min(Math.max(1, currentPage), totalPages);
+    }
+
+    const startIndex = filteredAccounts.length ? (currentPage - 1) * rowsPerPage : 0;
+    currentPageAccounts = filteredAccounts.slice(startIndex, startIndex + rowsPerPage);
+
+    renderAccounts(currentPageAccounts);
+    updateEmptyState(filteredAccounts.length > 0);
+    updateFooterCounts(filteredAccounts, startIndex, currentPageAccounts.length);
+    updatePaginationControls(filteredAccounts.length);
+    updateSelectionUI();
+    persistFiltersAndSelection();
+  }
+
+  function updateCounts() {
+    const total = allAccounts.length;
+    const connected = allAccounts.filter(a => (a.status || '').toLowerCase() === 'connected').length;
+    const failed = total - connected;
+
+    const setText = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    };
+
+    setText('tab-count-all', total);
+    setText('tab-count-success', connected);
+    setText('tab-count-failed', failed);
+    setText('master-accounts-count', allAccounts.filter(acc => acc.role === 'master').length);
+    setText('child-accounts-count', allAccounts.filter(acc => acc.role === 'child').length);
+    setText('total-capacity', total.toString());
+    setText('current-plan', 'Professional');
+    setText('plan-validity', '--');
+  }
+
+  function updateAccountCard() {
+    updateCounts();
+    applyFilters();
+  }
+
+  function scheduleAutoLoginChecks() {
+    if (!isActive || !Array.isArray(allAccounts) || allAccounts.length === 0) {
+      return;
+    }
+
+    const runAutoLoginChecks = () => {
+      if (!isActive) {
+        return;
+      }
+      let autoLoginStateChanged = false;
+
+      allAccounts.forEach(acc => {
+        const clientId = acc && acc.client_id;
+        if (!clientId) {
+          return;
+        }
+
+        const isConnected = (acc.status || '').toLowerCase() === 'connected';
+        if (isConnected) {
+          const existing = autoLoginResults[clientId];
+          if (!existing || existing.status !== 'success') {
+            autoLoginResults[clientId] = {
+              status: 'success',
+              lastAttemptAt: existing && typeof existing.lastAttemptAt === 'number'
+                ? existing.lastAttemptAt
+                : Date.now()
+            };
+            autoLoginStateChanged = true;
+          }
+          return;
+        }
+
+        if (!shouldAttemptAutoLogin(acc)) {
+          return;
+        }
+
+        attemptAutoLoginForAccount(acc)
+          .then(() => {
+            if (!isActive) return;
+            updateCounts();
+            updateAccountCard();
+          })
+          .catch(() => {
+            if (!isActive) return;
+            updateCounts();
+            updateAccountCard();
+          });
+      });
+
+      if (autoLoginStateChanged) {
+        persistAutoLoginState();
+      }
+    };
+
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(runAutoLoginChecks, { timeout: 1500 });
+    } else {
+      window.setTimeout(runAutoLoginChecks, 0);
+    }
+  }
+
+  async function attemptAutoLoginForAccount(acc, options = {}) {
+    if (!isActive) return;
+    const { recordAttempt = true } = options;
+    const attemptStartedAt = Date.now();
+    if (recordAttempt) {
+      markAutoLoginAttempted(acc.client_id);
+    }
+    autoLoginResults[acc.client_id] = { status: 'checking', lastAttemptAt: attemptStartedAt };
+    persistAutoLoginState();
+    const controller = new AbortController();
+    const unregister = registerAbortController(controller);
+    try {
+      const resp = await fetchJson('/api/reconnect-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: acc.client_id }),
+        signal: controller.signal
+      });
+      if (!isActive) return;
+      if (resp.message) {
+        autoLoginResults[acc.client_id] = { status: 'success', lastAttemptAt: attemptStartedAt };
+        persistAutoLoginState();
+        const updatedAcc = allAccounts.find(a => a.client_id === acc.client_id);
+        if (updatedAcc) updatedAcc.status = 'connected';
+        dispatchAccountsChanged({ reason: 'auto-reconnect', clientId: acc.client_id });  
+      } else {
+        const reason = resp.reason;
+        const errorText = resp.error || 'Error';
+        autoLoginResults[acc.client_id] = {
+          status: 'error',
+          error: errorText,
+          reason: reason,
+          lastAttemptAt: attemptStartedAt
+        };
+        persistAutoLoginState();
+        const updatedAcc = allAccounts.find(a => a.client_id === acc.client_id);
+        if (updatedAcc) {
+          updatedAcc.status = 'failed';
+          updatedAcc.last_error = errorText;
+          if (reason) {
+            updatedAcc.last_error_reason = reason;
+          }
+        }
+      }
+    } catch (err) {
+      if (controller.signal.aborted || !isActive) {
+        return;
+      }
+      autoLoginResults[acc.client_id] = {
+        status: 'error',
+        error: err.message,
+        lastAttemptAt: attemptStartedAt
+      };
+      persistAutoLoginState();
+      const updatedAcc = allAccounts.find(a => a.client_id === acc.client_id);
+      if (updatedAcc) {
+        updatedAcc.status = 'failed';
+        updatedAcc.last_error = err.message;
+      }
+    } finally {
+      unregister();
+    }
+  }
+
+  async function refreshBalanceForAccount(acc, options = {}) {
+    if (!isActive) return false;
+    const { cacheOnly = true } = options || {};
+    const controller = new AbortController();
+    const unregister = registerAbortController(controller);
+    try {
+      const requestBody = { client_id: acc.client_id };
+      if (cacheOnly) {
+        requestBody.cache_only = true;
+      }
+      const resp = await fetchJson('/api/account-balance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      });
+      if (!isActive) return false;
+      if (resp && resp.error) {
+        throw new Error(resp.error);
+      }
+      const hasBalance = typeof resp.balance === 'number';
+      if (hasBalance) {
+        const updatedAcc = allAccounts.find(a => a.client_id === acc.client_id);
+        if (updatedAcc) updatedAcc.opening_balance = resp.balance;
+      }
+      return hasBalance;
+    } catch (err) {
+      if (controller.signal.aborted || !isActive) {
+        return false;
+      }
+      if (!controller.signal.aborted && isActive) {
+        console.error(`Balance refresh failed for ${acc.client_id}:`, err);
+      }
+      throw err;
+    } finally {
+      unregister();
+    }
+  }
+
+  async function refreshVisibleBalances() {
+    if (!isActive || document.hidden || balancePollInFlight) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastBalancePollAt < BALANCE_POLL_DEBOUNCE_MS) {
+      return;
+    }
+    lastBalancePollAt = now;
+    balancePollInFlight = true;
+
+    const visibleAccounts = getVisibleAccounts();
+    if (!visibleAccounts.length) {
+      balancePollInFlight = false;
+      return;
+    }
+
+    let anyUpdated = false;
+    let firstError = null;
+
+    try {
+      for (const acc of visibleAccounts) {
+        if (!isActive) break;
+        try {
+          const hasNewBalance = await refreshBalanceForAccount(acc, { cacheOnly: false });
+          if (!isActive) break;
+          if (hasNewBalance) {
+            updateVisibleBalanceCell(acc);
+            anyUpdated = true;
+          }
+        } catch (error) {
+          if (!firstError) {
+            firstError = error;
+          }
+        }
+      }
+
+      if (isActive && anyUpdated) {
+        updateAccountCard();
+      }
+
+      if (
+        isActive &&
+        firstError &&
+        Date.now() - lastBalanceErrorToastAt >= BALANCE_POLL_ERROR_THROTTLE_MS
+      ) {
+        const message = firstError && firstError.message ? firstError.message : 'Unable to refresh balance.';
+        showToast(`Balance refresh failed: ${message}`, 'error');
+        lastBalanceErrorToastAt = Date.now();
+      }
+    } finally {
+      balancePollInFlight = false;
+    }
+  }
+
+  function startBalancePolling() {
+    if (balancePollingStarted) {
+      return;
+    }
+    balancePollingStarted = true;
+
+    const runPoll = () => {
+      if (!isActive) return;
+      refreshVisibleBalances().catch(() => { });
+    };
+
+    registerInterval(runPoll, BALANCE_POLL_INTERVAL_MS);
+
+    registerListener(document, 'visibilitychange', () => {
+      if (!isActive || document.hidden) {
+        return;
+      }
+      runPoll();
+    });
+
+    runPoll();
+  }
+  
+  async function copyToClipboard(text, successMessage) {
+    if (!text) {
+      showToast('No data available to copy.', 'error');
+      return;
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        temp.style.position = 'fixed';
+        temp.style.opacity = '0';
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+      }
+      showToast(successMessage || 'Copied to clipboard.');
+    } catch (err) {
+      console.error('Clipboard copy failed:', err);
+      showToast('Failed to copy to clipboard.', 'error');
+    }
+  }
+
+  function toCsvValue(value) {
+    const text = value === undefined || value === null ? '' : String(value);
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+
+  function exportAccountsData(accounts, filenameSuffix = 'accounts') {
+    if (!Array.isArray(accounts) || !accounts.length) {
+      showToast('No accounts available to export.', 'error');
+      return;
+    }
+
+    const headers = ['Broker', 'Client ID', 'Username', 'Status', 'Last Login', 'Developer URL', 'Static IP'];
+    const rows = accounts.map(acc => [
+      formatBrokerName(acc.broker),
+      acc.client_id || '',
+      acc.username || '',
+      acc.status || '',
+      acc.last_login ? formatDateTime(acc.last_login) : '',
+      getDeveloperUrl(acc) || '',
+      getStaticIp(acc) || ''
+    ]);
+
+    const csv = [headers, ...rows]
+      .map(row => row.map(toCsvValue).join(','))
+      .join('\r\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const safeSuffix = sanitizeClientId(filenameSuffix) || 'accounts';
+    const timestamp = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.download = `${safeSuffix}-${timestamp}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+
+    showToast(`Exported ${accounts.length} account${accounts.length === 1 ? '' : 's'}.`, 'success');
+  }
+
+  function closeDropdownMenu(dropdown) {
+    if (!dropdown) return;
+    dropdown.classList.remove('open');
+    const toggle = dropdown.querySelector('[data-dropdown-toggle]');
+    if (toggle) {
+      toggle.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  async function reconnectAccountsBulk(accounts) {
+    if (!accounts.length) {
+      showToast('No accounts selected for reconnection.', 'error');
+      return;
+    }
+
+    const label = accounts.length === 1
+      ? (accounts[0].client_id || accounts[0].username || 'the selected account')
+      : `${accounts.length} selected accounts`;
+
+    if (!confirm(`Attempt to reconnect ${label}?`)) {
+      return;
+    }
+
+    let successCount = 0;
+    const errors = [];
+
+    for (const acc of accounts) {
+      if (!acc.client_id) {
+        errors.push('Missing client ID for one of the selected accounts.');
+        continue;
+      }
+      markAutoLoginAttempted(acc.client_id);
+      autoLoginResults[acc.client_id] = {
+        status: 'checking',
+        lastAttemptAt: Date.now()
+      };
+      persistAutoLoginState();
+      try {
+        const response = await fetchJson('/api/reconnect-account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ client_id: acc.client_id })
+        });
+        if (response.message) {
+          successCount += 1;
+        } else {
+          errors.push(response.error || `Failed to reconnect ${acc.client_id}.`);
+        }
+      } catch (error) {
+        errors.push(error.message || `Failed to reconnect ${acc.client_id}.`);
+      }
+    }
+
+    if (successCount) {
+      showToast(`Reconnected ${successCount} account${successCount === 1 ? '' : 's'}.`, 'success');
+      clearSelection();
+      // Optimistic update not needed as we just fetched status? 
+      // Actually we should trigger a refresh or update status locally if possible.
+      // But standard pattern here is just to re-fetch or let background poll handle it.
+      // For immediate feedback, we can assume 'checking' or update timestamp.
+      // Better: trigger a background refresh of the list without full reload.
+      applyFilters();
+      dispatchAccountsChanged({ reason: 'bulk-reconnect', successCount });
+    }
+
+    if (errors.length) {
+      console.error('Reconnect errors:', errors);
+      showToast(`Reconnect completed with ${errors.length} error${errors.length === 1 ? '' : 's'}.`, 'error');
+    }
+  }
+
+  async function deleteAccountsBulk(accounts) {
+    if (!accounts.length) {
+      showToast('No accounts selected for deletion.', 'error');
+      return;
+    }
+
+    const label = accounts.length === 1
+      ? (accounts[0].client_id || accounts[0].username || 'the selected account')
+      : `${accounts.length} selected accounts`;
+
+    if (!confirm(`Are you sure you want to delete ${label}? This action cannot be undone.`)) {
+      return;
+    }
+
+    let successCount = 0;
+    const errors = [];
+
+    for (const acc of accounts) {
+      if (!acc.client_id) {
+        errors.push('Missing client ID for one of the selected accounts.');
+        continue;
+      }
+      try {
+        const response = await fetchJson('/api/delete-account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ client_id: acc.client_id })
+        });
+        if (response.message) {
+          successCount += 1;
+        } else {
+          errors.push(response.error || `Failed to delete ${acc.client_id}.`);
+        }
+      } catch (error) {
+        errors.push(error.message || `Failed to delete ${acc.client_id}.`);
+      }
+    }
+
+    if (successCount) {
+      showToast(`Deleted ${successCount} account${successCount === 1 ? '' : 's'}.`, 'success');
+      clearSelection();
+      // Remove deleted accounts from local cache
+      const deletedIds = new Set(accounts.filter(a => !errors.some(e => e.includes(a.client_id))).map(a => a.client_id));
+      allAccounts = allAccounts.filter(a => !deletedIds.has(a.client_id));
+      applyFilters();
+    }
+
+    if (errors.length) {
+      console.error('Delete errors:', errors);
+      showToast(`Delete completed with ${errors.length} error${errors.length === 1 ? '' : 's'}.`, 'error');
+    }
+  }
+
+  async function updateAccountCredentials(account) {
+    if (!account || !account.client_id) {
+      showToast('Client ID is required to update the account.', 'error');
+      return;
+    }
+
+    try {
+      const response = await fetchJson('/api/update-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: account.client_id })
+      });
+      showToast(response.message || 'Account updated successfully.');
+      if (response.message) {
+        dispatchAccountsChanged({ reason: 'account-updated', clientId: account.client_id });
+      }
+      clearSelection();
+      // Ideally we should update the specific account details in allAccounts
+      // For now, a re-fetch or just keeping it as is (since credentials change doesn't typically change list view) is fine.
+      // If needed, we can re-fetch just this account or all.
+      // Let's re-fetch to be safe but without reload.
+      fetchJson('/api/accounts?cache_only=0')
+        .then(data => {
+          if (data && Array.isArray(data.accounts)) {
+            allAccounts = data.accounts;
+            applyFilters();
+          }
+        });
+    } catch (error) {
+      showToast(`Failed to update account: ${error.message}`, 'error');
+    }
+  }
+
+  async function handleBulkMenuAction(action) {
+    const dropdown = document.getElementById('more-dropdown');
+    closeDropdownMenu(dropdown);
+
+    if (!action) {
+      return;
+    }
+
+    if (action === 'export-visible') {
+      const accounts = currentPageAccounts;
+      if (!accounts.length) {
+        showToast('No accounts available to export.', 'error');
+        return;
+      }
+      exportAccountsData(accounts, 'accounts-visible');
+      return;
+    }
+
+    const selectedAccounts = getSelectedAccounts();
+    if (!selectedAccounts.length) {
+      showToast('Please select at least one account.', 'error');
+      return;
+    }
+
+    if (action === 'single-reconnect') {
+      window.reconnectAccount(selectedAccounts[0].client_id);
+      return;
+    }
+
+    if (action === 'single-edit') {
+      window.editAccount(selectedAccounts[0].client_id);
+      return;
+    }
+
+    if (action === 'single-delete') {
+      window.deleteAccount(selectedAccounts[0].client_id);
+      return;
+    }
+
+    if (action === 'single-export') {
+      const identifier = selectedAccounts[0].client_id || selectedAccounts[0].username || 'account';
+      exportAccountsData(selectedAccounts, identifier);
+      return;
+    }
+
+    if (action === 'single-update') {
+      await updateAccountCredentials(selectedAccounts[0]);
+      return;
+    }
+
+    if (action === 'bulk-reconnect') {
+      await reconnectAccountsBulk(selectedAccounts);
+      return;
+    }
+
+    if (action === 'bulk-delete') {
+      await deleteAccountsBulk(selectedAccounts);
+      return;
+    }
+
+    if (action === 'bulk-export') {
+      exportAccountsData(selectedAccounts, `accounts-selected-${selectedAccounts.length}`);
+    }
+  }
+
+  const addAccountBtn = document.getElementById('add-account-btn');
+  if (addAccountBtn) {
+    registerListener(addAccountBtn, 'click', () => {
+      const section = document.getElementById('add-account-section');
+      const isHidden = !section || section.style.display === 'none' || getComputedStyle(section).display === 'none';
+      if (isHidden) {
+        openAddAccountForm();
+        populateBrokerCarousel();
+      } else {
+        hideBrokerForm();
+      }
+    });
+  }
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const openAddAccountParam = urlParams.get('openAddAccount');
+  const normalizedParam = (openAddAccountParam || '').toLowerCase();
+  const shouldOpenFromParam = openAddAccountParam !== null && !['0', 'false', 'no'].includes(normalizedParam);
+  const shouldOpenAddAccount = shouldOpenFromParam;
+
+  if (shouldOpenAddAccount) {
+    openAddAccountForm();
+    populateBrokerCarousel();
+
+    const section = document.getElementById('add-account-section');
+    if (section) {
+      window.requestAnimationFrame(() => {
+        const sectionTop = section.getBoundingClientRect().top + window.pageYOffset;
+        window.scrollTo({ top: Math.max(sectionTop - 16, 0), behavior: 'smooth' });
+      });
+    }
+  }
+
+  if (shouldOpenFromParam) {
+
+    urlParams.delete('openAddAccount');
+    const newQuery = urlParams.toString();
+    const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}${window.location.hash}`;
+    window.history.replaceState({}, '', newUrl);
+  }
+
+  const cancelAddAccountBtn = document.getElementById('cancel-add-account-btn');
+  if (cancelAddAccountBtn) {
+    registerListener(cancelAddAccountBtn, 'click', hideBrokerForm);
+  }
+
+  const brokerSearchInput = document.getElementById('broker-search');
+  if (brokerSearchInput) {
+    registerListener(brokerSearchInput, 'input', event => {
+      populateBrokerCarousel(event.target.value || '');
+    });
+  }
+
+  const brokerForm = document.getElementById('broker-credentials-form');
+  if (brokerForm) {
+    registerListener(brokerForm, 'submit', function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const data = {};
+      for (const [key, value] of formData.entries()) data[key] = value;
+
+      const selectedBroker = getSelectedBroker();
+      if (!selectedBroker) { showToast('Please select a broker.', 'error'); return; }
+      data['broker'] = selectedBroker;
+
+      if (data['broker'] === 'zerodha') {
+        fetchJson('/api/init-zerodha-login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+        })
+          .then(resp => { if (resp.login_url) window.location.href = resp.login_url; else showToast(resp.error || 'Failed to get login URL for Zerodha.', 'error'); })
+          .catch(error => showToast(`Failed to initiate Zerodha login: ${error.message}`, 'error'));
+        return;
+      }
+
+      if (data['broker'] === 'fyers') {
+        fetchJson('/api/init-fyers-login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+        })
+          .then(resp => { if (resp.login_url) window.location.href = resp.login_url; else showToast(resp.error || 'Failed to get login URL for Fyers.', 'error'); })
+          .catch(error => showToast(`Failed to initiate Fyers login: ${error.message}`, 'error'));
+        return;
+      }
+
+      const endpoint = editingAccountId ? '/api/update-account' : '/api/add-account';
+      if (editingAccountId) data['client_id'] = editingAccountId;
+
+      fetchJson(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+        .then(resp => {
+          showToast(resp.message || resp.error || 'Operation completed.');
+          if (resp.message) {
+            // Updated or Added
+            showToast(resp.message, 'success');
+            hideBrokerForm();
+            dispatchAccountsChanged({
+              reason: editingAccountId ? 'account-updated' : 'account-added',
+              clientId: editingAccountId || data.client_id || data.username || data.broker,
+            });
+            // Refresh list
+            fetchJson('/api/accounts?cache_only=0')
+              .then(data => {
+                if (data && Array.isArray(data.accounts)) {
+                  allAccounts = data.accounts;
+                  applyFilters();
+                }
+              });
+          }
+        })
+        .catch(error => showToast(`Failed to save account: ${error.message}`, 'error'));
+    });
+  }
+
+  document.querySelectorAll('#status-tabs .status-tab').forEach(button => {
+    registerListener(button, 'click', e => {
+      e.preventDefault();
+      statusFilter = button.dataset.status || 'all';
+      restoreFilterUI();
+      currentPage = 1;
+      applyFilters();
+    });
+  });
+
+  const brokerFilterSelect = document.getElementById('broker-filter');
+  if (brokerFilterSelect) {
+    registerListener(brokerFilterSelect, 'change', e => {
+      brokerFilter = e.target.value;
+      currentPage = 1;
+      applyFilters();
+    });
+  }
+
+  const accountSearchInput = document.getElementById('account-search');
+  if (accountSearchInput) {
+    registerListener(accountSearchInput, 'input', e => {
+      searchFilter = e.target.value;
+      currentPage = 1;
+      applyFilters();
+    });
+  }
+
+  const rowsPerPageSelect = document.getElementById('accounts-rows-per-page');
+  if (rowsPerPageSelect) {
+    registerListener(rowsPerPageSelect, 'change', e => {
+      const previousRowsPerPage = rowsPerPage;
+      rowsPerPage = clampRowsPerPage(e.target.value);
+      if (rowsPerPage !== previousRowsPerPage) {
+        currentPage = 1;
+      }
+      applyFilters();
+    });
+  }
+
+  const prevPageButton = document.getElementById('accounts-page-prev');
+  if (prevPageButton) {
+    registerListener(prevPageButton, 'click', () => {
+      if (currentPage > 1) {
+        currentPage -= 1;
+        applyFilters();
+      }
+    });
+  }
+
+  const nextPageButton = document.getElementById('accounts-page-next');
+  if (nextPageButton) {
+    registerListener(nextPageButton, 'click', () => {
+      const totalPages = getTotalPages(getFilteredAccounts().length);
+      if (currentPage < totalPages) {
+        currentPage += 1;
+        applyFilters();
+      }
+    });
+  }
+
+  const accountsTableBody = document.getElementById('accounts-table-body');
+  if (accountsTableBody) {
+    registerListener(accountsTableBody, 'change', event => {
+      const checkbox = event.target.closest('.account-select');
+      if (!checkbox) return;
+      const clientId = checkbox.dataset.clientId;
+      if (!clientId) return;
+      if (checkbox.checked) {
+        selectedAccountIds.add(clientId);
+      } else {
+        selectedAccountIds.delete(clientId);
+      }
+      updateSelectionUI();
+    });
+
+    registerListener(accountsTableBody, 'click', event => {
+      const errorInfoIcon = event.target.closest('.error-info');
+      if (errorInfoIcon) {
+        const reason = errorInfoIcon.dataset.errorReason || errorInfoIcon.getAttribute('title') || 'Error';
+        showToast(reason, 'error');
+        return;
+      }
+      
+      const actionButton = event.target.closest('[data-action]');
+      if (!actionButton) return;
+      const row = actionButton.closest('tr');
+      if (!row) return;
+      const clientId = row.dataset.clientId;
+      const account = getAccountByRowId(clientId);
+      if (!account) return;
+
+      const action = actionButton.dataset.action;
+      if (action === 'copy-url' || action === 'copy-ip') {
+        const requires = actionButton.dataset.requires || (action === 'copy-url' ? 'url' : 'ip');
+        const value = action === 'copy-url' ? getDeveloperUrl(account) : getStaticIp(account);
+        if (!value) {
+          showToast(`No ${requires.toUpperCase()} available to copy.`, 'error');
+          return;
+        }
+        copyToClipboard(value, `${requires.toUpperCase()} copied to clipboard.`);
+        const dropdown = actionButton.closest('.dropdown');
+        if (dropdown) dropdown.classList.remove('open');
+        return;
+      }
+
+      if (action === 'reconnect') {
+        window.reconnectAccount(account.client_id);
+        return;
+      }
+
+      if (action === 'edit') {
+        window.editAccount(account.client_id);
+        const dropdown = actionButton.closest('.dropdown');
+        if (dropdown) dropdown.classList.remove('open');
+        return;
+      }
+
+      if (action === 'refresh-balance') {
+        if (!account.client_id) {
+          showToast('Cannot refresh balance: missing client ID.', 'error');
+          return;
+        }
+
+        const previousTitle = actionButton.getAttribute('title');
+        const previousAriaLabel = actionButton.getAttribute('aria-label');
+        actionButton.disabled = true;
+        actionButton.classList.add('is-loading');
+        actionButton.setAttribute('aria-label', 'Refreshing balance…');
+        actionButton.setAttribute('title', 'Refreshing balance…');
+
+        refreshBalanceForAccount(account, { cacheOnly: false })
+          .then(result => {
+            if (!isActive) return;
+            if (result) {
+              const balanceField = row.querySelector('[data-field="balance"]');
+              if (balanceField) {
+                balanceField.textContent = formatBalance(account.opening_balance);
+              }
+              updateAccountCard();
+              updateCounts();
+              showToast('Balance refreshed successfully.');
+            }
+          })
+          .catch(error => {
+            if (!isActive) return;
+            const message = error && error.message ? error.message : 'Unable to refresh balance.';
+            showToast(`Failed to refresh balance: ${message}`, 'error');
+          })
+          .finally(() => {
+            actionButton.disabled = false;
+            actionButton.classList.remove('is-loading');
+            if (previousTitle !== null) {
+              actionButton.setAttribute('title', previousTitle);
+            } else {
+              actionButton.removeAttribute('title');
+            }
+            if (previousAriaLabel !== null) {
+              actionButton.setAttribute('aria-label', previousAriaLabel);
+            } else {
+              actionButton.removeAttribute('aria-label');
+            }
+            const dropdown = actionButton.closest('.dropdown');
+            if (dropdown) dropdown.classList.remove('open');
+          });
+        return;
+      }
+
+      if (action === 'delete') {
+        window.deleteAccount(account.client_id);
+        const dropdown = actionButton.closest('.dropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+  }
+
+  const selectAllCheckbox = document.getElementById('select-all-accounts');
+  if (selectAllCheckbox) {
+    registerListener(selectAllCheckbox, 'change', event => {
+      const shouldSelectAll = event.target.checked || event.target.indeterminate;
+      const pageAccounts = currentPageAccounts;
+      pageAccounts.forEach(acc => {
+        const rowId = getAccountRowIdFromInstance(acc);
+        if (shouldSelectAll) {
+          selectedAccountIds.add(rowId);
+        } else {
+          selectedAccountIds.delete(rowId);
+        }
+      });
+      updateSelectionUI();
+    });
+  }
+
+  const bulkActionsDropdown = document.getElementById('more-dropdown');
+  if (bulkActionsDropdown) {
+    registerListener(bulkActionsDropdown, 'click', event => {
+      const actionButton = event.target.closest('[data-bulk-action]');
+      if (!actionButton) return;
+      event.preventDefault();
+      handleBulkMenuAction(actionButton.dataset.bulkAction)
+        .catch(error => {
+          console.error('Bulk action failed:', error);
+          showToast(`Action failed: ${error.message || error}`, 'error');
+        });
+    });
+  }
+
+  updateBulkActionsMenu();
+
+  registerListener(document, 'click', event => {
+    const toggle = event.target.closest('[data-dropdown-toggle]');
+    if (toggle) {
+      event.preventDefault();
+      const targetId = toggle.dataset.dropdownToggle;
+      const dropdown = document.getElementById(targetId);
+      if (!dropdown) return;
+      const isOpen = dropdown.classList.contains('open');
+      document.querySelectorAll('.dropdown.open').forEach(d => {
+        if (d !== dropdown) {
+          d.classList.remove('open');
+          const btn = d.querySelector('[data-dropdown-toggle]');
+          if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+      });
+      dropdown.classList.toggle('open', !isOpen);
+      toggle.setAttribute('aria-expanded', String(!isOpen));
+
+      // Position dropdown menu for fixed positioning
+      if (!isOpen) {
+        const menu = dropdown.querySelector('.dropdown-menu');
+        if (menu) {
+          const rect = toggle.getBoundingClientRect();
+          const menuWidth = 200;
+          const viewportWidth = window.innerWidth;
+
+          // Calculate left position - align to left edge of button
+          let left = rect.left;
+
+          // If dropdown would go off right edge, align to right edge of button instead
+          if (left + menuWidth > viewportWidth - 20) {
+            left = rect.right - menuWidth;
+          }
+
+          // If still off-screen on left, push it to minimum margin
+          if (left < 20) {
+            left = 20;
+          }
+
+          // Final check: if still too wide, position at right edge of viewport
+          if (left + menuWidth > viewportWidth - 20) {
+            left = viewportWidth - menuWidth - 20;
+          }
+
+          menu.style.top = (rect.bottom + 8) + 'px';
+          menu.style.left = Math.max(10, left) + 'px';
+        }
+      }
+      return;
+    }
+
+    if (!event.target.closest('.dropdown')) {
+      document.querySelectorAll('.dropdown.open').forEach(d => {
+        d.classList.remove('open');
+        const btn = d.querySelector('[data-dropdown-toggle]');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+      });
+    }
+  });
+
+  const exportButton = document.querySelector('[data-action="export-accounts"]');
+  if (exportButton) {
+    registerListener(exportButton, 'click', () => {
+      showToast('Export functionality is coming soon.', 'error');
+      const dropdown = exportButton.closest('.dropdown');
+      if (dropdown) dropdown.classList.remove('open');
+    });
+  }
+
+  window.deleteAccount = function (cid) {
+    if (!confirm('Are you sure you want to delete account ' + cid + '? This action cannot be undone.')) return;
+    fetchJson('/api/delete-account', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: cid })
+    })
+      .then(resp => {
+        showToast(resp.message || resp.error || 'Unknown error during deletion.');
+        if (resp.message) {
+          allAccounts = allAccounts.filter(a => a.client_id !== cid);
+          applyFilters();
+        }
+      })
+      .catch(error => showToast(`Failed to delete account: ${error.message}`, 'error'));
+  };
+
+  window.editAccount = function (cid) {
+    const acc = allAccounts.find(a => a.client_id === cid);
+    if (!acc) { showToast('Account not found for editing.', 'error'); return; }
+    editingAccountId = cid;
+    openAddAccountForm();
+    const section = document.getElementById('add-account-section');
+    if (section) {
+      const sectionRect = section.getBoundingClientRect();
+      const targetOffset = sectionRect.top + window.pageYOffset;
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: targetOffset - 16, behavior: 'smooth' });
+      });
+    }
+
+    document.querySelectorAll('.broker-card').forEach(i => i.classList.remove('active'));
+    const item = document.querySelector(`.broker-card[data-broker="${acc.broker}"]`);
+    if (item) { item.classList.add('active'); showBrokerForm(acc.broker); }
+
+    setTimeout(() => {
+      const form = document.getElementById('broker-credentials-form');
+      if (!form) return;
+      const usernameInput = form.querySelector('input[name="username"]');
+      if (usernameInput) usernameInput.value = acc.username || '';
+      Object.entries(acc.credentials || {}).forEach(([k, v]) => {
+        const inp = form.querySelector(`input[name="${k}"]`);
+        if (inp) {
+          inp.value = v;
+          if (k === 'client_id') {
+            inp.readOnly = true;
+            inp.classList.add('bg-light');
+            inp.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        }
+      });
+      const submitBtn = document.getElementById('submit-account-btn');
+      if (submitBtn) submitBtn.textContent = 'Update Account';
+      const resultDiv = document.getElementById('cred-check-result');
+      if (resultDiv) resultDiv.innerHTML = '<span class="text-info small">Modify credentials and click Update.</span>';
+    }, 100);
+  };
+
+  window.reconnectAccount = function (cid) {
+    if (!confirm('Attempt to reconnect account ' + cid + '?')) return;
+    markAutoLoginAttempted(cid);
+    autoLoginResults[cid] = {
+      status: 'checking',
+      lastAttemptAt: Date.now()
+    };
+    persistAutoLoginState();
+    fetchJson('/api/reconnect-account', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: cid })
+    })
+      .then(resp => {
+        showToast(resp.message || resp.error || 'Unknown error during reconnection.');
+        if (resp.message) {
+          dispatchAccountsChanged({ reason: 'manual-reconnect', clientId: cid });
+          applyFilters(); // Re-render to show any status updates if we had them, mostly just keeps UI stable
+        }
+      })
+      .catch(error => showToast(`Failed to reconnect account: ${error.message}`, 'error'));
+  };
+
+  function refreshAccountsFromNetwork() {
+    if (!isActive) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const unregister = registerAbortController(controller);
+
+    fetchJson('/api/accounts?cache_only=0', { signal: controller.signal })
+      .then(data => {
+        if (!isActive) {
+          return;
+        }
+
+        const liveAccounts = Array.isArray(data.accounts) ? data.accounts : [];
+        const liveCache = createAccountsCache(liveAccounts);
+        state.cachedAccounts = liveCache;
+        updateAddAccountPrefetch(liveCache);
+        allAccounts = cloneAccountsList(liveCache.accounts);
+        pruneAutoLoginResults();
+        populateBrokerCarousel();
+        populateBrokerFilter();
+        restoreFilterUI();
+        updateCounts();
+        applyFilters();
+        scheduleAutoLoginChecks();
+        startBalancePolling();
+      })
+      .catch(error => {
+        if (!isActive || controller.signal.aborted) {
+          return;
+        }
+        console.error('Failed to refresh live accounts:', error);
+        showToast(`Failed to refresh accounts: ${error.message}`, 'error');
+      })
+      .finally(() => {
+        unregister();
+      });
+  }
+  
+  const accountsFetchController = new AbortController();
+  const unregisterAccountsController = registerAbortController(accountsFetchController);
+
+  fetchJson('/api/accounts?cache_only=1', { signal: accountsFetchController.signal })
+    .then(data => {
+      const newAccounts = Array.isArray(data.accounts) ? data.accounts : [];
+      const existingAccounts = state.cachedAccounts
+        ? state.cachedAccounts.accounts
+        : persistedAccountsCache && Array.isArray(persistedAccountsCache.accounts)
+          ? persistedAccountsCache.accounts
+          : [];
+      const mergedAccounts = mergeAccountsByClientId(existingAccounts, newAccounts);
+      const newSignature = computeAccountsSignature(mergedAccounts);
+      const previousSignature = state.cachedAccounts ? state.cachedAccounts.signature : null;
+      const shouldUpdateUI = !hasFreshCache || previousSignature !== newSignature;
+
+      const newCache = createAccountsCache(mergedAccounts, newSignature);
+      state.cachedAccounts = newCache;
+      updateAddAccountPrefetch(newCache);
+      allAccounts = cloneAccountsList(newCache.accounts);
+      pruneAutoLoginResults();
+
+      if (shouldUpdateUI) {
+        populateBrokerCarousel();
+        populateBrokerFilter();
+        restoreFilterUI();
+        updateCounts();
+        applyFilters();
+      }
+      scheduleAutoLoginChecks();
+      startBalancePolling();
+      refreshAccountsFromNetwork();
+    })
+    .catch(error => {
+      if (!isActive || accountsFetchController.signal.aborted) {
+        return;
+      }
+      showToast(`Failed to load accounts: ${error.message}`, 'error');
+      if (allAccounts.length) {
+        scheduleAutoLoginChecks();
+        startBalancePolling();
+      }
+    })
+    .finally(() => {
+      unregisterAccountsController();
+    });
+};
+
+  function initAddAccountPage() {
+    if (window.pageScripts && typeof window.pageScripts["Add-Account"] === 'function') {
+      window.pageScripts["Add-Account"]();
+    }
+  }
+
+  if (document.readyState !== 'loading') {
+    initAddAccountPage();
+  } else {
+    document.addEventListener('DOMContentLoaded', initAddAccountPage);
+  }
+
+</script>
+{% endblock %}
