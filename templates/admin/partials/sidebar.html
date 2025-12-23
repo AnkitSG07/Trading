@@ -1,0 +1,16 @@
+<aside class="admin-sidebar d-flex flex-column p-3">
+    <div class="d-flex align-items-center mb-4">
+        <div class="sidebar-brand fw-bold">QuantBot</div>
+    </div>
+    <nav class="nav flex-column gap-1">
+        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+        <a class="nav-link" href="{{ url_for('admin_users') }}">Users</a>
+        <a class="nav-link" href="{{ url_for('admin_brokers') }}">Brokers</a>
+        <a class="nav-link" href="{{ url_for('admin_subscriptions') }}">Subscriptions</a>
+        <a class="nav-link" href="{{ url_for('admin_trades') }}">Trades</a>
+        <a class="nav-link" href="{{ url_for('admin_bug_reports') }}">Bug Reports</a>
+        <a class="nav-link" href="{{ url_for('admin_logs') }}">Logs</a>
+        <a class="nav-link" href="{{ url_for('admin_settings') }}">Settings</a>
+        <a class="nav-link" href="{{ url_for('admin_profile') }}">Profile</a>
+    </nav>
+</aside>
