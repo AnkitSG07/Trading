@@ -1,0 +1,2312 @@
+.account-config-page {
+  position: relative;
+  padding: 2rem 0 3rem;
+  background: #f8f9fa;
+  color: #1f2937;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* floating bg shapes */
+.account-config-page .background-shapes {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.account-config-page .background-shapes .shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(500px);
+  opacity: 0;
+}
+.account-config-page .background-shapes .shape1 {
+  width: 420px;
+  height: 420px;
+  background: rgba(99, 102, 241, 0.2);
+  top: 10%;
+  left: 5%;
+  animation: account-config-drift 40s ease-in-out infinite alternate;
+}
+.account-config-page .background-shapes .shape2 {
+  width: 320px;
+  height: 320px;
+  background: rgba(20, 184, 166, 0.2);
+  bottom: 5%;
+  right: 10%;
+  animation: account-config-drift 45s ease-in-out infinite alternate;
+}
+
+.account-config-page .account-config-container {
+  position: relative;
+  z-index: 1;
+}
+
+/* PAGE HEADER (stats etc. stays same) */
+.account-config-page .page-header {
+  background: linear-gradient(to right, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.06), transparent);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0px;
+  flex-wrap: wrap;
+}
+.account-config-page .page-title {
+  font-size: 32px;
+  font-weight: 999;
+  background: linear-gradient(to right, #6366f1, rgba(99, 102, 241, 0.6));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+.account-config-page .breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #6b7280;
+}
+.account-config-page .breadcrumb-current {
+  color: #1f2937;
+  font-weight: 200;
+}
+
+/* STATS GRID */
+.account-config-page .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.account-config-page .stat-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 0px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.15);
+}
+.account-config-page .stat-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.account-config-page .stat-icon {
+  width: 30px;
+  height: 30px;
+  margin-left: 10px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  margin-top: 7px;
+}
+.account-config-page .icon {
+  width: 19px;
+  height: 19px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  margin-top: 1px;
+
+}
+.account-config-page .icon-sm {
+  width: 16px;
+  height: 16px;
+  
+}
+.account-config-page .stat-icon-primary { background: rgba(99, 102, 241, 0.2); color: #4f46e5; }
+.account-config-page .stat-icon-success { background: rgba(16, 185, 129, 0.2); color: #0f9d58; }
+.account-config-page .stat-icon-warning { background: rgba(245, 158, 11, 0.2); color: #d97706; }
+.account-config-page .stat-icon-danger { background: rgba(239, 68, 68, 0.2); color: #dc2626; }
+.account-config-page .stat-icon-muted { background: rgba(148, 163, 184, 0.2); color: #475569; }
+.account-config-page .stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  margin-top: 8px;
+  margin-bottom: 1px;
+  margin-left: -6px;
+}
+.account-config-page .stat-value {
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: -6px;
+  margin-top: 6px;
+  margin-bottom: 1px;
+}
+
+/* FORM CARD */
+.account-config-page .form-section {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.1);
+}
+.account-config-page .form-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.account-config-page .form-description {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 20px;
+}
+.account-config-page .form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.account-config-page .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.account-config-page .form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.account-config-page .form-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+.account-config-page .copy-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.account-config-page .copy-field .form-input {
+  flex: 1 1 auto;
+}
+.account-config-page .copy-field .btn {
+  flex-shrink: 0;
+}
+.account-config-page .form-helper {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+}
+.account-config-page .form-input,
+.account-config-page select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #ffffff;
+}
+.account-config-page .form-input:focus,
+.account-config-page select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  outline: none;
+}
+.account-config-page .password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.account-config-page .password-field .toggle-password {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #6b7280;
+  padding: 0;
+}
+
+/* --- BROKER SEARCH / FILTER BAR  (toolbar in screenshot 2) --- */
+.account-config-page .broker-search {
+  position: relative;
+  margin-bottom: 0;
+  max-width: 260px;
+  flex: 1 1 auto;
+}
+.account-config-page .search-wrapper {
+  position: relative;
+}
+.account-config-page .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+.account-config-page .search-input {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #1f2937;
+  font-weight: 500;
+  height: 40px;
+  width: 100%;
+  padding: 0 12px 0 36px;
+}
+.account-config-page .search-input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.account-config-page .broker-grid {
+  display:  grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+  margin-top: 24px;
+}
+.account-config-page .broker-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 1px;
+  border-radius: 14px;
+  border: 1.5px solid #e5e7eb;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+.account-config-page .broker-card:hover {
+  border-color: rgba(99, 102, 241, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -15px rgba(79, 70, 229, 0.6);
+}
+.account-config-page .broker-card.active {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.05);
+}
+.account-config-page .broker-card img {
+  width: 98px;
+  height: 58px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: #ffffff;
+  padding: 9px;
+}
+.account-config-page .broker-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 16px;
+  text-transform: uppercase;
+}
+.account-config-page .broker-name {
+  font-size: 12px;
+  font-weight: 300;
+  text-align: center;
+  color: #374151;
+}
+.account-config-page .broker-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #6b7280;
+  padding: 16px 0;
+}
+
+.account-config-page .form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* CARD WRAPPER AROUND TABS+TABLE */
+.account-config-page .card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 30px -15px rgba(15, 23, 42, 0.2);
+  overflow: hidden;
+}
+
+/* --- TABS BAR (ALL / SUCCESS / FAILED) --- */
+.account-config-page .tabs {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 16px 24px 0;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.account-config-page .tab {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  font-weight: 500;
+  font-size: 15px;
+  color: #4b5563;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  position: relative;
+}
+.account-config-page .tab:hover {
+  color: #111827;
+  background: transparent;
+  box-shadow: none;
+}
+.account-config-page .tab.active {
+  color: #111827;
+  font-weight: 600;
+}
+.account-config-page .tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -16px;
+  height: 2px;
+  background-color: #111827;
+  border-radius: 999px;
+}
+
+/* pill showing counts */
+.account-config-page .tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+.account-config-page .tab-count.all {
+  background: #eef2ff;
+  color: #4b5563;
+  border-color: #e5e7eb;
+}
+.account-config-page .tab-count.success {
+  background: #e6f9ef;
+  color: #059669;
+  border-color: rgba(5,150,105,0.3);
+}
+.account-config-page .tab-count.failed {
+  background: #ffe7e7;
+  color: #dc2626;
+  border-color: rgba(220,38,38,0.3);
+}
+
+/* kill old colored .status-tab pills */
+.account-config-page .status-tab[data-status="all"],
+.account-config-page .status-tab[data-status="success"],
+.account-config-page .status-tab[data-status="failed"],
+.account-config-page .status-tab[data-status="all"].active,
+.account-config-page .status-tab[data-status="success"].active,
+.account-config-page .status-tab[data-status="failed"].active {
+  background: transparent !important;
+  color: inherit !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+/* --- TOOLBAR under tabs (dropdown + search) --- */
+.account-config-page .toolbar {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 16px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 16px;
+}
+.account-config-page .toolbar-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+/* dropdown menu (3 dots etc) remains same */
+.account-config-page .dropdown {
+  position: relative;
+}
+.account-config-page .dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 8px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px -24px rgba(15, 23, 42, 0.25);
+  min-width: 180px;
+  display: none;
+  z-index: 20;
+  padding: 8px 0;
+}
+.account-config-page .dropdown.open .dropdown-menu {
+  display: block;
+}
+.account-config-page .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #1f2937;
+  text-align: left;
+  cursor: pointer;
+}
+.account-config-page .dropdown-item:hover {
+  background: #f9fafb;
+}
+.account-config-page .dropdown-item.disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.account-config-page .dropdown-item.danger {
+  color: #dc2626;
+}
+
+/* TABLE WRAPPER + TABLE */
+.account-config-page .table-wrapper {
+  overflow-x: auto;
+  background: #ffffff;
+}
+
+.account-config-page table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+  background: #ffffff;
+  font-size: 12px;
+  color: #1f2937;
+}
+
+.account-config-page thead {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.account-config-page th {
+  padding: 16px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #4b5563;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.account-config-page td {
+  padding: 16px 24px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #1f2937;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+/* hover row */
+.account-config-page tbody tr:hover {
+  background: #f9fafb;
+}
+
+/* first col radio (instead of checkbox square) */
+.account-config-page .checkbox,
+.account-config-page .row-select-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid #d1d5db;
+  appearance: none;
+  cursor: pointer;
+  position: relative;
+  accent-color: #6366f1; /* fallback */
+  background: #fff;
+}
+.account-config-page .row-select-radio:checked,
+.account-config-page .checkbox:checked {
+  border-color: #6366f1;
+}
+.account-config-page .row-select-radio:checked::after,
+.account-config-page .checkbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  background: #6366f1;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+}
+
+/* avatar + two-line client info */
+.account-config-page .client-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.account-config-page .avatar {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 999px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  color: #4b5563;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 40px;
+  text-align: center;
+  text-transform: uppercase;
+}
+.account-config-page .avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 999px;
+  background: #ffffff;
+  display: block;
+}
+.account-config-page .client-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.4;
+}
+.account-config-page .client-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+.account-config-page .client-sub {
+  font-size: 13px;
+  font-weight: 400;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+/* opening balance small grey text */
+.account-config-page .balance-text {
+  font-size: 13px;
+  font-weight: 400;
+  color: #6b7280;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.account-config-page .balance-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.account-config-page .balance-refresh-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.account-config-page .balance-refresh-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.account-config-page .balance-refresh-btn:hover:not(:disabled) {
+  color: #047857;
+}
+
+.account-config-page .balance-refresh-btn:focus-visible {
+  outline: 2px solid rgba(16, 185, 129, 0.4);
+  outline-offset: 2px;
+}
+
+.account-config-page .balance-refresh-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.account-config-page .balance-refresh-btn.is-loading {
+  opacity: 0.6;
+}
+
+.account-config-page .balance-refresh-btn.is-loading svg {
+  animation: balance-refresh-spin 1s linear infinite;
+}
+
+@keyframes balance-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* green/red pill in Auto-Login column */
+.account-config-page .badge,
+.account-config-page .status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  max-width: 160px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.account-config-page .badge-success,
+.account-config-page .status-pill.success {
+  background: #e6f9ef;
+  border-color: rgba(5,150,105,0.3);
+  color: #059669;
+}
+.account-config-page .badge-danger,
+.account-config-page .status-pill.error {
+  background: #ffe7e7;
+  border-color: rgba(220,38,38,0.3);
+  color: #dc2626;
+}
+.account-config-page .badge-secondary {
+  background: #e5e7eb;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+/* green outline buttons in Developer URL / Static IP / Action columns */
+.account-config-page .btn-soft-green {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  padding: 0 14px;
+  background: #ecfff5;
+  border: 1px solid rgba(5,150,105,0.3);
+  color: #059669;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.account-config-page .btn-soft-green:hover {
+  background: #e6f9ef;
+}
+.account-config-page .btn-soft-green .btn-icon-box {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid rgba(5,150,105,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 600;
+  background: transparent;
+  color: inherit;
+}
+
+/* GENERIC BTN STYLES (you already had) */
+.account-config-page .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  background: #ffffff;
+  color: #1f2937;
+}
+.account-config-page .btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 20px -18px rgba(15, 23, 42, 0.35);
+}
+.account-config-page .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.account-config-page .btn-primary {
+  background: linear-gradient(to right, #6366f1, rgba(99, 102, 241, 0.85));
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 10px 20px -15px rgba(79, 70, 229, 0.8);
+}
+.account-config-page .btn-primary:hover {
+  background: linear-gradient(to right, rgba(99, 102, 241, 0.95), rgba(99, 102, 241, 0.8));
+}
+.account-config-page .btn-outline {
+  border-color: #d1d5db;
+  background: #ffffff;
+  color: #374151;
+}
+.account-config-page .btn-outline:hover {
+  background: #f3f4f6;
+}
+.account-config-page .btn-success {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #0f9d58;
+}
+.account-config-page .btn-success:hover {
+  background: rgba(16, 185, 129, 0.2);
+}
+.account-config-page .btn-sm {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+.account-config-page .btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+.account-config-page .btn-ghost {
+  background: transparent;
+  border: none;
+  color: #6b7280;
+}
+.account-config-page .btn-ghost:hover {
+  background: #f3f4f6;
+}
+
+/* FOOTER / PAGINATION BAR */
+.account-config-page .table-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 13px;
+  color: #4b5563;
+}
+.account-config-page .footer-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.account-config-page .footer-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* rows per page dropdown */
+.account-config-page .footer-controls select {
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  padding: 0 32px 0 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  background: #ffffff;
+}
+
+/* pagination arrows */
+.account-config-page .pagination-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.account-config-page .pagination-btn:hover {
+  background: #f9fafb;
+  color: #1f2937;
+}
+
+/* UTILITIES */
+.account-config-page .text-sm { font-size: 12px; }
+.account-config-page .text-xs { font-size: 12px; }
+.account-config-page .text-muted { color: #6b7280; }
+.account-config-page .font-medium { font-weight: 600; }
+.account-config-page .truncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.account-config-page .flex { display: flex; }
+.account-config-page .items-center { align-items: center; }
+.account-config-page .gap-2 { gap: 8px; }
+.account-config-page .gap-3 { gap: 12px; }
+.account-config-page .hidden { display: none !important; }
+.account-config-page .animate-in {
+  animation: account-config-fade-in 0.3s ease-in-out;
+}
+
+/* responsive visibility helpers */
+.account-config-page .mobile-hide { display: none; }
+@media (min-width: 768px) {
+  .account-config-page .mobile-hide.md-show { display: table-cell; }
+}
+
+@media (min-width: 1024px) {
+  .account-config-page .mobile-hide.lg-show { display: table-cell; }
+}
+@media (min-width: 1280px) {
+  .account-config-page .mobile-hide.xl-show { display: table-cell; }
+}
+
+/* responsive tweaks */
+@media (max-width: 767px) {
+  .account-config-page .page-header { flex-direction: column; align-items: flex-start; }
+  .account-config-page .page-title { font-size: 24px; }
+  .account-config-page .stats-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .account-config-page .toolbar { flex-direction: column; align-items: stretch; }
+  .account-config-page .toolbar-left { width: 100%; }
+  .account-config-page .form-actions { justify-content: stretch; }
+}
+
+/* animations */
+@keyframes account-config-drift {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(-40px, 20px) rotate(180deg); }
+  100% { transform: translate(0, 0) rotate(360deg); }
+}
+@keyframes account-config-fade-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* --- ULTRA COMPACT OVERRIDES --- */
+
+/* Tabs bar even tighter */
+.account-config-page .tabs {
+  padding: 8px 16px 0;
+  gap: 16px;
+}
+.account-config-page .tab {
+  font-size: 13px;
+  line-height: 1.2;
+  gap: 4px;
+}
+.account-config-page .tab.active::after {
+  bottom: -8px;
+  height: 2px;
+}
+.account-config-page .tab-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 11px;
+  line-height: 1;
+  border-radius: 10px;
+}
+
+/* Toolbar (All Brokers + Search) super slim */
+.account-config-page .toolbar {
+  padding: 8px 16px;
+  gap: 10px;
+}
+.account-config-page .toolbar-left {
+  gap: 10px;
+}
+
+/* Inputs shorter */
+.account-config-page .search-input,
+.account-config-page .footer-controls select,
+.account-config-page .broker-filter-select,
+.account-config-page select.broker-filter-select {
+  height: 28px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.2;
+  padding-left: 28px;
+  padding-right: 8px;
+}
+.account-config-page .search-icon {
+  width: 12px;
+  height: 12px;
+  left: 8px;
+}
+
+/* TABLE: tighter padding + smaller font */
+.account-config-page th {
+  padding: 6px 12px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.account-config-page td {
+  padding: 6px 12px;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+/* avatar smaller */
+.account-config-page .avatar {
+  width: px;
+  height: 28px;
+  min-width: 28px;
+  line-height: 28px;
+  font-size: 11px;
+  border-radius: 999px;
+}
+.account-config-page .client-cell {
+  gap: 6px;
+}
+
+
+/* row select radio / checkbox smaller */
+.account-config-page .row-select-radio,
+.account-config-page .checkbox {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+  border-radius: 999px;
+}
+.account-config-page .row-select-radio:checked::after,
+.account-config-page .checkbox:checked::after {
+  width: 5px;
+  height: 5px;
+}
+
+/* status pill (Success / Invalid Access) = tag size */
+.account-config-page .badge,
+.account-config-page .status-pill {
+  padding: 2px 6px;
+  min-width: auto;
+  max-width: none;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 600;
+  border-width: 1px;
+}
+
+/* Copy URL / Copy IP / Reconnect buttons tiny */
+.account-config-page .btn-soft-green {
+  height: 28px;
+  border-radius: 6px;
+  padding: 0 8px;
+  font-size: 11px;
+  line-height: 1.2;
+  gap: 4px;
+  font-weight: 500;
+}
+.account-config-page .btn-soft-green .btn-icon-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  font-size: 9px;
+  line-height: 1;
+  border-width: 1px;
+  padding: 0;
+}
+
+/* generic .btn */
+.account-config-page .btn {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.2;
+  gap: 4px;
+  min-height: 28px;
+}
+.account-config-page .btn-sm {
+  padding: 3px 6px;
+  font-size: 11px;
+  min-height: 24px;
+}
+.account-config-page .btn-icon {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: 6px;
+  padding: 0;
+  font-size: 11px;
+  line-height: 1;
+}
+
+/* footer row compact */
+.account-config-page .table-footer {
+  padding: 8px 16px;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.account-config-page .footer-controls {
+  gap: 10px;
+}
+.account-config-page .footer-group {
+  gap: 4px;
+}
+
+/* pagination buttons small */
+.account-config-page .pagination-btn {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0;
+  border-width: 1px;
+}
+
+/* card corners tighter too */
+.account-config-page .card {
+  border-radius: 10px;
+}
+
+/* kill extra vertical gaps between sections */
+.account-config-page .page-header {
+  margin-bottom: 16px;
+  padding: 16px;
+}
+.account-config-page .stats-grid {
+  margin-bottom: 16px;
+  gap: 12px;
+}
+.account-config-page .form-section {
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 10px;
+}
+/* --- FINAL DENSITY TUNING TO MATCH LATEST SCREENSHOT --- */
+
+/* Card rounding like screenshot (slightly rounded 10px) */
+.account-config-page .card {
+  border-radius: 10px;
+}
+
+/* ===== Top Tabs Row ===== */
+.account-config-page .tabs {
+  padding: 12px 16px 0;
+  gap: 20px;
+  border-bottom: none; /* screenshot: underline only under active tab, not full bar */
+}
+.account-config-page .tab {
+  font-size: 14px;
+
+  line-height: 1.3;
+  gap: 15px;
+  padding-bottom: 8px;
+  color: #1f1f1f;
+}
+.account-config-page .tab-count {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  font-size: 1px;
+  font-weight: 500;
+  line-height: 1;
+  border-radius: 999px;
+}
+.account-config-page .tab.active {
+  font-weight: 600;
+}
+.account-config-page .tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0; /* sits right under tab text */
+  height: 2px;
+  background-color: #111827;
+  border-radius: 999px;
+}
+
+/* remove our earlier bottom offset for ::after from ultra compact */
+.account-config-page .tab.active::after {
+  bottom: -2px;
+}
+
+/* ===== Toolbar row (All Brokers + Search + kebab menu) ===== */
+.account-config-page .toolbar {
+  padding: 10px 16px;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  background: transparent;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 16px;
+}
+.account-config-page .toolbar-left {
+  flex-wrap: nowrap;
+  gap: 12px;
+}
+
+/* dropdown/select look in screenshot = pill-ish 8px radius, ~36px tall */
+.account-config-page .broker-filter-select,
+.account-config-page select.broker-filter-select {
+  height: 36px;
+  min-width: 180px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  padding: 0 32px 0 12px;
+  color: #1f2937;
+}
+
+/* search box = same height, icon left, soft grey bg */
+.account-config-page .broker-search {
+  max-width: 260px;
+}
+.account-config-page .search-input {
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  font-size: 14px;
+  line-height: 1.3;
+  padding-left: 36px;
+  padding-right: 12px;
+  color: #1f2937;
+  font-weight: 500;
+}
+.account-config-page .search-input::placeholder {
+  color: #6b7280;
+  font-weight: 400;
+}
+.account-config-page .search-icon {
+  width: 16px;
+  height: 16px;
+  left: 12px;
+}
+.toolbar {
+  justify-content: left;
+  flex: auto;
+}
+/* keep kebab menu (3 dots) floated to the right in your HTML using flex-grow on .toolbar-left if needed */
+/* You don't need extra CSS here, just: .toolbar {justify-content: space-between;} if you want it far right */
+
+/* ===== Table Header ===== */
+.account-config-page thead {
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+.account-config-page th {
+  padding: 9px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #4b5563;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+.account-config-page th:first-child {
+  width: 40px;
+}
+
+/* ===== Table Body Rows ===== */
+.account-config-page td {
+  padding: 1px 15px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  color: #1f1f1f;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align:baseline;
+}
+
+/* left select circle (radio style) */
+.account-config-page .row-select-radio,
+.account-config-page .checkbox {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  border-radius: 50%;
+  border: 2px solid #6366f1;
+  background: #ffffff;
+  position: relative;
+}
+.account-config-page .row-select-radio:checked::after,
+.account-config-page .checkbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  background: #6366f1;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+}
+
+/* avatar cell style from screenshot: light border ring, pastel bg, initials */
+.account-config-page .client-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.account-config-page .avatar {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  line-height: 40px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: #4b5563;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+}
+.account-config-page .client-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.4;
+  
+  
+}
+.account-config-page .client-name {
+  font-size: 12px;
+  font-weight: 100;
+  color: #1f2937;
+}
+
+.account-config-page .client-sub {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+/* Opening Balance column in screenshot is just normal number, not grey subtext */
+.account-config-page .balance-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1f1f1f;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* ===== Status pill ("Invalid Access...", "Success") ===== */
+.account-config-page .badge,
+.account-config-page .status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 6px 12px;
+  min-width: auto;
+  border: none;
+}
+.account-config-page .badge-danger,
+.account-config-page .status-pill.error {
+  background: #d62828; /* solid red like screenshot */
+  color: #ffffff;
+}
+.account-config-page .badge-success,
+.account-config-page .status-pill.success {
+  background: #e6f9ef;
+  border: 1px solid rgba(5,150,105,0.3);
+  color: #059669;
+}
+
+/* ===== Green action buttons (Copy URL / Copy IP / Reconnect) ===== */
+.account-config-page .btn-soft-green {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 26px;
+  padding: 0 12px;
+  background: #ecfff5;
+  border: 1px solid rgba(5,150,105,0.3);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #059669;
+  white-space: nowrap;
+}
+.account-config-page .btn-soft-green .btn-icon-box {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  border-radius: 4px;
+  border: 1px solid rgba(5,150,105,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  background: transparent;
+  color: inherit;
+}
+
+/* ===== Footer row (pagination) ===== */
+.account-config-page .table-footer {
+  padding: 10px 16px;
+  border-top: 1px solid #e5e7eb;
+  background: transparent;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #4b5563;
+  gap: 12px;
+}
+.account-config-page .footer-controls {
+  gap: 12px;
+}
+.account-config-page .footer-group {
+  gap: 6px;
+}
+.account-config-page .footer-controls select {
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  padding: 0 28px 0 10px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #1f2937;
+}
+.account-config-page .pagination-btn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+}
+.account-config-page .pagination-btn:hover {
+  background: #f9fafb;
+  color: #1f2937;
+}
+
+/* ===== Row hover subtle ===== */
+.account-config-page tbody tr:hover {
+  background: #fdfdfd;
+}
+/* =========================
+   SOFTER TABLE STYLE (like image 2)
+   ========================= */
+
+/* card background + radius like image 2 */
+.account-config-page .card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px -15px rgba(15,23,42,0.08);
+}
+
+/* toolbar row soft grey bg separation */
+.account-config-page .toolbar {
+  background: #ffffff;
+  border-top: none;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 16px 20px;
+  align-items: center;
+  gap: 16px;
+}
+
+.account-config-page .toolbar-left {
+  flex-wrap: nowrap;
+  gap: 16px;
+  align-items: center;
+}
+
+/* broker dropdown pill (left side "All Brokers") */
+.account-config-page #broker-filter {
+  height: 40px;
+  min-width: 180px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  padding: 0 32px 0 12px;
+  color: #1f2937;
+  appearance: none;
+}
+
+/* search box next to it */
+.account-config-page .search-wrapper {
+  position: relative;
+}
+.account-config-page .search-wrapper .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: #6b7280;
+}
+.account-config-page .search-wrapper .search-input {
+  height: 40px;
+  width: 240px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  font-size: 14px;
+  line-height: 1.3;
+  padding-left: 36px;
+  padding-right: 12px;
+  font-weight: 500;
+  color: #1f2937;
+}
+.account-config-page .search-wrapper .search-input::placeholder {
+  color: #6b7280;
+  font-weight: 400;
+}
+
+/* kebab button on right */
+.account-config-page .btn-ghost.btn-icon {
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  color: #1f2937;
+}
+.account-config-page .btn-ghost.btn-icon:hover {
+  background: #f3f4f6;
+}
+
+/* table wrapper should sit on white, not edge-to-edge noisy */
+.account-config-page .table-wrapper {
+  background: #ffffff;
+}
+
+/* table header row */
+.account-config-page thead {
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.account-config-page th {
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b5563;
+  line-height: 1.4;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+/* table body rows: give breathing room again */
+.account-config-page td {
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #1f2937;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+  background: #ffffff;
+}
+
+/* left select radio size back to nice visible */
+.account-config-page .row-select-radio,
+.account-config-page .checkbox {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  border-radius: 50%;
+  border: 2px solid #6366f1;
+  background: #fff;
+  position: relative;
+}
+
+/* avatar style like reference = light border ring badge */
+.account-config-page .avatar {
+  width: 36px;
+  height: 36px;
+  line-height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* name + ID stack, more relaxed (not smashed) */
+.account-config-page td > .flex.items-center.gap-2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;         /* instead of 6px tight */
+}
+.account-config-page td > .flex.items-center.gap-2 > div > p {
+  margin: 0;
+  line-height: 1.4;
+  padding: 0;
+}
+.account-config-page td > .flex.items-center.gap-2 > div > p.font-medium {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2937;
+}
+.account-config-page td > .flex.items-center.gap-2 > div > p.text-xs {
+  font-size: 12px;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+/* status pill */
+.account-config-page .badge,
+.account-config-page .status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: auto;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  padding: 6px 12px;
+  border: none;
+}
+.account-config-page .badge-success,
+.account-config-page .status-pill.success {
+  background: #e6f9ef;
+  color: #059669;
+  border: 1px solid rgba(5,150,105,0.3);
+}
+.account-config-page .badge-danger,
+.account-config-page .status-pill.error {
+  background: #d62828;
+  color: #ffffff;
+  border: none;
+}
+
+/* action buttons ("Copy URL", "Copy IP", "Reconnect") */
+.account-config-page .btn.btn-sm.btn-success,
+.account-config-page .btn-soft-green {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 10px;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(5,150,105,0.3);
+  background: #ecfff5;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #059669;
+  white-space: nowrap;
+}
+.account-config-page .btn.btn-sm.btn-success .icon,
+.account-config-page .btn-soft-green .icon {
+  width: 16px;
+  height: 16px;
+}
+.account-config-page .btn-soft-green .btn-icon-box {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  border-radius: 4px;
+  border: 1px solid rgba(5,150,105,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  line-height: 1;
+  color: inherit;
+}
+
+/* kebab menu cell button matches same rounded hover */
+.account-config-page td .btn-ghost.btn-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  z-index: 9999;
+}
+.account-config-page td .btn-ghost.btn-icon:hover {
+  background: #f3f4f6;
+}
+
+/* row hover subtle light tint (not zebra lines, not harsh grey) */
+.account-config-page tbody tr:hover td {
+  background: #f9fafb;
+}
+
+/* footer area spacing again */
+.account-config-page .table-footer {
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  padding: 12px 20px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #4b5563;
+  gap: 12px;
+}
+.account-config-page .footer-controls {
+  gap: 15px;
+}
+.account-config-page .footer-group {
+  gap: 20px;
+}
+.account-config-page .footer-controls select {
+  height: 16px;
+  min-height: 36px;
+  width: 60px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  padding: 0 28px 0 10px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #1f2937;
+}
+.account-config-page .pagination-btn,
+.account-config-page .btn.btn-icon.btn-ghost {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+}
+.account-config-page .pagination-btn:hover,
+.account-config-page .btn.btn-icon.btn-ghost:hover {
+  background: #f9fafb;
+  color: #1f2937;
+}
+
+/* tabs row across top ("All 6", "Success 1", "Failed 5") */
+.account-config-page .tabs {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px 8px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+.account-config-page .tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 0 0 8px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #1f2937;
+  position: relative;
+}
+.account-config-page .tab .badge {
+  min-width: 14px;
+  height: 24px;
+  padding: 0 8px;
+  font-size: 11px;
+  line-height: 24px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.account-config-page .tab .badge-success {
+  background: #e6f9ef;
+  border: 1px solid rgba(5,150,105,0.3);
+  color: #059669;
+}
+.account-config-page .tab .badge-danger {
+  background: #ffe7e7;
+  border: 1px solid rgba(220,38,38,0.3);
+  color: #dc2626;
+}
+.account-config-page .tab .badge-secondary {
+  background: #eef2ff;
+  border: 1px solid #e5e7eb;
+  color: #4b5563;
+}
+.account-config-page .tab.active {
+  font-weight: 600;
+}
+.account-config-page .tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background-color: #111827;
+  border-radius: 999px;
+}
+/* --- ACTION COLUMN RESET --- */
+
+/* The <td> for Action should just hug its contents naturally */
+.account-config-page td[data-field="action-cell"] {
+  /* don't force flex here */
+  display: table-cell !important;
+  vertical-align: middle !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  overflow: visible !important;
+  white-space: nowrap;
+}
+
+/* Inside that cell, the wrapper we render from JS:
+   <div class="flex items-center gap-2"> ... </div>
+   That's the thing that should lay out:
+   [Reconnect button][kebab button]
+*/
+.account-config-page td[data-field="action-cell"] > .flex.items-center.gap-2 {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+/* Make sure the reconnect pill is its own element, not merged with kebab */
+.account-config-page td[data-field="action-cell"] .btn.btn-sm.btn-success {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  height: 22px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(5,150,105,0.3);
+  background: #ecfff5;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #059669;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* The kebab button (3 dots) should be its own button next to reconnect,
+   not inside the green pill */
+.account-config-page td[data-field="action-cell"] .btn-ghost.btn-icon {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #1f2937;
+  padding: 0;
+  flex-shrink: 0;
+}
+.account-config-page td[data-field="action-cell"] .btn-ghost.btn-icon:hover {
+  background: #f3f4f6;
+}
+
+/* dropdown should anchor to kebab, not push layout around */
+.account-config-page td[data-field="action-cell"] .dropdown {
+  position: relative !important;
+  display: inline-block !important;
+  margin: 0 !important;
+}
+.account-config-page td[data-field="action-cell"] .dropdown-menu {
+  position: absolute !important;
+  right: 0;
+  top: 100%;
+  margin-top: 8px;
+  min-width: 200px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 24px 48px -12px rgba(0,0,0,0.15);
+  padding: 8px 0;
+  z-index: 1000;
+}
+
+/* each item in dropdown: left icon + text */
+.account-config-page td[data-field="action-cell"] .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+  border: 0;
+  color: #1f2937;
+  text-align: left;
+  line-height: 1.3;
+}
+.account-config-page td[data-field="action-cell"] .dropdown-item.disabled {
+  color: #9ca3af;
+}
+.account-config-page td[data-field="action-cell"] .dropdown-item:hover:not(.disabled) {
+  background: #f9fafb;
+}
+/* === Move the kebab icon to the far left of the toolbar row === */
+.account-config-page .toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* everything aligned left */
+  gap: 439px;
+}
+
+/* ensure dropdown + search sit next to kebab */
+.account-config-page .toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* make kebab the first element on the row */
+.account-config-page .toolbar > .dropdown {
+  order: 1;
+  align-items: end;
+}
+
+/* optional: make it look tidy and aligned vertically */
+.account-config-page .toolbar > .dropdown .btn-ghost.btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.account-config-page .toolbar > .dropdown .btn-ghost.btn-icon:hover {
+  background: #f3f4f6;
+}
+/* Slightly larger "Add New Account" button in header */
+.account-config-page .page-header .btn-primary {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 600;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 6px 20px -10px rgba(79, 70, 229, 0.7);
+}
+
+/* Adjust the + icon proportionally */
+.account-config-page .page-header .btn-primary .icon,
+.account-config-page .page-header .btn-primary svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+/* =========================================
+   RESPONSIVE TOOLBAR LAYOUT (FILTER / SEARCH / KEBAB)
+   ========================================= */
+.account-config-page .toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;          /* keep them on one line */
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+/* broker + search group should sit inline, then kebab right after */
+.account-config-page .toolbar-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  flex: 1 1 auto;             /* this group takes the row's width */
+  min-width: 0;               /* allows children to shrink */
+  order: 1;
+}
+
+/* dropdown ("All Brokers") */
+.account-config-page .toolbar-left .broker-filter-select,
+.account-config-page .toolbar-left select.broker-filter-select,
+.account-config-page #broker-filter {
+  flex: 0 0 auto;             /* do not stretch */
+  min-width: 130px;           /* not super wide so search has room */
+  max-width: 160px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  padding: 0 32px 0 12px;
+  color: #1f2937;
+  white-space: nowrap;
+}
+
+/* search wrapper should flex and shrink */
+.account-config-page .toolbar-left .search-wrapper {
+  position: relative;
+  flex: 1 1 auto;             /* <-- this makes the search take remaining space */
+  min-width: 0;               /* so it can shrink instead of overflow */
+}
+
+.account-config-page .toolbar-left .search-wrapper .search-input {
+  width: 100%;                /* fill the flex space */
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  font-size: 14px;
+  line-height: 1.3;
+  padding-left: 32px;
+  padding-right: 10px;
+  color: #1f2937;
+  font-weight: 500;
+  min-width: 0;               /* important: allow shrinking */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-config-page .toolbar-left .search-wrapper .search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: #6b7280;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+/* kebab menu button (⋮) */
+.account-config-page .toolbar > .dropdown {
+  order: 2;                   /* comes after .toolbar-left, same row */
+  flex: 0 0 auto;             /* fixed, doesn't try to grow or wrap */
+}
+
+.account-config-page .toolbar > .dropdown .btn-ghost.btn-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #1f2937;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+.account-config-page .toolbar > .dropdown .btn-ghost.btn-icon:hover {
+  background: #f3f4f6;
+}
+
+/* dropdown panel for kebab in toolbar */
+.account-config-page .toolbar > .dropdown .dropdown-menu {
+  right: 0;
+  left: auto;
+  top: 100%;
+  margin-top: 8px;
+  min-width: 180px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 24px 48px -12px rgba(0,0,0,0.15);
+  padding: 8px 0;
+  z-index: 1000;
+}
+.account-config-page .toolbar > .dropdown .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  line-height: 1.3;
+  background: transparent;
+  border: 0;
+  text-align: left;
+}
+.account-config-page .toolbar > .dropdown .dropdown-item.disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+.account-config-page .toolbar > .dropdown .dropdown-item:hover:not(.disabled) {
+  background: #f9fafb;
+}
+
+/* --- super small screens tightening (optional, but helps under ~360px) --- */
+@media (max-width: 400px) {
+  .account-config-page .toolbar-left {
+    gap: 6px;
+  }
+
+  .account-config-page .toolbar-left .broker-filter-select,
+  .account-config-page .toolbar-left select.broker-filter-select,
+  .account-config-page #broker-filter {
+    min-width: 110px;
+    max-width: 130px;
+    font-size: 13px;
+    padding: 0 28px 0 10px;
+    border-radius: 6px;
+    height: 34px;
+  }
+
+  .account-config-page .toolbar-left .search-wrapper .search-input {
+    height: 34px;
+    font-size: 13px;
+    border-radius: 6px;
+    padding-left: 30px;
+  }
+
+  .account-config-page .toolbar > .dropdown .btn-ghost.btn-icon {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    border-radius: 6px;
+  }
+}
+/* =========================================================
+   FINAL TOOLBAR FIX (All Brokers | Search | ⋮ on same row)
+   ========================================================= */
+
+.account-config-page .toolbar {
+  display: flex;
+  flex-direction: row;     /* force horizontal layout */
+  align-items: center;
+  flex-wrap: nowrap;       /* KEEP everything on one line */
+  gap: 8px;
+
+  padding: 12px 16px;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* group that contains [All Brokers] and [Search] */
+.account-config-page .toolbar-left {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+
+  flex: 1 1 auto;                /* this group takes the row width */
+  min-width: 0;                  /* allow children to shrink instead of wrapping */
+  max-width: calc(100% - 40px);  /* leave ~40px space for kebab button */
+  order: 1;
+}
+
+/* the <select> / broker filter */
+.account-config-page .toolbar-left .broker-filter-select,
+.account-config-page .toolbar-left select.broker-filter-select,
+.account-config-page #broker-filter {
+  flex: 0 0 auto;          /* fixed size, no grow */
+  min-width: 120px;
+  max-width: 150px;
+
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  padding: 0 32px 0 12px;
+  color: #1f2937;
+  white-space: nowrap;
+}
+
+/* wrapper around the search input */
+.account-config-page .toolbar-left .search-wrapper {
+  position: relative;
+  flex: 1 1 auto;     /* grows + shrinks to fill remaining space */
+  min-width: 0;       /* <-- critical: lets it shrink on small screens */
+}
+
+/* the actual input */
+.account-config-page .toolbar-left .search-wrapper .search-input {
+  width: 100%;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  font-size: 14px;
+  line-height: 1.3;
+  padding-left: 32px;
+  padding-right: 10px;
+  color: #1f2937;
+  font-weight: 500;
+
+  min-width: 0;              /* prevent overflow */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-config-page .toolbar-left .search-wrapper .search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: #6b7280;
+  pointer-events: none;
+}
+
+/* kebab container */
+.account-config-page .toolbar > .dropdown {
+  order: 2;             /* kebab comes AFTER .toolbar-left */
+  flex: 0 0 auto;       /* fixed width; never grows */
+  min-width: 32px;
+  min-height: 32px;
+  align-self: center;
+}
+
+/* ============================================
+   COMPACT ERROR/SUCCESS BADGE OVERRIDE
+   Add this at the END of your CSS file
+   ============================================ */
+
+/* Override: Make all status pills compact and consistent */
+.account-config-page .badge,
+.account-config-page .status-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  
+  /* Compact sizing - slightly bigger than success badge */
+  max-width: 320px !important;
+  min-width: auto !important;
+  height: 28px !important;
+  padding: 0 12px !important;
+  
+  /* Typography */
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  
+  /* Rounded pill shape */
+  border-radius: 999px !important;
+  
+  /* Enable text truncation with ellipsis */
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Override: Success badge (green) */
+.account-config-page .badge-success,
+.account-config-page .status-pill.success {
+  background: #e6f9ef !important;
+  border: 1px solid rgba(5,150,105,0.3) !important;
+  color: #059669 !important;
+}
+
+/* Override: Error badge (red) - compact like success */
+.account-config-page .badge-danger,
+.account-config-page .status-pill.error {
+  background: #fee2e2 !important;
+  border: 1px solid rgba(220,38,38,0.3) !important;
+  color: #dc2626 !important;
+  transition: max-width 0.3s ease !important;
+}
+
+/* Override: Expand on hover to show more text */
+.account-config-page .badge-danger:hover,
+.account-config-page .status-pill.error:hover {
+  max-width: 500px !important;
+  cursor: help !important;
+  z-index: 10 !important;
+}
+
+/* Override: Secondary badge */
+.account-config-page .badge-secondary {
+  background: #eef2ff !important;
+  border: 1px solid #e5e7eb !important;
+  color: #4b5563 !important;
+}
+

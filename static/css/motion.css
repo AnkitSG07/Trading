@@ -1,0 +1,106 @@
+:root {
+  --motion-duration-fast: 160ms;
+  --motion-duration-base: 220ms;
+  --motion-duration-slow: 360ms;
+  --motion-ease: cubic-bezier(0.4, 0.14, 0.3, 1);
+  --motion-ease-emphasis: cubic-bezier(0.32, 0.08, 0.24, 1);
+  --shadow-soft: 0 12px 40px rgba(15, 23, 42, 0.08);
+}
+
+.motion-ready {
+  opacity: 0;
+  transform: translateY(12px);
+  filter: blur(6px);
+  transition:
+    opacity var(--motion-duration-base) var(--motion-ease),
+    transform var(--motion-duration-base) var(--motion-ease),
+    filter var(--motion-duration-base) var(--motion-ease);
+  will-change: opacity, transform, filter;
+}
+
+.motion-visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+.motion-hover,
+[data-motion-hover="true"] {
+  transition: transform var(--motion-duration-fast) var(--motion-ease),
+    box-shadow var(--motion-duration-fast) var(--motion-ease),
+    border-color var(--motion-duration-fast) var(--motion-ease),
+    background-color var(--motion-duration-fast) var(--motion-ease);
+}
+
+.motion-hover:hover,
+[data-motion-hover="true"]:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-soft);
+}
+
+.motion-hover:active,
+[data-motion-hover="true"]:active {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+}
+
+.motion-highlight {
+  position: relative;
+  overflow: hidden;
+}
+
+.motion-highlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(79, 70, 229, 0.08), rgba(14, 165, 233, 0.08));
+  opacity: 0;
+  transform: translateY(8%);
+  transition: opacity var(--motion-duration-base) var(--motion-ease),
+    transform var(--motion-duration-base) var(--motion-ease);
+  pointer-events: none;
+}
+
+.motion-highlight.motion-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.table tbody tr.motion-ready {
+  transition-delay: 40ms;
+}
+
+.table tbody tr:nth-child(2).motion-ready {
+  transition-delay: 80ms;
+}
+
+.table tbody tr:nth-child(3).motion-ready {
+  transition-delay: 120ms;
+}
+
+.table tbody tr:nth-child(4).motion-ready {
+  transition-delay: 160ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-fast: 0ms;
+    --motion-duration-base: 0ms;
+    --motion-duration-slow: 0ms;
+  }
+
+  .motion-ready,
+  .motion-visible,
+  .motion-hover,
+  [data-motion-hover="true"],
+  .motion-highlight,
+  .motion-highlight::after {
+    transition: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .motion-ready {
+    opacity: 1;
+  }
+}
