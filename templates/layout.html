@@ -27,6 +27,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.umd.min.js"
     defer data-global-script="true"></script>
   <script src="{{ url_for('static', filename='js/prefetch.js') }}" defer data-global-script="true"></script>
+  <script src="{{ url_for('static', filename='js/upgrade-modal.js') }}" defer data-global-script="true"></script>
+  <script src="{{ url_for('static', filename='js/usage-stats.js') }}" defer data-global-script="true"></script>
   {% block styles %}{% endblock %}
   <style data-global-style="true">
     <style>* {
@@ -1913,7 +1915,6 @@
         transform: translateX(100%);
       }
     }
-  
   </style>
 </head>
 
@@ -2181,7 +2182,9 @@
       </a>
       <button class="sidebar-item" id="bugReportButton" type="button" aria-label="Report a bug">
         <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 8l1-2-2-2-2 1a5 5 0 0 0-6 0l-2-1-2 2 1 2a5 5 0 0 0 0 6l-1 2 2 2 2-1a5 5 0 0 0 6 0l2 1 2-2-1-2a5 5 0 0 0 0-6z"></path>
+          <path
+            d="M19 8l1-2-2-2-2 1a5 5 0 0 0-6 0l-2-1-2 2 1 2a5 5 0 0 0 0 6l-1 2 2 2 2-1a5 5 0 0 0 6 0l2 1 2-2-1-2a5 5 0 0 0 0-6z">
+          </path>
           <line x1="12" y1="8" x2="12" y2="12"></line>
           <line x1="12" y1="16" x2="12.01" y2="16"></line>
         </svg>
@@ -2293,7 +2296,7 @@
       </form>
     </div>
   </div>
-  
+
   <!-- Custom Alert Modal -->
   <div id="custom-alert-modal" class="custom-modal-backdrop">
     <div class="custom-modal-content">
@@ -2435,7 +2438,7 @@
       fillMetadata();
     });
   </script>
-  
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
     data-global-script="true"></script>
   <script src="{{ url_for('static', filename='js/notifications-panel.js') }}" defer data-global-script="true"></script>
